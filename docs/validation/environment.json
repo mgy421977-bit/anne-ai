@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-08",
+  "python": "3.13.15",
+  "syntax_checked_python_files": 140,
+  "validation_tools_available": {
+    "pytest": true,
+    "ruff": false,
+    "mypy": false,
+    "setuptools": false
+  },
+  "dependencies_installed_during_review": false,
+  "live_cloud_provider_calls": false,
+  "notes": [
+    "Local CPU test run; no hosted CI run.",
+    "Voice adapter tests skip when optional local backends are absent."
+  ]
+}

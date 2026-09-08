@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "protocol": "frozen-response-replay-v1",
+  "dataset_sha256": "517ccd64faffbada3791db85087ad559cbe392a68be7540f800fe8158c18fcc9",
+  "split": "development",
+  "model": "synthetic-demonstration-no-model-called",
+  "generation_settings": {
+    "seed": 0,
+    "temperature": 0,
+    "synthetic": true
+  },
+  "limitations": [
+    "Replay measures filtering, not end-to-end generation quality.",
+    "ANLA passing does not establish factual truth.",
+    "Development examples are not held-out evidence of generalization.",
+    "Latency includes recorded generation plus measured gates, excluding setup."
+  ],
+  "raw": {
+    "n": 6,
+    "accepted": 6,
+    "abstained": 0,
+    "false_accept": 4,
+    "false_reject": 0,
+    "false_accept_rate": 1.0,
+    "false_reject_rate": 0.0,
+    "mean_gate_latency_ms": 0.0,
+    "mean_total_latency_ms": 0
+  },
+  "anne": {
+    "n": 6,
+    "accepted": 4,
+    "abstained": 1,
+    "false_accept": 2,
+    "false_reject": 0,
+    "false_accept_rate": 0.5,
+    "false_reject_rate": 0.0,
+    "mean_gate_latency_ms": 0.9480743333369901,
+    "mean_total_latency_ms": 0.9480743333369901
+  },
+  "pairs": [
+    {
+      "id": "hello",
+      "response_sha256": "23ea498e82f4435b1c135324eedef4ba64061600897077bf76082a50b41a9c13",
+      "expected_acceptable": true,
+      "raw": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 0.0,
+        "total_latency_ms": 0
+      },
+      "anne": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 1.314159000003201,
+        "total_latency_ms": 1.314159000003201,
+        "verdict": "ONAYLA",
+        "factual_status": "unverified"
+      }
+    },
+    {
+      "id": "separate-statements",
+      "response_sha256": "b13bbc5c777b2d8ca2ba3d3aeefa65745f07432154ae3bc2ec26adca111f6afb",
+      "expected_acceptable": true,
+      "raw": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 0.0,
+        "total_latency_ms": 0
+      },
+      "anne": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 0.6370099999912782,
+        "total_latency_ms": 0.6370099999912782,
+        "verdict": "ONAYLA",
+        "factual_status": "unverified"
+      }
+    },
+    {
+      "id": "contradiction",
+      "response_sha256": "63620658749a2dc84fe091af4cf3276ab03c5eca15815ad83d063066f25b5d24",
+      "expected_acceptable": false,
+      "raw": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 0.0,
+        "total_latency_ms": 0
+      },
+      "anne": {
+        "accepted": false,
+        "abstained": false,
+        "gate_latency_ms": 1.2597170000390179,
+        "total_latency_ms": 1.2597170000390179,
+        "verdict": "REDDET",
+        "factual_status": "unverified"
+      }
+    },
+    {
+      "id": "unsupported-en",
+      "response_sha256": "f1766362a591ae699bda946abc26110961e6c72b6cef6f8205f1eca7f08f81f1",
+      "expected_acceptable": false,
+      "raw": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 0.0,
+        "total_latency_ms": 0
+      },
+      "anne": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 1.693841000133034,
+        "total_latency_ms": 1.693841000133034,
+        "verdict": "ONAYLA",
+        "factual_status": "unverified"
+      }
+    },
+    {
+      "id": "unsupported-tr",
+      "response_sha256": "8e901a5affc2a5d6bae0abf41d967986c194a7536e9108ff271b6711aca2cb4d",
+      "expected_acceptable": false,
+      "raw": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 0.0,
+        "total_latency_ms": 0
+      },
+      "anne": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 0.6020759999501024,
+        "total_latency_ms": 0.6020759999501024,
+        "verdict": "ONAYLA",
+        "factual_status": "unverified"
+      }
+    },
+    {
+      "id": "evidence-gap",
+      "response_sha256": "8a63cf6900e4ec27bfcc2d658db86f753c2e76a962f8eef54c1d9b825285316e",
+      "expected_acceptable": false,
+      "raw": {
+        "accepted": true,
+        "abstained": false,
+        "gate_latency_ms": 0.0,
+        "total_latency_ms": 0
+      },
+      "anne": {
+        "accepted": false,
+        "abstained": true,
+        "gate_latency_ms": 0.18164299990530708,
+        "total_latency_ms": 0.18164299990530708,
+        "verdict": "ABSTAIN",
+        "factual_status": "unverified"
+      }
+    }
+  ],
+  "timestamp": "2026-09-08T10:10:47.870983+00:00",
+  "python": "3.13.15",
+  "source_sha256": "c93069a293ff6aba41d97372aa8da9e92cc04ed0e0acda79bdb084dbc1b7952f"
+}

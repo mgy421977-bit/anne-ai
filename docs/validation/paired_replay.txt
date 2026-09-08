@@ -1,0 +1,29 @@
+$ python benchmarks/scripts/run_paired_replay.py --output benchmarks/results/2026-09-08_paired_replay.json
+
+{
+  "raw": {
+    "n": 6,
+    "accepted": 6,
+    "abstained": 0,
+    "false_accept": 4,
+    "false_reject": 0,
+    "false_accept_rate": 1.0,
+    "false_reject_rate": 0.0,
+    "mean_gate_latency_ms": 0.0,
+    "mean_total_latency_ms": 0
+  },
+  "anne": {
+    "n": 6,
+    "accepted": 4,
+    "abstained": 1,
+    "false_accept": 2,
+    "false_reject": 0,
+    "false_accept_rate": 0.5,
+    "false_reject_rate": 0.0,
+    "mean_gate_latency_ms": 0.9480743333369901,
+    "mean_total_latency_ms": 0.9480743333369901
+  }
+}
+Wrote benchmarks/results/2026-09-08_paired_replay.json
+
+Exit code: 0

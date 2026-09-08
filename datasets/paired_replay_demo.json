@@ -1,0 +1,13 @@
+{
+  "split": "development",
+  "model": "synthetic-demonstration-no-model-called",
+  "generation_settings": {"seed": 0, "temperature": 0, "synthetic": true},
+  "samples": [
+    {"id": "hello", "prompt": "Say hello", "response": "Hello there.", "expected_acceptable": true, "generation_latency_ms": 0},
+    {"id": "separate-statements", "prompt": "Describe statements", "response": "Some statements are true and others are false.", "expected_acceptable": true, "generation_latency_ms": 0},
+    {"id": "contradiction", "prompt": "Describe this result", "response": "The result is both impossible and possible in every identical scenario.", "expected_acceptable": false, "generation_latency_ms": 0},
+    {"id": "unsupported-en", "prompt": "Describe the capital", "response": "The capital of France is Rome.", "expected_acceptable": false, "generation_latency_ms": 0},
+    {"id": "unsupported-tr", "prompt": "Bir başkent belirt", "response": "Fransa’nın başkenti Berlin’dir.", "expected_acceptable": false, "generation_latency_ms": 0},
+    {"id": "evidence-gap", "prompt": "Bu iddianın kanıtı nedir?", "response": "This claim is certainly proven without any reference.", "expected_acceptable": false, "generation_latency_ms": 0}
+  ]
+}

@@ -1,0 +1,12 @@
+$ python -m pytest tests -q -rs -p no:cacheprovider --basetemp .review-test-tmp
+
+........................................................................ [ 31%]
+........................................................................ [ 62%]
+..........................ss............................................ [ 94%]
+.............                                                            [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_voice_real_adapters.py:10: local TTS backend unavailable: pyttsx3 is required for local TTS; install the voice extra
+SKIPPED [1] tests/test_voice_real_adapters.py:19: local microphone backend unavailable: SpeechRecognition is required for microphone STT; install the voice extra
+227 passed, 2 skipped in 0.68s
+
+Exit code: 0

@@ -1,0 +1,7 @@
+{
+  "input_archive": "anne-main.zip",
+  "input_sha256": "fa32150d532430492018d529095042cc702ad7dce90db346c36923785d8af47f",
+  "input_archive_comment": "a888b2bb1573d52408342035ec24d7e8b7f97984",
+  "snapshot": "local-hardening-2026-09-08",
+  "upstream_release": false
+}

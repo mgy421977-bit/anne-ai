@@ -1,0 +1,26 @@
+{
+  "fixture_version": "0.3",
+  "git_sha": "unknown",
+  "timestamp": "2026-09-08T10:10:47.949823+00:00",
+  "ANLA_OFF": {
+    "anla": "OFF",
+    "passed": 30,
+    "blocked": 0,
+    "false_pass": 15,
+    "false_block": 0,
+    "retry_events": 0,
+    "n": 30,
+    "tau": 0.5
+  },
+  "ANLA_ON": {
+    "anla": "ON",
+    "passed": 15,
+    "blocked": 15,
+    "false_pass": 0,
+    "false_block": 0,
+    "retry_events": 15,
+    "n": 30,
+    "tau": 0.5
+  },
+  "note": "Heuristic scaffold only — not a published benchmark claim."
+}
