@@ -37,6 +37,14 @@ def test_cycle_rejects_action_before_authorization():
         cycle.action = {"type": "external-action"}
 
 
+def test_blocked_cycle_rejects_action():
+    cycle = CognitiveCycle(goal="test")
+    cycle.block("independent verification failed")
+    with pytest.raises(PermissionError, match="authorized cycle"):
+        cycle.action = {"type": "external-action"}
+    assert cycle.status.value == "BLOCKED"
+
+
 def test_cycle_rejects_outcome_before_authorization():
     cycle = CognitiveCycle(goal="test")
     outcome = type(
@@ -52,6 +60,25 @@ def test_cycle_rejects_outcome_before_authorization():
     )()
     with pytest.raises(PermissionError, match="authorized cycle"):
         cycle.record_outcome(outcome)
+
+
+def test_blocked_cycle_rejects_outcome():
+    cycle = CognitiveCycle(goal="test")
+    cycle.block("safety policy rejected action")
+    outcome = type(
+        "OutcomeLike",
+        (),
+        {
+            "prediction_id": "p1",
+            "observed_outcome": "executed",
+            "observed": True,
+            "source": "test",
+            "provenance": (),
+        },
+    )()
+    with pytest.raises(PermissionError, match="authorized cycle"):
+        cycle.record_outcome(outcome)
+    assert cycle.status.value == "BLOCKED"
 
 
 def test_authorized_cycle_accepts_action_and_outcome():
