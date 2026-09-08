@@ -1,0 +1,10 @@
+{
+  "data_dir": "%USERPROFILE%\\ANNE\\data",
+  "record_audio": true,
+  "minimum_free_gb": 5.0,
+  "offline_first": true,
+  "google_learning_enabled": true,
+  "google_learning_only_on_memory_miss": true,
+  "update_check_on_start": true,
+  "auto_install_updates": false
+}
