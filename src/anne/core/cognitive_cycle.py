@@ -93,6 +93,15 @@ class CognitiveCycle:
     learning_updates: list[dict[str, Any]] = field(default_factory=list)
     provenance: list[str] = field(default_factory=list)
 
+    def __setattr__(self, name: str, value: Any) -> None:
+        if (
+            name == "action"
+            and name in self.__dict__
+            and self.__dict__.get("status") not in (CycleStatus.AUTHORIZED, CycleStatus.ACTED)
+        ):
+            raise PermissionError("action requires an authorized cycle")
+        object.__setattr__(self, name, value)
+
     def add_observation(self, observation: Observation) -> None:
         self.observations.append(observation)
         self.provenance.extend(observation.provenance)
@@ -106,7 +115,10 @@ class CognitiveCycle:
         self.predictions.append(prediction)
 
     def record_outcome(self, outcome: Outcome, error: PredictionError | None = None) -> None:
+        if self.status not in (CycleStatus.AUTHORIZED, CycleStatus.ACTED):
+            raise PermissionError("record_outcome requires an authorized cycle")
         self.outcomes.append(outcome)
+        self.provenance.extend(outcome.provenance)
         if error is not None:
             self.prediction_errors.append(error)
         self.status = CycleStatus.COMPLETED
