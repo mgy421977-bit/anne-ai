@@ -1,0 +1,6 @@
+{
+  "version": "0.1.0",
+  "package_url": "https://github.com/mgy421977-bit/anne-ai/releases/latest/download/anne-desktop.zip",
+  "sha256": "REPLACE_WITH_RELEASE_SHA256",
+  "min_free_gb": 2.0
+}
