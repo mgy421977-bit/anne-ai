@@ -1,3 +1,5 @@
+import pytest
+
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
 from anne.core.cognitive_cycle import CognitiveCycle, Prediction, PredictionError
 
@@ -13,6 +15,7 @@ def test_cycle_requires_behavior_change_for_learning_evidence():
 def test_prediction_bounds_and_outcome():
     cycle = CognitiveCycle(goal="test")
     cycle.add_prediction(Prediction("h1", "yes", 0.2, 0.4))
+    cycle.authorize("test authorization")
     cycle.record_outcome(
         type("OutcomeLike", (), {"prediction_id": "p1", "observed_outcome": "no", "observed": True, "source": "test", "provenance": ()})(),
         PredictionError("p1", 0.2, "mismatch"),
@@ -26,3 +29,37 @@ def test_agency_gate_fails_closed():
     proposal = ActionProposal("external-action", risk=0.1)
     result = gate.authorize(proposal, safety_allowed=False)
     assert result.decision is ActionDecision.DENY
+
+
+def test_cycle_rejects_action_before_authorization():
+    cycle = CognitiveCycle(goal="test")
+    with pytest.raises(PermissionError, match="authorized cycle"):
+        cycle.action = {"type": "external-action"}
+
+
+def test_cycle_rejects_outcome_before_authorization():
+    cycle = CognitiveCycle(goal="test")
+    outcome = type(
+        "OutcomeLike",
+        (),
+        {
+            "prediction_id": "p1",
+            "observed_outcome": "executed",
+            "observed": True,
+            "source": "test",
+            "provenance": (),
+        },
+    )()
+    with pytest.raises(PermissionError, match="authorized cycle"):
+        cycle.record_outcome(outcome)
+
+
+def test_authorized_cycle_accepts_action_and_outcome():
+    cycle = CognitiveCycle(goal="test")
+    cycle.authorize("test authorization")
+    cycle.action = {"type": "controlled-action"}
+    cycle.record_outcome(
+        type("OutcomeLike", (), {"prediction_id": "p1", "observed_outcome": "executed", "observed": True, "source": "test", "provenance": ()})(),
+    )
+    assert cycle.status.value == "COMPLETED"
+    assert cycle.action["type"] == "controlled-action"
