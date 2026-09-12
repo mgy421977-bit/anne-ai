@@ -53,9 +53,43 @@ The project explores this through several interacting mechanisms:
 - bounded multi-agent collaboration
 - reproducible benchmarks and ablation experiments
 
+No component should be interpreted as proof of consciousness, general intelligence, or safe autonomous operation.
+
 ---
 
-## Cognitive stages
+## Architecture at a glance
+
+```text
+                    ┌──────────────────────┐
+                    │   Model Provider     │
+                    │ local / API / LLM    │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────┐
+│                    ANNE Cognitive Runtime                 │
+│                                                          │
+│  DUY → BAK → GÖR → ANLA → HİSSET → YAP                  │
+│   │      │      │      │        │        │               │
+│   │      │      │      │        │        └─ action       │
+│   │      │      │      │        └──────── contextual     │
+│   │      │      │      └──────────────── semantic gate  │
+│   │      │      └──────────────────── pattern/attention │
+│   │      └────────────────────────── observation/memory │
+│   └────────────────────────────────── perception         │
+│                                                          │
+│  Memory • Planning • Metacognition • Safety • Tools     │
+│  Neuro-symbolic reasoning • Provenance • Verification   │
+└──────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │ Response / Action /  │
+                    │ Reject + SFT         │
+                    └──────────────────────┘
+```
+
+### Cognitive stages
 
 | Stage | Turkish | Role |
 | --- | --- | --- |
@@ -137,11 +171,23 @@ ANNE includes a local execution path designed to reduce dependence on external A
 
 ---
 
-## Safety posture
+## Model providers
+
+Provider adapters live under `src/anne/providers/`. Local-first installation is the default; optional cloud SDKs are extra dependencies.
+
+---
+
+## Reliability and safety layer
 
 External actions are constrained by allowlists and agency controls. Empty tool allowlists deny tool use. Registered tools consult AgencyGate. Memory writes redact recognized credential patterns at persistence boundaries.
 
 This does **not** mean ANNE is “fully safe” or that safety is solved.
+
+---
+
+## Memory and learning
+
+Persistent/fractal memory and Structured Failure Traces (SFT) support retrieval and auditability. Memory is not automatic learning; learning claims require measurable behavioural criteria.
 
 ---
 
@@ -158,7 +204,13 @@ Related themes:
 
 ---
 
-## Status summary
+## Benchmarks and evidence
+
+Benchmark runners and results live under `benchmarks/`. Prefer published artifacts and ablation scripts over narrative claims.
+
+---
+
+## Project status
 
 | Area | Status |
 | --- | --- |
@@ -173,9 +225,24 @@ Related themes:
 
 ---
 
-## Research program
+## Research discipline
 
 ANNE is intended to support open, reproducible experimentation around cognitive orchestration. Contributions and collaboration are welcome when they preserve the distinction between implemented mechanisms, experimental features, and hypotheses.
+
+---
+
+## Development
+
+```bash
+python -m pip install -e ".[dev]"
+pytest tests -q
+```
+
+---
+
+## Roadmap
+
+See `ROADMAP.md` for milestone-level criteria.
 
 ---
 
@@ -198,4 +265,4 @@ ANNE is intended to support open, reproducible experimentation around cognitive 
 
 Apache License 2.0 — see LICENSE .
 
-**Author:** Mustafa Gökhan Yılmaz · ORCID 0009-0002-6591-0163 · İzmir, Türkiye
+**Author:** Mustafa Gökhan Yılmaz · ORCID [0009-0002-6591-0163](https://orcid.org/0009-0002-6591-0163) · İzmir, Türkiye
