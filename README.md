@@ -34,6 +34,26 @@ it does not discover facts or validate the authority of arbitrary source strings
 
 ---
 
+## Official Research Network
+
+**ANNE — AGI-Oriented Open Cognitive Architecture** is the research positioning of this project. ANNE is a research system exploring cognitive orchestration; it does **not** claim achieved AGI, human-level understanding, or support for unsupervised high-stakes autonomous use.
+
+This repository is the primary implementation surface for ANNE within the Vitavolt Research layer.
+
+| Layer | Resource |
+|-------|----------|
+| Vitavolt Research (hub) | https://vitavoltglobal.com/research/ |
+| ANNE canonical page | https://vitavoltglobal.com/anne.html |
+| ANNE research overview | https://vitavoltglobal.com/research/anne-ai.html |
+| ANNE architecture | https://vitavoltglobal.com/research/anne-architecture.html |
+| Research publication map | https://vitavoltglobal.com/research/publications.html |
+| Related core research repo | https://github.com/mgy421977-bit/anne-core |
+| Public research profile | https://www.linkedin.com/in/mustafa-g%C3%B6khan-yilmaz-184b4468/ |
+
+**Related repository:** [anne-core](https://github.com/mgy421977-bit/anne-core) is the associated core research prototype (executable, local-first knowledge layer). It belongs to the same research ecosystem and is not a separate product claim.
+
+---
+
 ## What ANNE is trying to test
 
 The central research question is:
