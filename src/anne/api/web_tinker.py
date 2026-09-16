@@ -11,7 +11,6 @@ import asyncio
 import heapq
 import os
 import threading
-import time
 from concurrent.futures import Future
 from dataclasses import dataclass, field
 from typing import Any
@@ -42,10 +41,14 @@ class _QueuedRequest:
     prompt: str = field(compare=False)
 
 
+class QueueFullError(RuntimeError):
+    """Raised when the bounded laptop queue cannot accept another public request."""
+
+
 class PriorityRuntime:
     """One bounded worker for a laptop-hosted ANNE runtime."""
 
-    def __init__(self, *, max_concurrency: int = 1, max_queue: int = 32) -> None:
+    def __init__(self, *, max_concurrency: int = 1, max_queue: int = DEFAULT_MAX_QUEUE) -> None:
         if max_concurrency != 1:
             raise ValueError("the initial laptop runtime supports one model worker")
         if max_queue < 1:
@@ -56,7 +59,9 @@ class PriorityRuntime:
         self._sequence = 0
         self._stopping = False
         self._busy = False
-        self._worker = threading.Thread(target=self._run, name="anne-model-worker", daemon=True)
+        self._worker = threading.Thread(
+            target=self._run, name="anne-model-worker", daemon=True
+        )
         self._worker.start()
 
     def submit(self, prompt: str, *, priority: int = PUBLIC_PRIORITY) -> Future[str]:
@@ -119,10 +124,6 @@ class PriorityRuntime:
             finally:
                 with self._condition:
                     self._busy = False
-
-
-class QueueFullError(RuntimeError):
-    """Raised when the bounded laptop queue cannot accept another public request."""
 
 
 class ChatRequest(BaseModel):
