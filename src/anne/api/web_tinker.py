@@ -30,6 +30,7 @@ from anne.api.console_html import CONSOLE_HTML
 from anne.api.provider_factory import ProviderConfigurationError as FactoryProviderError
 from anne.api.provider_factory import create_language_provider
 from anne.core.conversation import CognitiveConversation, LanguageInterface
+from anne.core.users import resolve_user
 from anne.memory.local_memory import LocalMemory
 from anne.memory.paths import resolve_memory_location
 
@@ -209,9 +210,12 @@ class PriorityRuntime:
             try:
                 if conversation is None or memory is None:
                     conversation, memory = _create_conversation()
-                previous = memory.find_previous_answer(request.prompt)
-                recent_experiences = memory.recent_experiences(limit=8)
-                known_context = memory.context(limit=8)
+                identity = resolve_user(request.actor)
+                uid = identity.user_id
+                previous = memory.find_previous_answer(request.prompt, user_id=uid)
+                recent_experiences = memory.recent_experiences(limit=8, user_id=uid)
+                known_context = memory.context(limit=8, user_id=uid)
+                first_contact = identity.is_demo and memory.interaction_count(uid) == 0
                 result = conversation.handle(
                     request.actor,
                     request.prompt,
@@ -219,10 +223,16 @@ class PriorityRuntime:
                     previous_answer=previous,
                     recent_experiences=recent_experiences,
                 )
+                if first_contact and identity.greeting and identity.greeting not in result.answer:
+                    result.answer = f"{identity.greeting}\n\n{result.answer}"
                 confidence = result.audit.confidence if result.audit is not None else 0.5
-                memory.save(request.prompt, result.answer, result.learned, confidence)
+                memory.save(
+                    request.prompt, result.answer, result.learned, confidence, user_id=uid
+                )
                 if result.experience is not None:
-                    memory.save_experience(result.experience)
+                    memory.save_experience(result.experience, user_id=uid)
+                result._identity_display = identity.display_name  # noqa: SLF001
+                result._identity_user_id = uid  # noqa: SLF001
                 request.future.set_result(result)
             except Exception as exc:  # noqa: BLE001
                 request.future.set_exception(exc)
@@ -251,6 +261,8 @@ class ChatResponse(BaseModel):
     confidence: float = 0.0
     knowledge_state: str = "none"
     research_reason: str = ""
+    user_display_name: str = ""
+    user_id: str = ""
 
 
 MAX_QUEUE = int(os.getenv("ANNE_WEB_MAX_QUEUE", str(DEFAULT_MAX_QUEUE)))
@@ -333,6 +345,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
         confidence=float(audit.confidence) if audit is not None else 0.0,
         knowledge_state=str(audit.knowledge_state) if audit is not None else "none",
         research_reason=str(audit.research_reason) if audit is not None else "",
+        user_display_name=str(getattr(result, "_identity_display", "") or ""),
+        user_id=str(getattr(result, "_identity_user_id", "") or ""),
     )
 
 
