@@ -80,17 +80,12 @@ def register_installation(
     consent: bool,
     email: str | None = None,
 ) -> InstallationRecord:
-    """Create/update a local registration record after explicit consent.
-
-    The record is deliberately outside the cognitive memory database. It can be
-    exported to a future notification service without exposing ANNE's memory.
-    """
+    """Create/update a local registration record after explicit consent."""
     registration_dir = root / "installation"
     id_path = registration_dir / "installation_id"
     record_path = registration_dir / "registration.json"
     installation_id = _installation_id(id_path)
     github_user_id, github_username = _github_identity() if consent else (None, None)
-    consent_at = _now() if consent else None
     record = InstallationRecord(
         installation_id=installation_id,
         github_user_id=github_user_id,
@@ -98,7 +93,7 @@ def register_installation(
         installed_version=version,
         installed_at=_now(),
         notification_consent=consent,
-        consent_at=consent_at,
+        consent_at=_now() if consent else None,
         email=email if consent and email else None,
     )
     registration_dir.mkdir(parents=True, exist_ok=True)
@@ -138,3 +133,19 @@ def maybe_register_installation(root: Path, version: str) -> InstallationRecord 
         email_value = input("Optional notification email (leave blank to skip): ").strip()
         email = email_value or None
     return register_installation(root=root, version=version, consent=consent, email=email)
+
+
+def main() -> int:
+    root = Path(os.getenv("ANNE_MEMORY_ROOT") or os.getcwd()).resolve()
+    version = os.getenv("ANNE_VERSION", "0.1.0")
+    record = maybe_register_installation(root, version)
+    if record is not None:
+        identity = record.github_username or "not linked"
+        print(f"  Installation: {record.installation_id}")
+        print(f"  GitHub: {identity}")
+        print(f"  Notifications: {'enabled' if record.notification_consent else 'disabled'}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
