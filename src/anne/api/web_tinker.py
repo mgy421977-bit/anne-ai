@@ -31,6 +31,7 @@ from anne.api.provider_factory import ProviderConfigurationError as FactoryProvi
 from anne.api.provider_factory import create_language_provider
 from anne.core.conversation import CognitiveConversation, LanguageInterface
 from anne.memory.local_memory import LocalMemory
+from anne.memory.paths import resolve_memory_location
 
 PUBLIC_PRIORITY = 10
 PRIORITY_OWNER = 0
@@ -120,7 +121,14 @@ class HTTPResearchAdapter:
 
 
 def _create_conversation() -> tuple[CognitiveConversation, LocalMemory]:
-    db_path = os.getenv("ANNE_WEB_DB", "anne_web.db")
+    db_env = (os.getenv("ANNE_WEB_DB") or "").strip()
+    if db_env:
+        db_path = db_env
+    else:
+        location = resolve_memory_location()
+        db_path = str(location.db_path)
+        os.environ.setdefault("ANNE_MEMORY_ROOT", str(location.root))
+        os.environ.setdefault("ANNE_WEB_DB", db_path)
     memory = LocalMemory(db_path)
     try:
         provider = create_language_provider()
@@ -279,6 +287,7 @@ def health() -> dict[str, Any]:
         "provider": provider or "not configured",
         "provider_key_configured": key_ok,
         "memory_db": os.getenv("ANNE_WEB_DB", "anne_web.db"),
+        "memory_root": os.getenv("ANNE_MEMORY_ROOT", ""),
         "research_mitos": bool(os.getenv("ANNE_MITOS_URL", "").strip()),
         "research_http": bool(os.getenv("ANNE_CHATGPT_URL", "").strip()),
         "ollama_required": False,
