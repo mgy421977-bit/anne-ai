@@ -49,6 +49,9 @@ voice = [
     "pyttsx3>=2.90",
 ]
 
+[project.scripts]
+anne = "anne.desktop:main"
+
 [project.urls]
 Homepage = "https://github.com/mgy421977-bit/anne"
 Repository = "https://github.com/mgy421977-bit/anne"
