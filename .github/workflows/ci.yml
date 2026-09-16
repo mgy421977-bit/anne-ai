@@ -1,0 +1,48 @@
+name: ANNE CI
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      # V1 freeze gate: check the code paths that constitute the shipped
+      # cognitive web surface. The wider repository currently contains legacy
+      # lint debt that is intentionally outside the V1 release gate.
+      - name: Ruff (V1 surface)
+        run: >-
+          ruff check
+          src/anne/api
+          src/anne/core/conversation.py
+          src/anne/core/users.py
+          src/anne/github/sync.py
+          src/anne/memory/local_memory.py
+          tests/test_cognitive_conversation.py
+          tests/test_external_memory.py
+          tests/test_v1_users_and_flow.py
+          tests/test_v1_web_path.py
+          tests/test_web_tinker_queue.py
+          --select E9,F
+
+      - name: Tests
+        run: pytest -q

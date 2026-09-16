@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
+from anne.core.character_integrity import CharacterIntegrityGate
 from anne.core.cognitive_orchestrator import CognitiveOrchestrator, OrchestrationResult
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
@@ -26,6 +27,7 @@ class DecisionResult:
     ethic_total: float | None = None
     state: CognitiveState | None = None
     reason: str = ""
+    character_integrity: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -38,6 +40,7 @@ class DecisionResult:
             "ethic_total": self.ethic_total,
             "reason": self.reason,
             "factual_status": "unverified",
+            "character_integrity": self.character_integrity,
         }
 
 
@@ -64,6 +67,7 @@ class DecisionLoop:
             self.pipeline,
             resource_profile=self.resource_profile,
         )
+        self.character_integrity = CharacterIntegrityGate()
 
     def run(
         self,
@@ -106,16 +110,42 @@ class DecisionLoop:
             aborted = False
         ethic_total = state.ethic_score.total if state.ethic_score else None
         anla_score = state.context_map.get("anla_score")
+
+        ethic = state.ethic_score
+        goodness = ethic.goodness if ethic else 0.0
+        equality = ethic.equality if ethic else 0.0
+        evidence_available = state.evidence_count > 0 or state.evidence_status in {
+            "available",
+            "conflicting",
+            "unverified",
+        }
+        contradiction = state.evidence_status == "conflicting" or bool(state.low_prob_preserved)
+        character = self.character_integrity.assess(
+            probability=hyp.probability,
+            goodness=goodness,
+            equality=equality,
+            evidence_verified=state.evidence_verified,
+            evidence_available=evidence_available,
+            contradiction=contradiction,
+            negative_character_risk=False,
+        )
+        state.character_integrity = character
+        state.output["character_integrity"] = character.as_dict()
+
+        if character.quarantined:
+            state.output["learning"] = "QUARANTINED"
+
         return DecisionResult(
             "ABORTED" if aborted else "EXECUTED",
             str(verdict),
             str(action),
-            out,
+            state.output,
             ff.as_dict(),
             anla_score if isinstance(anla_score, (int, float)) else None,
             ethic_total,
             state,
             str(out.get("reason") or out.get("note") or ""),
+            character.as_dict(),
         )
 
     def run_cognitive(

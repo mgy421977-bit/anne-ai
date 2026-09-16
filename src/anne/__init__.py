@@ -6,6 +6,12 @@ and Mythos curiosity engine.
 """
 
 from anne.bridge import AnneMythosBridge
+from anne.core.character_integrity import (
+    CharacterAssessment,
+    CharacterBaseline,
+    CharacterIntegrityGate,
+    FactualStatus,
+)
 from anne.core.cognitive_state import CognitiveState, Consciousness, EthicScore, Hypothesis
 from anne.core.decision_loop import DecisionLoop, DecisionResult
 from anne.core.ethic_core import EthicCore
@@ -28,4 +34,8 @@ __all__ = [
     "FailFastGate",
     "FractalMemory",
     "MythosEngine",
+    "CharacterAssessment",
+    "CharacterBaseline",
+    "CharacterIntegrityGate",
+    "FactualStatus",
 ]

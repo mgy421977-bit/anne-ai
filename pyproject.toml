@@ -35,10 +35,15 @@ dev = [
     "ruff>=0.6.0",
     "mypy>=1.11.0",
     "pre-commit>=3.8.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
 ]
 api = [
     "fastapi>=0.115.0",
     "uvicorn>=0.30.0",
+]
+chatgpt-web = [
+    "playwright>=1.40.0",
 ]
 storage = [
     "boto3>=1.35.0",
@@ -48,6 +53,9 @@ voice = [
     "PyAudio>=0.2.14",
     "pyttsx3>=2.90",
 ]
+
+[project.scripts]
+anne = "anne.desktop:main"
 
 [project.urls]
 Homepage = "https://github.com/mgy421977-bit/anne"
