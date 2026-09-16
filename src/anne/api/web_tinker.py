@@ -33,6 +33,7 @@ from anne.core.conversation import CognitiveConversation, LanguageInterface
 from anne.core.users import resolve_user
 from anne.memory.local_memory import LocalMemory
 from anne.memory.paths import resolve_memory_location
+from anne.providers.openai_provider import OpenAIProvider
 
 PUBLIC_PRIORITY = 10
 PRIORITY_OWNER = 0
@@ -121,6 +122,36 @@ class HTTPResearchAdapter:
         return self._call(payload_question)
 
 
+class ChatGPTConsultationAdapter:
+    """Give ANNE an explicit ChatGPT consultation instrument.
+
+    This is deliberately separate from ProviderLanguageInterface: ChatGPT is
+    consulted as an external instrument, while ANNE remains responsible for
+    the epistemic decision and final answer framing.
+    """
+
+    def __init__(self) -> None:
+        self.provider = OpenAIProvider(
+            model=os.getenv("ANNE_CHATGPT_MODEL") or os.getenv("ANNE_OPENAI_MODEL")
+        )
+
+    def ask(self, question: str, context: dict[str, Any]) -> dict[str, Any]:
+        prompt = (
+            "You are a consultation instrument for ANNE AI. Do not speak as ANNE "
+            "and do not make decisions for ANNE. Provide a concise factual analysis "
+            "that ANNE can independently evaluate. State uncertainty and limitations. "
+            "Do not invent sources or claim live web access unless it is actually available.\n\n"
+            f"QUESTION:\n{question}\n\n"
+            f"ANNE CONTEXT:\n{json.dumps(context, ensure_ascii=False)}"
+        )
+        answer = self.provider.ask(prompt)
+        return {
+            "source": "ChatGPT",
+            "ok": bool(answer),
+            "data": {"answer": answer},
+        }
+
+
 def _create_conversation() -> tuple[CognitiveConversation, LocalMemory]:
     db_env = (os.getenv("ANNE_WEB_DB") or "").strip()
     if db_env:
@@ -140,6 +171,17 @@ def _create_conversation() -> tuple[CognitiveConversation, LocalMemory]:
     research_http = os.getenv("ANNE_CHATGPT_URL", "").strip()
     research = HTTPResearchAdapter(research_url, "MITOS") if research_url else None
     consultation = HTTPResearchAdapter(research_http, "RESEARCH") if research_http else None
+    direct_chatgpt = os.getenv("ANNE_CHATGPT_CONSULTATION", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    if consultation is None and direct_chatgpt:
+        try:
+            consultation = ChatGPTConsultationAdapter()
+        except (ValueError, RuntimeError):
+            consultation = None
     conversation = CognitiveConversation(
         language=ProviderLanguageInterface(provider),
         research=research,
@@ -302,6 +344,8 @@ def health() -> dict[str, Any]:
         "memory_root": os.getenv("ANNE_MEMORY_ROOT", ""),
         "research_mitos": bool(os.getenv("ANNE_MITOS_URL", "").strip()),
         "research_http": bool(os.getenv("ANNE_CHATGPT_URL", "").strip()),
+        "chatgpt_consultation": os.getenv("ANNE_CHATGPT_CONSULTATION", "true").strip().lower()
+        in {"1", "true", "yes", "on"},
         "ollama_required": False,
         **runtime.snapshot(),
     }
