@@ -22,3 +22,12 @@ dist/
 *.db
 *.sqlite
 *.sqlite3
+
+# ANNE local secrets and runtime (never commit)
+anne_config.env
+.env
+.env.*
+!.env.example
+!anne_config.env.example
+anne_data/
+*.log
