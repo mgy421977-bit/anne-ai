@@ -420,7 +420,7 @@ class CognitiveConversation:
         assessment = self.epistemic_policy.assess(
             question=question,
             previous=previous,
-            research_available=self.research is not None,
+            research_available=(self.research is not None or self.consultation is not None),
             recent_experiences=recent_experiences,
         )
         audit.research_required = assessment.research_required
@@ -438,7 +438,7 @@ class CognitiveConversation:
         elif not assessment.research_required:
             workspace.observations.append("Research skipped by EpistemicPolicy")
         else:
-            workspace.observations.append("No research interface configured")
+            workspace.observations.append("No dedicated research interface configured")
 
         workspace.transition("ANLA")
         evidence_items = sum(1 for item in workspace.tool_results if item.get("ok"))
