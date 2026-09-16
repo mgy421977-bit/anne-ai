@@ -79,6 +79,7 @@ class CognitiveState:
     # ANLA
     logic_valid: bool = False
     ethic_score: Optional[EthicScore] = None
+    character_integrity: Optional[Any] = None
 
     # HİSSET
     empathy_map: dict[str, Any] = field(default_factory=dict)
