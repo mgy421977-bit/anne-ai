@@ -17,3 +17,8 @@ env/
 build/
 dist/
 *.egg-info/
+
+# Local ANNE runtime state
+*.db
+*.sqlite
+*.sqlite3
