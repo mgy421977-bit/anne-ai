@@ -1,10 +1,10 @@
-"""Safe GitHub repository sync for ANNE V1.
+"""Safe GitHub upstream sync and anonymized experience queue for ANNE V1.
 
 The installed ANNE can keep its code connected to the public upstream repository
 and fetch fast-forward updates on startup. Experience sharing is deliberately
-separate: only explicitly anonymized, non-content telemetry is exported, and
-no GitHub write is attempted from the client because a public repository cannot
-accept anonymous writes safely.
+separate: only explicitly enabled, content-free telemetry is exported locally.
+A public GitHub repository cannot accept anonymous client writes safely without
+a trusted intake service, so no automatic GitHub write is attempted here.
 """
 from __future__ import annotations
 
@@ -74,10 +74,7 @@ def ensure_repository_connection(root: Path) -> dict[str, Any]:
 
 
 def anonymize_experience(experience: dict[str, Any], *, version: str) -> dict[str, Any]:
-    """Convert an experience into non-content telemetry.
-
-    User text, answers, evidence, identifiers, and memory contents are excluded.
-    """
+    """Convert an experience into non-content telemetry."""
     status = str(experience.get("comparison_status") or "UNKNOWN").upper()
     confidence = experience.get("confidence")
     try:
@@ -87,7 +84,7 @@ def anonymize_experience(experience: dict[str, Any], *, version: str) -> dict[st
     return {
         "schema": "anne-experience-v1",
         "version": version,
-        "timestamp": datetime.now(UTC).date().isoformat(),
+        "date": datetime.now(UTC).date().isoformat(),
         "comparison_status": status,
         "research_used": bool(experience.get("research_used", False)),
         "previous_answer_used": bool(experience.get("previous_answer_used", False)),
@@ -99,7 +96,7 @@ def anonymize_experience(experience: dict[str, Any], *, version: str) -> dict[st
 
 
 def queue_anonymized_experience(root: Path, experience: dict[str, Any], *, version: str) -> Path:
-    """Append sanitized experience telemetry to an outbox for a future intake service."""
+    """Append sanitized experience telemetry to a local outbox."""
     outbox = root / "experiences" / "anonymous_outbox.jsonl"
     outbox.parent.mkdir(parents=True, exist_ok=True)
     payload = anonymize_experience(experience, version=version)
@@ -109,5 +106,20 @@ def queue_anonymized_experience(root: Path, experience: dict[str, Any], *, versi
 
 
 def installation_fingerprint(installation_id: str) -> str:
-    """Return a one-way, non-reversible-ish contribution grouping identifier."""
     return hashlib.sha256(installation_id.encode("utf-8")).hexdigest()[:16]
+
+
+def main() -> int:
+    root = Path.cwd().resolve()
+    if (os.getenv("ANNE_AUTO_UPDATE") or "true").strip().lower() not in {"1", "true", "yes"}:
+        print("  GitHub update: disabled")
+        return 0
+    result = ensure_repository_connection(root)
+    print(f"  GitHub upstream: {result.get('status', 'unknown')}")
+    if result.get("detail"):
+        print(f"  GitHub detail: {result['detail']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
