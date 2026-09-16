@@ -35,6 +35,8 @@ dev = [
     "ruff>=0.6.0",
     "mypy>=1.11.0",
     "pre-commit>=3.8.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
 ]
 api = [
     "fastapi>=0.115.0",
@@ -51,6 +53,7 @@ voice = [
 
 [project.scripts]
 anne = "anne.desktop:main"
+anne-web = "anne.api.web_tinker:app"
 
 [project.urls]
 Homepage = "https://github.com/mgy421977-bit/anne"
