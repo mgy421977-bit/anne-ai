@@ -191,9 +191,22 @@ class PriorityRuntime:
             try:
                 if conversation is None or memory is None:
                     conversation, memory = _create_conversation()
-                previous = memory.context(limit=8)
-                result = conversation.handle(request.actor, request.prompt, known_context=previous)
-                memory.save(request.prompt, result.answer, result.learned, 0.5)
+
+                # Epistemic decisions must consume structured memory. The legacy
+                # context string remains presentation/debug context only and is
+                # never the primary previous-answer source.
+                previous = memory.find_previous_answer(request.prompt)
+                recent_experiences = memory.recent_experiences(limit=8)
+                known_context = memory.context(limit=8)
+                result = conversation.handle(
+                    request.actor,
+                    request.prompt,
+                    known_context=known_context,
+                    previous_answer=previous,
+                    recent_experiences=recent_experiences,
+                )
+                confidence = result.audit.confidence if result.audit is not None else 0.5
+                memory.save(request.prompt, result.answer, result.learned, confidence)
                 if result.experience is not None:
                     memory.save_experience(result.experience)
                 request.future.set_result(result)
@@ -217,12 +230,13 @@ class ChatResponse(BaseModel):
     learned: str
     evidence_count: int = 0
     changed_since_previous: bool = False
+    comparison_status: str = "INSUFFICIENT"
     experience: dict[str, Any] = Field(default_factory=dict)
 
 
 MAX_QUEUE = int(os.getenv("ANNE_WEB_MAX_QUEUE", str(DEFAULT_MAX_QUEUE)))
 runtime = PriorityRuntime(max_queue=MAX_QUEUE)
-app = FastAPI(title="ANNE Cognitive Learning Console", version="0.3.0")
+app = FastAPI(title="ANNE Cognitive Learning Console", version="0.4.0")
 
 
 HTML = """<!doctype html>
@@ -248,7 +262,7 @@ async function send(){const p=document.getElementById('prompt'),c=document.getEl
 c.innerHTML+=`<div class="msg"><span class="badge">GÖKHAN</span><br>${esc(prompt)}</div>`;p.value='';rpt.textContent='ANNE bilişsel döngüyü çalıştırıyor...';
 try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,actor:'GÖKHAN'})});const d=await r.json();if(!r.ok)throw new Error(d.detail||'İstek başarısız');
 c.innerHTML+=`<div class="msg anne"><span class="badge">ANNE</span><br>${esc(d.response)}</div>`;
-rpt.innerHTML=`<b>YÖNETİCİ ÖZETİ</b><br>${esc(d.manager_summary)}<br><br><b>EDİNİLMEK İSTENEN FAYDA</b><br>${esc(d.benefit)}<br><br><b>ÖĞRENME</b><br>${esc(d.learned)}<br><br><b>DIŞ KANIT</b>: ${d.evidence_count}<br><b>ÖNCEKİ BİLGİ DEĞİŞTİ</b>: ${d.changed_since_previous?'Evet':'Hayır'}<br><b>TECRÜBE</b>: ${esc(JSON.stringify(d.experience))}`;
+rpt.innerHTML=`<b>YÖNETİCİ ÖZETİ</b><br>${esc(d.manager_summary)}<br><br><b>EDİNİLMEK İSTENEN FAYDA</b><br>${esc(d.benefit)}<br><br><b>ÖĞRENME</b><br>${esc(d.learned)}<br><br><b>KARŞILAŞTIRMA</b>: ${esc(d.comparison_status)}<br><b>DIŞ KANIT</b>: ${d.evidence_count}<br><b>ÖNCEKİ BİLGİ DEĞİŞTİ</b>: ${d.changed_since_previous?'Evet':'Hayır'}<br><b>TECRÜBE</b>: ${esc(JSON.stringify(d.experience))}`;
 c.scrollTop=c.scrollHeight;}catch(e){rpt.innerHTML='<span class="warn">'+esc(e.message)+'</span>';}finally{b.disabled=false;}}
 document.getElementById('send').addEventListener('click',send);
 document.getElementById('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();send();}});
@@ -284,13 +298,24 @@ async def chat(request: ChatRequest) -> ChatResponse:
     except Exception as exc:  # noqa: BLE001 - safe server boundary
         raise HTTPException(status_code=503, detail=f"ANNE runtime unavailable: {exc}") from exc
     experience = result.experience.__dict__ if result.experience is not None else {}
+    audit = result.audit
+    manager_summary = (
+        f"Karşılaştırma: {result.comparison_status}. "
+        f"Yeni kanıt: {result.current_evidence}. "
+        f"Önceki bilgi değişti: {'evet' if result.changed_since_previous else 'hayır'}. "
+        f"Bilişsel güven: {audit.confidence:.2f}. "
+        f"Araştırma: {'gerekli' if audit.research_required else 'gerekli değil'}"
+        if audit is not None
+        else result.benefit
+    )
     return ChatResponse(
         response=result.answer,
-        manager_summary=result.answer,
+        manager_summary=manager_summary,
         benefit=result.benefit,
         learned=result.learned,
         evidence_count=result.current_evidence,
         changed_since_previous=result.changed_since_previous,
+        comparison_status=result.comparison_status,
         experience=experience,
     )
 
