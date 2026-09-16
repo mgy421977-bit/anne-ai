@@ -14,23 +14,52 @@ ANNE is a **research system, not an AGI claim**. The repository deliberately dis
 ### Local hardening snapshot — September 8, 2026
 
 This archive includes a locally tested hardening patch, not a new upstream release.
-See [HARDENING_REPORT_TR.md](HARDENING_REPORT_TR.md) for the Turkish delivery report,
-verification instructions, changes, and remaining limitations.
+See [HARDENING_REPORT_TR.md](HARDENING_REPORT_TR.md) for the Turkish delivery report, verification instructions, changes, and remaining limitations.
 
 - New memory writes redact recognized credentials at the SQLite/JSON boundaries.
 - Empty tool allowlists deny all tools; registered read-tool execution consults AgencyGate.
-- Local imports no longer require the Gemini SDK. Install `.[gemini]`, `.[anthropic]`,
-  or `.[cloud]` only when those SDKs are needed; base installation remains local-first.
-- `AnneAgent` exposes independent factual verification separately from heuristic filtering.
-  `require_verified_response=True` withholds responses lacking trusted verification.
+- Local imports no longer require the Gemini SDK. Install `.[gemini]`, `.[anthropic]`, or `.[cloud]` only when those SDKs are needed; base installation remains local-first.
+- `AnneAgent` exposes independent factual verification separately from heuristic filtering. `require_verified_response=True` withholds responses lacking trusted verification.
 - MITOS random fixture scores explicitly retain `SIMULATION` provenance.
 - Retry frames recheck FailFast and retain evidence/authority requirements and lineage.
 - A frozen-response paired replay records false acceptance/rejection and gate latency.
 
-The default conversational mode can still return factually incorrect, explicitly
-unverified text. ANLA is a heuristic filter, not a general fact checker. An optional
-`ReferenceVerifier` only matches exact, application-supplied trusted reference claims;
-it does not discover facts or validate the authority of arbitrary source strings.
+The default conversational mode can still return factually incorrect, explicitly unverified text. ANLA is a heuristic filter, not a general fact checker. An optional `ReferenceVerifier` only matches exact, application-supplied trusted reference claims; it does not discover facts or validate the authority of arbitrary source strings.
+
+---
+
+## Chrome Learning Console
+
+The `feature/laptop-web-tinker` branch adds a browser-facing ANNE communication surface. Chrome is the **human interface**, not a second AI brain. Messages are sent to the existing `AnneAgent` runtime, and the response can expose learning, confidence, verification, and tools used.
+
+The web console intentionally does **not** fall back to Ollama. Select an existing hosted provider explicitly with:
+
+```text
+ANNE_WEB_PROVIDER=openrouter
+```
+
+or:
+
+```text
+ANNE_WEB_PROVIDER=gemini
+```
+
+The corresponding provider credentials remain environment variables and are never committed to the repository. If no provider is configured, the console returns a configuration error rather than silently starting a slow local model.
+
+Conceptually:
+
+```text
+Human ↔ Chrome Learning Console ↔ ANNE Cognitive Runtime ↔ Model Provider
+                                      │
+                                      ├─ memory
+                                      ├─ verification
+                                      ├─ safety / agency gates
+                                      └─ bounded tools
+```
+
+The console presents a **management-oriented learning report** after each interaction: response, durable-learning candidate, confidence, verification state, and tools used. This is a review surface; it is not evidence that ANNE has achieved autonomous learning or consciousness.
+
+A future research layer can add a dedicated ANNE ↔ external-reasoner protocol, where machine-readable messages are translated into a human-readable management summary. That protocol is intentionally not claimed as implemented until its transport and authorization path exist.
 
 ---
 
@@ -217,172 +246,3 @@ The architectural principle is:
 Model = reasoning component
 ANNE = orchestration + memory + verification + policy
 ```
-
-The model output is therefore not treated as an unconditional authority for tool use or external action.
-
----
-
-## Reliability and safety layer
-
-The current architecture includes conservative controls such as:
-
-- allowlisted tool policies
-- credential redaction before durable memory writes
-- evidence-weighted belief revision
-- contradiction marking
-- provenance/evidence tracking
-- plan-step verification
-- missing-precondition detection and repair steps
-- bounded planning and deliberation
-- deterministic decision/verification paths
-
-These mechanisms are engineering controls, **not a safety certification**.
-
----
-
-## Memory and learning
-
-ANNE contains persistent memory and learning-oriented components, but the project follows an important evidence rule:
-
-> A correct answer is not, by itself, evidence that ANNE learned.
-
-Learning claims must be demonstrated separately through reproducible experiments covering, where applicable:
-
-1. repeated experience,
-2. rule formation or update,
-3. transfer to a related new problem,
-4. contextual rejection when a learned rule does not apply,
-5. confidence or rule weakening after an incorrect outcome.
-
-Benchmark results are stored separately from architectural claims so that implementation status is not confused with experimental proof.
-
----
-
-## Mathematics, physics and symbolic reasoning
-
-ANNE's research direction includes deterministic symbolic reasoning, derivation tracing, dimensional/unit validation, and physics-oriented computation. These components are treated as **verification and reasoning infrastructure**, not as evidence of general intelligence.
-
-Where a derivation benchmark is used, the project distinguishes:
-
-- numerical calculation,
-- symbolic manipulation,
-- derivation trace,
-- independent verification,
-- dimensional consistency,
-- and actual learning/transfer.
-
-A mathematically correct derivation demonstrates the corresponding computational capability; it does not automatically demonstrate learning or understanding.
-
----
-
-## Benchmarks and evidence
-
-The repository contains:
-
-- ANLA ablation experiments
-- benchmark datasets/prompts
-- reproducible runner scripts
-- committed result artifacts
-- research reviews and decision records
-
-See:
-
-- [`benchmarks/`](benchmarks/)
-- [`benchmarks/results/`](benchmarks/results/)
-- [`ROADMAP.md`](ROADMAP.md)
-- [`research/`](research/)
-
-**Evidence first:** claims should be promoted from hypothesis to implemented result only when the corresponding code, test, or benchmark artifact exists.
-
----
-
-## Project status
-
-**Research Preview / Alpha — active development**
-
-| Area | Current position |
-|---|---|
-| Six-stage cognitive pipeline | Implemented |
-| Persistent/fractal memory + SFT | Implemented |
-| Semantic validation / contradiction controls | Implemented in research architecture |
-| Cognitive workspace / planning / metacognition | Implemented in research architecture |
-| Neuro-symbolic components | Implemented / experimental |
-| Safety and verification controls | Implemented / conservative |
-| Local/offline runtime | Implemented |
-| Model-provider abstraction | Implemented |
-| Multi-agent coordinator | Experimental / bounded |
-| Benchmark and ablation infrastructure | Implemented |
-| General intelligence / AGI | **Not claimed** |
-| Human-level understanding | **Not claimed** |
-| Unsupervised high-stakes deployment | **Not supported** |
-
-For the authoritative milestone sequence, see [`ROADMAP.md`](ROADMAP.md).
-
----
-
-## Research discipline
-
-ANNE uses four practical labels when discussing new capabilities:
-
-- **IMPLEMENTED** — present in the repository and testable.
-- **EXPERIMENTAL** — implemented for controlled evaluation; not established as generally reliable.
-- **HYPOTHESIS** — a research proposition requiring evidence.
-- **ROADMAP** — planned work that should not be described as current capability.
-
-This distinction is a core part of the project, not just documentation style.
-
----
-
-## Development
-
-Install development dependencies with:
-
-```bash
-python -m pip install -e ".[dev]"
-```
-
-Recommended checks before a change is considered complete:
-
-```bash
-ruff check .
-mypy src
-pytest -q
-```
-
-Keep benchmark outputs and research notes reproducible. Avoid committing credentials, local databases, generated binaries, or machine-specific artifacts.
-
----
-
-## Roadmap
-
-The roadmap prioritizes evidence before expansion:
-
-1. strengthen benchmark coverage and measurement;
-2. validate semantic gates and failure paths;
-3. test learning/transfer independently from calculation correctness;
-4. improve local runtime and persistent memory;
-5. evaluate symbolic/physical reasoning with reproducible traces;
-6. document limitations and publish evidence before making broader claims.
-
-See [`ROADMAP.md`](ROADMAP.md) for milestone-level criteria.
-
----
-
-## Citation
-
-```bibtex
-@software{yilmaz2026anne,
-  author       = {Yılmaz, Mustafa Gökhan},
-  title        = {ANNE – Adaptive Neural Nexus Engine},
-  year         = {2026},
-  publisher    = {GitHub},
-  url          = {https://github.com/mgy421977-bit/anne-ai},
-  orcid        = {0009-0002-6591-0163}
-}
-```
-
-## License
-
-Apache License 2.0 — see [`LICENSE`](LICENSE).
-
-**Author:** Mustafa Gökhan Yılmaz · ORCID [0009-0002-6591-0163](https://orcid.org/0009-0002-6591-0163) · İzmir, Türkiye
