@@ -11,15 +11,15 @@ stored in this database.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from anne.github.sync import queue_anonymized_experience
 from anne.memory.paths import backup_sqlite
 from anne.memory.persistence import connect_memory
-
-_FORBIDDEN_SECRET_HINTS = ("api_key", "apikey", "secret", "token", "password", "bearer")
 
 
 class LocalMemory:
@@ -104,6 +104,7 @@ class LocalMemory:
 
     def save_experience(self, experience: object) -> str:
         timestamp = datetime.now(UTC).isoformat()
+        approach = list(getattr(experience, "approach", []))
         self.conn.execute(
             "INSERT INTO experiences(timestamp, actor, question, approach, criteria, objections, outcome) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -111,7 +112,7 @@ class LocalMemory:
                 timestamp,
                 str(getattr(experience, "actor", "unknown")),
                 str(getattr(experience, "question", "")),
-                json.dumps(getattr(experience, "approach", []), ensure_ascii=False),
+                json.dumps(approach, ensure_ascii=False),
                 json.dumps(getattr(experience, "evaluation_criteria", []), ensure_ascii=False),
                 json.dumps(getattr(experience, "objections", []), ensure_ascii=False),
                 str(getattr(experience, "outcome", "")),
@@ -119,6 +120,25 @@ class LocalMemory:
         )
         self.conn.commit()
         row_id = self.conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        # Optional anonymous contribution queue. No raw question, answer, actor,
+        # evidence, or memory content is exported. Sharing is disabled by default.
+        if (os.getenv("ANNE_SHARE_EXPERIENCE") or "").strip().lower() in {"1", "true", "yes"}:
+            payload = {
+                "research_used": "research_used" in approach,
+                "previous_answer_used": "previous_answer_used" in approach,
+                "previous_answer_changed": "previous_answer_changed" in approach,
+                "uncertainty_detected": "uncertainty_detected" in approach,
+                "anne_evaluation_formed": "anne_evaluation_formed" in approach,
+            }
+            try:
+                queue_anonymized_experience(
+                    self.db_path.parent.parent,
+                    payload,
+                    version=os.getenv("ANNE_VERSION", "0.1.0"),
+                )
+            except OSError:
+                pass
         return f"local:experiences/{row_id}"
 
     def recent_experiences(self, limit: int = 8) -> list[dict[str, object]]:
