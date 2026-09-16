@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from anne.memory.paths import resolve_memory_location
+
 
 CONFIG_FILENAME = "anne_config.env"
 CONFIG_EXAMPLE = "anne_config.env.example"
@@ -37,6 +39,8 @@ class SelfSetupReport:
     config_path: str = ""
     data_dir: str = ""
     db_path: str = ""
+    memory_durable: bool = False
+    memory_source: str = ""
     port: int = DEFAULT_PORT
     provider: str = ""
     messages: list[str] = field(default_factory=list)
@@ -48,6 +52,8 @@ class SelfSetupReport:
             "config_path": self.config_path,
             "data_dir": self.data_dir,
             "db_path": self.db_path,
+            "memory_durable": self.memory_durable,
+            "memory_source": self.memory_source,
             "port": self.port,
             "checks": [
                 {
@@ -77,6 +83,8 @@ class SelfSetupReport:
         print("-" * 46)
         if self.ready:
             print("  ANNE READY")
+            print(f"  Memory: {self.db_path}")
+            print(f"  Durable: {'yes' if self.memory_durable else 'NO (temporary)'}")
             print(f"  Open Chrome: http://127.0.0.1:{self.port}")
         else:
             print("  ANNE NOT READY")
@@ -111,14 +119,13 @@ def _write_config_example(root: Path) -> Path:
         "# Grok / xAI\n"
         "XAI_API_KEY=\n"
         "ANNE_XAI_MODEL=grok-2-latest\n\n"
-        "# Optional OpenRouter / Gemini (also supported)\n"
         "OPENROUTER_API_KEY=\n"
         "GEMINI_API_KEY=\n\n"
-        "# Optional research HTTP adapters (ANNE-controlled, not model tool-calls)\n"
         "ANNE_MITOS_URL=\n"
         "ANNE_CHATGPT_URL=\n\n"
-        "# Runtime\n"
-        "ANNE_WEB_DB=anne_data/anne_web.db\n"
+        "# External durable memory root (e.g. E:/ANNE)\n"
+        "ANNE_MEMORY_ROOT=\n"
+        "ANNE_WEB_DB=\n"
         "ANNE_WEB_MAX_QUEUE=32\n"
         "ANNE_WEB_PORT=8000\n"
     )
@@ -237,20 +244,61 @@ def run_self_setup(*, root: Path | None = None, port: int | None = None) -> Self
     else:
         report.checks.append(CheckItem("Configuration", True, str(loaded.name)))
 
-    data_dir, logs_dir = _ensure_dirs(root)
-    report.data_dir = str(data_dir)
-    db_env = os.getenv("ANNE_WEB_DB", str(data_dir / DEFAULT_DB))
-    db_path = Path(db_env)
-    if not db_path.is_absolute():
-        db_path = root / db_path
+    location = resolve_memory_location(project_fallback=root / DEFAULT_DATA_DIR)
+    report.data_dir = str(location.root)
+    report.db_path = str(location.db_path)
+    report.memory_durable = location.durable
+    report.memory_source = location.source
+    if location.exists_prior:
+        report.checks.append(
+            CheckItem("ANNE Memory Root", True, f"Existing ANNE Memory Found: {location.root}")
+        )
+    elif location.durable:
+        report.checks.append(
+            CheckItem("ANNE Memory Root", True, f"new durable root prepared: {location.root}")
+        )
+    else:
+        report.checks.append(
+            CheckItem(
+                "ANNE Memory Root",
+                True,
+                location.message or "Kalıcı ANNE Memory bulunamadı.",
+                warning=True,
+            )
+        )
+        report.messages.append(location.message)
+
+    db_env = (os.getenv("ANNE_WEB_DB") or "").strip()
+    if db_env:
+        db_path = Path(db_env)
+        if not db_path.is_absolute():
+            db_path = root / db_path
+    else:
+        db_path = location.db_path
     db_path.parent.mkdir(parents=True, exist_ok=True)
     report.db_path = str(db_path)
+    os.environ["ANNE_WEB_DB"] = str(db_path)
+    os.environ.setdefault("ANNE_MEMORY_ROOT", str(location.root))
+
     mem_ok, mem_detail = _init_memory(db_path)
     report.checks.append(CheckItem("Memory", mem_ok, mem_detail))
     report.checks.append(
         CheckItem("Experience Store", mem_ok, "experiences table ready" if mem_ok else mem_detail)
     )
-    report.checks.append(CheckItem("Logs", True, str(logs_dir)))
+    report.checks.append(CheckItem("Logs", True, str(location.root / "logs")))
+    if location.durable and mem_ok:
+        report.checks.append(
+            CheckItem("Memory Durability", True, "persistent external/local ANNE root")
+        )
+    else:
+        report.checks.append(
+            CheckItem(
+                "Memory Durability",
+                True,
+                "temporary — not durable across machines until ANNE_MEMORY_ROOT is set",
+                warning=True,
+            )
+        )
 
     try:
         from anne.core.conversation import CognitiveConversation, EpistemicPolicy  # noqa: F401
