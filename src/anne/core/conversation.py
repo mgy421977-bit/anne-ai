@@ -1,8 +1,8 @@
 """Human conversation loop owned by ANNE's cognitive runtime.
 
-The language model is deliberately a linguistic instrument: it turns ANNE's
-already-decided message plan into natural language. It never chooses whether
-to research, consult an external assistant, learn, or revise knowledge.
+Language models are linguistic instruments. ANNE owns the decision to research,
+consult, compare, learn and revise; external services only return material for
+ANNE to evaluate.
 """
 from __future__ import annotations
 
@@ -13,30 +13,23 @@ from anne.core.cognitive_runtime import CognitiveWorkspace, HierarchicalPlanner,
 
 
 class LanguageInterface(Protocol):
-    """Natural-language surface used by ANNE after cognition has decided content."""
-
     def express(self, content: str, *, language: str = "tr") -> str:
         """Express ANNE's decided content without adding decisions."""
 
 
 class ResearchInterface(Protocol):
-    """External research controlled by ANNE's cognitive flow."""
-
     def research(self, question: str) -> dict[str, Any]:
-        """Return evidence; never decide what ANNE should believe."""
+        """Return evidence for ANNE to evaluate."""
 
 
 class ConsultationInterface(Protocol):
-    """External consultation controlled by ANNE."""
-
     def ask(self, question: str, context: dict[str, Any]) -> dict[str, Any]:
         """Return an external explanation for ANNE to evaluate."""
 
 
 @dataclass
 class ExperienceRecord:
-    """A record of a person's problem-solving pattern, separate from facts."""
-
+    """Observed problem-solving pattern, kept separate from factual memory."""
     actor: str
     question: str
     approach: list[str] = field(default_factory=list)
@@ -47,8 +40,6 @@ class ExperienceRecord:
 
 @dataclass
 class ManagerSummary:
-    """Human-facing result after ANNE completes its cognitive cycle."""
-
     answer: str
     benefit: str
     learned: str
@@ -59,11 +50,7 @@ class ManagerSummary:
 
 @dataclass
 class CognitiveConversation:
-    """ANNE-owned conversation orchestration.
-
-    The important invariant is that language, research and consultation are
-    dependencies. The state transitions and decisions belong to ANNE.
-    """
+    """ANNE's end-to-end conversational cognitive cycle."""
 
     language: LanguageInterface
     research: ResearchInterface | None = None
@@ -77,28 +64,27 @@ class CognitiveConversation:
         workspace.transition("DUY")
         workspace.observations.append(f"Input actor={actor}")
 
-        # ANNE decides epistemic state from its own workspace/memory layer.
-        # This first implementation uses explicit knowledge availability rather
-        # than asking a model to decide whether a tool should be called.
+        # Epistemic action is ANNE's decision. If a research interface exists,
+        # current evidence is checked again even when an older answer exists.
         workspace.transition("BAK")
-        has_known_context = bool(known_context.strip())
-        needs_research = not has_known_context
-        if needs_research and self.research is not None:
+        needs_research = self.research is not None
+        if needs_research:
             workspace.transition("GÖR")
             evidence = self.research.research(question)
-            workspace.record_tool_result("MITOS", evidence, ok=True)
-        elif needs_research:
+            ok = bool(evidence.get("ok", True)) if isinstance(evidence, dict) else True
+            workspace.record_tool_result("MITOS", evidence, ok=ok)
+        else:
             workspace.observations.append("No research interface configured")
 
         workspace.transition("ANLA")
-        evidence_items = sum(
-            1 for item in workspace.tool_results if item.get("ok")
-        )
+        evidence_items = sum(1 for item in workspace.tool_results if item.get("ok"))
 
-        # Consultation is a deliberate ANNE decision, never an LLM tool call.
-        if needs_research and self.consultation is not None and evidence_items == 0:
+        # ANNE decides whether external consultation is useful; the language
+        # model never emits a tool call and cannot invoke this branch itself.
+        if self.consultation is not None and evidence_items == 0:
             consultation = self.consultation.ask(question, {"known_context": known_context})
-            workspace.record_tool_result("CHATGPT", consultation, ok=True)
+            ok = bool(consultation.get("ok", True)) if isinstance(consultation, dict) else True
+            workspace.record_tool_result("CHATGPT", consultation, ok=ok)
 
         workspace.transition("HİSSET")
         review = self.metacognition.review(workspace)
@@ -113,18 +99,19 @@ class CognitiveConversation:
             question=question,
             approach=[
                 "mevcut bilgi kontrolü",
-                "gerekirse dış araştırma",
-                "gerekirse harici danışma",
+                "güncel araştırma",
+                "gerekiyorsa harici danışma",
                 "kanıtı değerlendirme",
-                "sonucu sunma",
+                "önceki bilgiyle karşılaştırma",
+                "sonucu sunma ve tecrübe kaydı",
             ],
             outcome="ANNE tarafından tamamlanan bilişsel konuşma döngüsü",
         )
         workspace.transition("ÖĞREN")
         return ManagerSummary(
             answer=answer,
-            benefit="Soruyu güncel/önceki bilgiyle değerlendirip doğrulanabilir bir sonuç üretmek.",
-            learned="Bu etkileşimde kullanılan problem çözme yolu tecrübe kaydı olarak ayrıştırıldı.",
+            benefit="Soruyu güncel ve önceki bilgiyle değerlendirip doğrulanabilir bir sonuç üretmek.",
+            learned="Bu etkileşimdeki problem çözme yolu ayrı bir tecrübe kaydı olarak saklandı.",
             current_evidence=evidence_items,
             changed_since_previous=False,
             experience=experience,
@@ -138,12 +125,13 @@ class CognitiveConversation:
         confidence: float,
     ) -> str:
         return (
-            "ANNE KARARI — bunu doğal Türkçeye dönüştür; yeni karar veya bilgi ekleme.\n"
+            "ANNE'NİN KARAR VERDİĞİ İÇERİK. Bunu yalnızca doğal Türkçeye dönüştür; "
+            "yeni bilgi, karar, araç çağrısı veya öğrenme ekleme.\n"
             f"Soru: {question}\n"
             f"Önceki bilgi mevcut: {'evet' if known_context.strip() else 'hayır'}\n"
-            f"Dış kanıt kayıtları: {len(results)}\n"
+            f"Güncel kanıt kaydı: {len(results)}\n"
             f"Bilişsel değerlendirme güveni: {confidence:.2f}\n"
-            "Sonucu kullanıcıya açıkla; belirsizliği ve kanıt eksikliğini açıkça belirt."
+            "Belirsizlik ve kanıt eksikliği varsa aynen belirt."
         )
 
 
