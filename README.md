@@ -9,7 +9,7 @@
 
 **ANNE (Adaptive Neural Nexus Engine)** is a research platform for exploring cognitive orchestration around language models. The project separates perception, semantic/contextual processing, memory, verification, safety constraints, tool execution, and model generation rather than treating a foundation model as the sole authority.
 
-ANNE is a **research system, not an AGI claim**. The repository deliberately distinguishes implemented engineering from experiments, hypotheses, and future research.
+ANNE is a **research system, not an AGI claim**. Research boundaries, safety posture, and non-AGI limits are summarized in [docs/PHILOSOPHY.md](docs/PHILOSOPHY.md). The repository deliberately distinguishes implemented engineering from experiments, hypotheses, and future research.
 
 ### Local hardening snapshot — September 8, 2026
 
@@ -30,42 +30,45 @@ The default conversational mode can still return factually incorrect, explicitly
 
 ## Chrome Learning Console
 
-The `feature/laptop-web-tinker` branch adds a browser-facing ANNE communication surface. Chrome is the **human interface**, not a second AI brain. Messages are sent to the existing `AnneAgent` runtime, and the response can expose learning, confidence, verification, and tools used.
+The `feature/laptop-web-tinker` branch adds a browser-facing ANNE communication surface. Chrome is the **human interface**, not a second AI brain. Messages are sent to the existing cognitive runtime (`CognitiveConversation`), and the response can expose learning, confidence, verification, and tools used.
 
 The web console intentionally does **not** fall back to Ollama. Select an existing hosted provider explicitly with:
 
 ```text
-ANNE_WEB_PROVIDER=openrouter
+ANNE_WEB_PROVIDER=openai
 ```
 
 or:
 
 ```text
-ANNE_WEB_PROVIDER=gemini
+ANNE_WEB_PROVIDER=xai
 ```
 
 The corresponding provider credentials remain environment variables and are never committed to the repository. If no provider is configured, the console returns a configuration error rather than silently starting a slow local model.
 
+V1 demo identity (password-free, non-auth):
+
+- `Dönerci Mıstık` → Mustafa Bey
+- `Gügü Baba` → Gürhan Bey
+
+Memory and experiences are isolated per user_id.
+
 Conceptually:
 
 ```text
-Human ↔ Chrome Learning Console ↔ ANNE Cognitive Runtime ↔ Model Provider
+Human ↔ Chrome Learning Console ↔ ANNE Cognitive Runtime ↔ Model Provider (LanguageInterface only)
                                       │
-                                      ├─ memory
-                                      ├─ verification
+                                      ├─ memory (user-scoped)
+                                      ├─ EpistemicPolicy / ComparisonEngine
                                       ├─ safety / agency gates
                                       └─ bounded tools
 ```
-
-The console presents a **management-oriented learning report** after each interaction: response, durable-learning candidate, confidence, verification state, and tools used. This is a review surface; it is not evidence that ANNE has achieved autonomous learning or consciousness.
-
-A future research layer can add a dedicated ANNE ↔ external-reasoner protocol, where machine-readable messages are translated into a human-readable management summary. That protocol is intentionally not claimed as implemented until its transport and authorization path exist.
 
 ---
 
 ## Official Research Network
 
-**ANNE — AGI-Oriented Open Cognitive Architecture** is the research positioning of this project. ANNE is a research system exploring cognitive orchestration; it does **not** claim achieved AGI, human-level understanding, or support for unsupervised high-stakes autonomous use.
+**ANNE — AGI-Oriented Open Cognitive Architecture** is the research positioning of this project. ANNE is a research system exploring cognitive orchestration; it does **not** claim achieved AGI, human-level understanding, or support for unsupervised high-stakes autonomous use. See [docs/PHILOSOPHY.md](docs/PHILOSOPHY.md).
 
 This repository is the primary implementation surface for ANNE within the Vitavolt Research layer.
 
@@ -89,102 +92,7 @@ The central research question is:
 
 > Can an additional cognitive orchestration layer improve the reliability, traceability, and controllability of model-assisted reasoning?
 
-The project explores this through several interacting mechanisms:
-
-- six-stage cognitive processing (`DUY → BAK → GÖR → ANLA → HİSSET → YAP`)
-- semantic validation and contradiction handling
-- persistent episodic/fractal memory
-- structured failure traces (SFT)
-- deterministic verification and safety gates
-- neuro-symbolic reasoning components
-- bounded planning and metacognitive review
-- local/offline model providers
-- bounded multi-agent collaboration
-- reproducible benchmarks and ablation experiments
-
 No component should be interpreted as proof of consciousness, general intelligence, or safe autonomous operation.
-
----
-
-## Architecture at a glance
-
-```text
-                    ┌──────────────────────┐
-                    │   Model Provider     │
-                    │ local / API / LLM    │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-┌──────────────────────────────────────────────────────────┐
-│                    ANNE Cognitive Runtime                 │
-│                                                          │
-│  DUY → BAK → GÖR → ANLA → HİSSET → YAP                  │
-│   │      │      │      │        │        │               │
-│   │      │      │      │        │        └─ action       │
-│   │      │      │      │        └──────── contextual     │
-│   │      │      │      └──────────────── semantic gate  │
-│   │      │      └──────────────────── pattern/attention │
-│   │      └────────────────────────── observation/memory │
-│   └────────────────────────────────── perception         │
-│                                                          │
-│  Memory • Planning • Metacognition • Safety • Tools     │
-│  Neuro-symbolic reasoning • Provenance • Verification   │
-└──────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │ Traceable response   │
-                    │ + evidence + state   │
-                    └──────────────────────┘
-```
-
-### Cognitive stages
-
-| Stage | Turkish | Role |
-|---|---|---|
-| 1 | **DUY** | Receive raw input without premature judgment |
-| 2 | **BAK** | Observe structure and query relevant memory |
-| 3 | **GÖR** | Recognize patterns, attention, and priority |
-| 4 | **ANLA** | Semantic validation, contradiction handling, ethical synthesis |
-| 5 | **HİSSET** | Contextual and evaluative weighting |
-| 6 | **YAP** | Act or respond only after the preceding controls |
-
-A reject path can be recorded as a **Structured Failure Trace (SFT)** instead of silently converting failure into an answer.
-
----
-
-## Current repository structure
-
-```text
-anne/
-├── src/anne/
-│   ├── agent/              Agent and offline runtime
-│   ├── api/                API surface
-│   ├── core/               Cognitive core, learning, verification, planning
-│   ├── dream/              Dream-cycle research components
-│   ├── memory/             Persistent/fractal memory
-│   ├── multi_agent/        Bounded specialist coordination
-│   ├── mythos/              Proposal/generative research layer
-│   ├── neuro_symbolic/     Neuro-symbolic reasoning components
-│   ├── providers/          Model-provider adapters
-│   ├── safety/             Tool/action safety controls
-│   ├── semantics/          Semantic frames and grounding
-│   ├── tools/              Tool execution and integration
-│   └── world/              World/context representations
-│
-├── benchmarks/             Ablations, benchmark runners and results
-├── datasets/               Versioned benchmark datasets/prompts
-├── desktop/                Windows/Tkinter clients and build scripts
-├── docs/                   Architecture, mathematics and research notes
-├── research/               Reviews, decision logs and open questions
-├── applications/           Experimental application entry points
-├── tests/                  Unit/integration tests
-├── ROADMAP.md              Research/engineering roadmap
-├── CHANGELOG.md            Change history
-└── pyproject.toml          Package and development configuration
-```
-
-The repository is intentionally organized so that **implementation, evidence, and speculation remain distinguishable**.
 
 ---
 
@@ -194,55 +102,18 @@ Requirements: Python 3.12+.
 
 ```bash
 git clone https://github.com/mgy421977-bit/anne-ai.git
-cd anne
+cd anne-ai
 python -m pip install -e ".[dev]"
-
-# Example pipeline
-python examples/basic_pipeline.py
-
-# Test suite
-pytest tests/unit -q
+pytest -q
 ```
 
-For the benchmark suite:
-
-```bash
-python benchmarks/scripts/run_anla_ablation.py
-```
-
-Published benchmark artifacts live under `benchmarks/results/`.
-
----
-
-## Local / offline runtime
-
-ANNE includes a local execution path designed to reduce dependence on external APIs. The offline runtime can use a local model backend such as Ollama or another OpenAI-compatible local endpoint, while persistence remains local.
-
-Example:
-
-```python
-from anne.agent.offline import create_offline_agent
-
-agent = create_offline_agent(
-    model="qwen2.5:7b",
-    db_path="anne_offline.db",
-)
-
-result = agent.run("Summarize the local workspace safely.")
-print(result.response)
-```
-
-Local execution does **not** mean that the system is autonomous or safe for unsupervised high-stakes use.
+Windows V1: copy `anne_config.env.example` → `anne_config.env`, set provider keys and optional `ANNE_MEMORY_ROOT`, then run `START_ANNE.bat`.
 
 ---
 
 ## Model providers
 
-ANNE is designed so that the reasoning provider is replaceable. Depending on the installed configuration, the repository can work with hosted providers or local model endpoints.
-
-The architectural principle is:
-
 ```text
-Model = reasoning component
+Model = LanguageInterface (expression only)
 ANNE = orchestration + memory + verification + policy
 ```
