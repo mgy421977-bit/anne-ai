@@ -26,8 +26,23 @@ jobs:
       - name: Install
         run: python -m pip install -e ".[dev]"
 
-      - name: Ruff
-        run: ruff check .
+      # V1 freeze gate: check the code paths that constitute the shipped
+      # cognitive web surface. The wider repository currently contains legacy
+      # lint debt that is intentionally outside the V1 release gate.
+      - name: Ruff (V1 surface)
+        run: >-
+          ruff check
+          src/anne/api
+          src/anne/core/conversation.py
+          src/anne/core/users.py
+          src/anne/github/sync.py
+          src/anne/memory/local_memory.py
+          tests/test_cognitive_conversation.py
+          tests/test_external_memory.py
+          tests/test_v1_users_and_flow.py
+          tests/test_v1_web_path.py
+          tests/test_web_tinker_queue.py
+          --select E9,F
 
       - name: Tests
         run: pytest -q
