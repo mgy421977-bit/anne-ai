@@ -3,30 +3,34 @@ setlocal
 cd /d "%~dp0"
 
 echo ==============================================
-echo   ANNE AI - Laptop Web Tinker
- echo ==============================================
+echo   ANNE AI V1 - Web Tinker
+echo ==============================================
+echo Ollama is NOT used as the V1 cognitive engine.
+echo Prefer START_ANNE.bat for first-run setup.
+echo.
 
 if not exist ".venv\Scripts\python.exe" (
-    echo [ERROR] .venv not found. Run START_ANNE.bat first.
+    echo [ERROR] .venv bulunamadi. Once START_ANNE.bat calistirin.
     pause
     exit /b 1
 )
 
-if "%ANNE_LOCAL_BACKEND%"=="" set "ANNE_LOCAL_BACKEND=ollama"
-if "%ANNE_LOCAL_MODEL%"=="" set "ANNE_LOCAL_MODEL=qwen2.5:3b"
+if exist "anne_config.env" (
+    for /f "usebackq tokens=1,* delims== eol=#" %%A in ("anne_config.env") do (
+        if not "%%A"=="" if not "%%B"=="" if not defined %%A set "%%A=%%B"
+    )
+)
+
+if "%ANNE_WEB_PROVIDER%"=="" set "ANNE_WEB_PROVIDER=openai"
+if "%ANNE_WEB_PORT%"=="" set "ANNE_WEB_PORT=8000"
 if "%ANNE_WEB_MAX_QUEUE%"=="" set "ANNE_WEB_MAX_QUEUE=32"
 
- echo Backend: %ANNE_LOCAL_BACKEND%
- echo Model  : %ANNE_LOCAL_MODEL%
- echo Queue  : %ANNE_WEB_MAX_QUEUE%
- echo.
-echo Web Tinker: http://127.0.0.1:8000
- echo LAN access is intentionally not enabled by default.
+echo Provider: %ANNE_WEB_PROVIDER%
+echo URL     : http://127.0.0.1:%ANNE_WEB_PORT%
 echo.
 
-".venv\Scripts\python.exe" -m uvicorn anne.api.web_tinker:app --host 127.0.0.1 --port 8000
+".venv\Scripts\python.exe" -m uvicorn anne.api.web_tinker:app --host 127.0.0.1 --port %ANNE_WEB_PORT%
 if errorlevel 1 (
-    echo.
-    echo [ERROR] Web Tinker stopped.
+    echo [ERROR] Web Tinker durdu.
     pause
 )
