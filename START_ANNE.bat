@@ -44,6 +44,26 @@ if not exist "anne_config.env" (
     )
 )
 
+for /f "usebackq tokens=1,* delims== eol=#" %%A in ("anne_config.env") do (
+    if not "%%A"=="" if not "%%B"=="" if not defined %%A set "%%A=%%B"
+)
+
+if "%ANNE_AUTO_UPDATE%"=="" set "ANNE_AUTO_UPDATE=true"
+if "%ANNE_GITHUB_REPOSITORY%"=="" set "ANNE_GITHUB_REPOSITORY=https://github.com/mgy421977-bit/anne-ai.git"
+if "%ANNE_GITHUB_BRANCH%"=="" set "ANNE_GITHUB_BRANCH=main"
+if "%ANNE_WEB_PROVIDER%"=="" set "ANNE_WEB_PROVIDER=openai"
+if "%ANNE_WEB_PORT%"=="" set "ANNE_WEB_PORT=8000"
+if "%ANNE_WEB_DB%"=="" set "ANNE_WEB_DB=anne_data\anne_web.db"
+if "%ANNE_WEB_MAX_QUEUE%"=="" set "ANNE_WEB_MAX_QUEUE=32"
+set "ANNE_GITHUB_REGISTER=1"
+if "%ANNE_VERSION%"=="" set "ANNE_VERSION=0.1.0"
+
+if /I "%ANNE_AUTO_UPDATE%"=="true" (
+    echo [UPDATE] GitHub upstream kontrol ediliyor...
+    ".venv\Scripts\python.exe" -m anne.github.sync
+    if errorlevel 1 echo [WARN] GitHub update skipped; ANNE continues normally.
+)
+
 echo [SETUP] ANNE Self-Setup calisiyor...
 ".venv\Scripts\python.exe" -m anne.setup.self_setup
 
