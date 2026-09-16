@@ -278,7 +278,6 @@ def run_self_setup(*, root: Path | None = None, port: int | None = None) -> Self
     db_path.parent.mkdir(parents=True, exist_ok=True)
     report.db_path = str(db_path)
     os.environ["ANNE_WEB_DB"] = str(db_path)
-    os.environ.setdefault("ANNE_MEMORY_ROOT", str(location.root))
 
     mem_ok, mem_detail = _init_memory(db_path)
     report.checks.append(CheckItem("Memory", mem_ok, mem_detail))
