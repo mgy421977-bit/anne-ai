@@ -1,21 +1,28 @@
+import heapq
 from concurrent.futures import Future
 
-from anne.api.web_tinker import PRIORITY_OWNER, PUBLIC_PRIORITY, PriorityRuntime
+from anne.api.web_tinker import (
+    PRIORITY_OWNER,
+    PUBLIC_PRIORITY,
+    PriorityRuntime,
+    _QueuedRequest,
+)
 
 
 def test_owner_priority_is_lower_than_public_priority() -> None:
     assert PRIORITY_OWNER < PUBLIC_PRIORITY
 
 
-def test_priority_runtime_runs_high_priority_before_public_queue() -> None:
-    runtime = PriorityRuntime(max_concurrency=1, max_queue=4)
-    runtime._stopping = True
-    # Stop the automatically created worker before replacing its queue with
-    # deterministic test work; the ordering itself is tested independently.
-    runtime._worker.join(timeout=1)
-
-    assert PRIORITY_OWNER == 0
-    assert PUBLIC_PRIORITY == 10
+def test_priority_queue_orders_owner_before_public() -> None:
+    owner: Future[str] = Future()
+    public: Future[str] = Future()
+    heap = [
+        _QueuedRequest(PUBLIC_PRIORITY, 1, public, "public"),
+        _QueuedRequest(PRIORITY_OWNER, 2, owner, "owner"),
+    ]
+    heapq.heapify(heap)
+    assert heapq.heappop(heap).prompt == "owner"
+    assert heapq.heappop(heap).prompt == "public"
 
 
 def test_queue_rejects_when_bounded() -> None:
@@ -25,9 +32,7 @@ def test_queue_rejects_when_bounded() -> None:
         runtime._sequence += 1
         first: Future[str] = Future()
         runtime._heap.append(
-            __import__("anne.api.web_tinker", fromlist=["_QueuedRequest"])._QueuedRequest(
-                PUBLIC_PRIORITY, runtime._sequence, first, "first"
-            )
+            _QueuedRequest(PUBLIC_PRIORITY, runtime._sequence, first, "first")
         )
     second = runtime.submit("second")
     assert second.done()
