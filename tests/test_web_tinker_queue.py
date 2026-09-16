@@ -26,7 +26,7 @@ def test_priority_queue_orders_owner_before_public() -> None:
 
 
 def test_queue_rejects_when_bounded() -> None:
-    runtime = PriorityRuntime(max_concurrency=1, max_queue=1)
+    runtime = PriorityRuntime(max_queue=1)
     with runtime._condition:
         runtime._busy = True
         runtime._sequence += 1
