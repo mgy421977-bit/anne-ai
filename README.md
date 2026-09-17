@@ -10,7 +10,7 @@
 > anne-core  → INSTALLABLE CORE LIBRARY
 > ```
 >
-> Active architectural development, integration work, experiments, and research milestones belong here. Reusable, installable core capabilities may be extracted into [`anne-core`](https://github.com/mgy421977-bit/anne).
+> Active architectural development, integration work, experiments, and research milestones belong here. Reusable, installable core capabilities may be extracted into [`anne-core`](https://github.com/mgy421977-bit/anne-core).
 >
 > **Canonical project map:**
 > - Platform: [`mgy421977-bit/anne-ai`](https://github.com/mgy421977-bit/anne-ai)
