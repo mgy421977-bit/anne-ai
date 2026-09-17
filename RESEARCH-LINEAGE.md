@@ -20,11 +20,41 @@ anne-core
   → reusable, installable core capabilities
 ```
 
-### Development relationship
+### Relationship between the three repositories
 
-The original `anne` line is preserved rather than continuously extended. The current ANNE direction is being developed on `anne-ai`, while foundational capabilities that can stand as a reusable core are developed in `anne-core`.
+The three repositories form **one ANNE research lineage with three distinct roles**.
 
-`anne-ai` therefore represents the active research and architectural surface; `anne-core` represents the foundational core layer being developed alongside it.
+- **`anne`** — the original first/main development line. It is frozen as a historical snapshot for reference and reproducibility.
+- **`anne-ai`** — the current canonical research platform. This is where the broader ANNE architecture, integration work, experiments, and research milestones continue.
+- **`anne-core`** — the first foundational/core engine layer of the current direction. Reusable capabilities are developed here alongside the platform and can be isolated, tested, and installed independently.
+
+The relationship is:
+
+```text
+Original ANNE research line
+        │
+        ▼
+     anne
+   FROZEN
+        │
+        │ architectural continuation
+        ▼
+   anne-ai  ◄──────────────►  anne-core
+ CURRENT PLATFORM            FOUNDATIONAL CORE
+ active research             reusable core layer
+```
+
+`anne-ai` and `anne-core` are developed together but have different boundaries: `anne-ai` is the broader research and integration surface; `anne-core` is the foundational reusable core layer.
+
+### Vitavolt Research connection
+
+ANNE is part of the **Vitavolt Research** network. The Vitavolt website provides the public research/entity layer, while GitHub provides the corresponding source and research repository layer.
+
+- **Vitavolt Research:** https://vitavoltglobal.com/research/
+- **ANNE canonical page:** https://vitavoltglobal.com/anne.html
+- **ANNE research overview:** https://vitavoltglobal.com/research/anne-ai.html
+- **ANNE architecture:** https://vitavoltglobal.com/research/anne-architecture.html
+- **Research publications:** https://vitavoltglobal.com/research/publications.html
 
 This is a research architecture. It does not constitute a claim of achieved AGI, human-level understanding, or unsupervised high-stakes autonomous operation.
 
