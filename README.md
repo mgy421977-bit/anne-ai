@@ -1,5 +1,22 @@
 # ANNE — Adaptive Neural Nexus Engine
 
+> ## 🧠 CANONICAL RESEARCH PLATFORM
+>
+> **`anne-ai` is the primary research platform for the next-generation ANNE architecture.**
+>
+> ```text
+> anne       → FROZEN LEGACY
+> anne-ai    → CANONICAL RESEARCH PLATFORM
+> anne-core  → INSTALLABLE CORE LIBRARY
+> ```
+>
+> Active architectural development, integration work, experiments, and research milestones belong here. Reusable, installable core capabilities may be extracted into [`anne-core`](https://github.com/mgy421977-bit/anne).
+>
+> **Canonical project map:**
+> - Platform: [`mgy421977-bit/anne-ai`](https://github.com/mgy421977-bit/anne-ai)
+> - Installable core: [`mgy421977-bit/anne-core`](https://github.com/mgy421977-bit/anne-core)
+> - Legacy/frozen line: [`mgy421977-bit/anne`](https://github.com/mgy421977-bit/anne)
+
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
 [![Status](https://img.shields.io/badge/status-research%20preview-orange)](https://github.com/mgy421977-bit/anne-ai)
@@ -93,7 +110,7 @@ No component should be interpreted as proof of consciousness, general intelligen
 │   │      │      │      │        │        │               │
 │   │      │      │      │        │        └─ action       │
 │   │      │      │      │        └──────── contextual     │
-│   │      │      │      └──────────────── semantic gate  │
+│   │      │      └──────────────────── semantic gate  │
 │   │      │      └──────────────────── pattern/attention │
 │   │      └────────────────────────── observation/memory │
 │   └────────────────────────────────── perception         │
@@ -165,7 +182,7 @@ Requirements: Python 3.12+.
 
 ```bash
 git clone https://github.com/mgy421977-bit/anne-ai.git
-cd anne
+cd anne-ai
 python -m pip install -e ".[dev]"
 
 # Example pipeline
