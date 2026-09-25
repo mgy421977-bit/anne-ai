@@ -73,7 +73,7 @@ class AnnePipeline:
         state.authority_check_required = requirements.requires_authority_check
         return state
 
-    def bak(self, state: CognitiveState, evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (), *, claim: str | None = None) -> CognitiveState:
+    def bak(self, state: CognitiveState, evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (), *, claim: str | None = None, verifier: ClaimVerifier | None = None) -> CognitiveState:
         past = self.memory.get_similar_decisions(state.raw_input)
         state.related_memories = past
 
@@ -81,6 +81,7 @@ class AnnePipeline:
             assessment = self.evidence_validator.assess(
                 evidence_packages,
                 claim=claim or state.raw_input,
+                verifier=verifier,
             )
             # Memory matches are contextual references, never proof. MITOS
             # packages can move the state from MISSING to UNVERIFIED, while
@@ -294,7 +295,7 @@ class AnnePipeline:
     def run_with_fail_fast(self, raw_input: str,
                            consciousnesses: Sequence[Consciousness],
                            hypothesis: Hypothesis,
-                           evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = ()) -> tuple[FailFastResult, CognitiveState | None]:
+                           evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (), verifier: ClaimVerifier | None = None) -> tuple[FailFastResult, CognitiveState | None]:
         """Convenience: fail-fast then full stage chain if allowed."""
         ff = self.fail_fast(raw_input)
         if not ff.passed:
@@ -311,7 +312,7 @@ class AnnePipeline:
 
         state = self.duy(raw_input, consciousnesses)
         state.context_map["fail_fast"] = ff.as_dict()
-        state = self.bak(state, evidence_packages, claim=hypothesis.claim)
+        state = self.bak(state, evidence_packages, claim=hypothesis.claim, verifier=verifier)
         state = self.gor(state, [hypothesis])
         state = self.anla(state, hypothesis)
         if state.logic_valid or state.ethic_score is not None:
