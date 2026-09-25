@@ -19,6 +19,8 @@ from anne.core.resource_profile import ResourceProfile
 from anne.mythos.candidate import SelectionResult, TaskMode
 from anne.mythos.generate import generate_candidates
 from anne.mythos.selection import CandidateSelector
+from anne.mythos.agent_swarm import EvidencePackage
+from anne.core.verification import ClaimVerifier
 
 
 @dataclass(frozen=True)
@@ -85,6 +87,8 @@ class CognitiveOrchestrator:
         parties: Sequence[Consciousness] | None = None,
         task_mode: TaskMode = TaskMode.GENERAL,
         seed: int | None = None,
+        evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (),
+        verifier: ClaimVerifier | None = None,
     ) -> OrchestrationResult:
         people = list(parties) if parties else [Consciousness(id="user")]
         ff = self.pipeline.fail_fast(raw_input)
@@ -138,7 +142,12 @@ class CognitiveOrchestrator:
             state.requires_evidence = evidence_required
             state.requires_authority_check = authority_required
             state.authority_check_required = authority_required
-            state = self.pipeline.bak(state)
+            state = self.pipeline.bak(
+                state,
+                evidence_packages=evidence_packages,
+                claim=current_question,
+                verifier=verifier,
+            )
             last_state = state
 
             # Ambiguity is an early boundary: MITOS must never manufacture a
@@ -248,7 +257,13 @@ class CognitiveOrchestrator:
                 trace.append("YAP")
                 state = self.pipeline.yap(state, hypothesis)
                 state.output["candidate_evidence_status"] = selected.evidence_status
-                state.output["factual_status"] = "unverified"
+                state.output["factual_status"] = (
+                    "verified"
+                    if state.evidence_status == "available"
+                    else "conflicting"
+                    if state.evidence_status == "conflicting"
+                    else "unverified"
+                )
                 last_state = state
                 confidence = float(
                     state.context_map.get("anla_score") or selected.probability
