@@ -141,3 +141,36 @@ def test_stale_source_does_not_verify_current_claim():
     assert result.verified is False
     price_claim = next(item for item in result.claims if item.claim.value == "4.800")
     assert price_claim.status == FactualStatus.UNVERIFIED
+
+def test_untrusted_authority_does_not_verify_claim():
+    verifier = SourceAwareVerifier(
+        (
+            SourceRecord(
+                "https://example.com/blog",
+                "655 W panel Türkiye'de 4.800 TL",
+                "TR",
+                date.today(),
+                True,
+                "blog",
+            ),
+            SourceRecord(
+                "https://example.com/stock",
+                "şu anda satışta",
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+        ),
+        required_scope="TR",
+        allowed_authorities=("official",),
+    )
+    result = EvidenceSemantics().assess(
+        "655 W panel Türkiye'de 4.800 TL ve şu anda satışta",
+        verifier,
+    )
+
+    assert result.status == FactualStatus.UNVERIFIED
+    assert result.verified is False
+    price_claim = next(item for item in result.claims if item.claim.value == "4.800")
+    assert price_claim.status == FactualStatus.UNVERIFIED
