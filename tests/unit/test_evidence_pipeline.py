@@ -362,3 +362,121 @@ def test_evidence_audit_metadata_survives_context_map_rebuild():
     assert result.state is not None
     assert result.state.context_map["evidence_sources"] == ["https://example.com/panel"]
     assert result.state.context_map["evidence_reason"] == "All atomic claims passed independent source verification."
+
+
+def test_cognitive_path_routes_evidence_to_independent_verifier(monkeypatch):
+    from datetime import date
+    from anne.core.source_verifier import SourceAwareVerifier, SourceRecord
+    from anne.mythos.candidate import HypothesisCandidate
+    from anne.mythos.engine import ExplorationMode
+
+    claim = "655 W panel Türkiye'de 4.800 TL? Kaynağı nedir?"
+    package = EvidencePackage(
+        mission_id="mission_cognitive",
+        agent_id="agent_mitos",
+        role=AgentRole.CUSTOM,
+        findings=(
+            EvidenceItem(
+                claim=claim,
+                source="https://example.com/panel",
+                evidence_kind="WEB_SOURCE",
+                provenance="MITOS:web_research",
+            ),
+        ),
+    )
+    verifier = SourceAwareVerifier(
+        (
+            SourceRecord(
+                "https://example.com/panel",
+                claim,
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+        ),
+        required_scope="TR",
+        allowed_authorities=("official",),
+        max_age_days=365,
+    )
+    candidate = HypothesisCandidate(
+        id="cand_verified",
+        goal=claim,
+        claim=claim,
+        mode=ExplorationMode.HYPOTHESIS,
+        probability=0.9,
+        discovery_value=0.9,
+        novelty=0.9,
+        testability=1.0,
+        harm_risk=0.0,
+        reversibility=1.0,
+        expected_benefit=0.9,
+        test_cost=0.1,
+        evidence_status="SIMULATION",
+        score_origin="test_fixture",
+    )
+    monkeypatch.setattr(
+        "anne.core.cognitive_orchestrator.generate_candidates",
+        lambda *args, **kwargs: [candidate],
+    )
+
+    result = DecisionLoop(memory=FractalMemory(":memory:")).run_cognitive(
+        claim,
+        parties=[Consciousness(id="user")],
+        evidence_packages=[package],
+        verifier=verifier,
+    )
+
+    assert result.state is not None
+    assert result.state.evidence_status == "available"
+    assert result.state.evidence_verified is True
+    assert result.state.output["factual_status"] == "verified"
+    assert result.state.context_map["evidence_sources"] == ["https://example.com/panel"]
+
+
+def test_decision_result_preserves_verified_factual_status():
+    from datetime import date
+    from anne.core.source_verifier import SourceAwareVerifier, SourceRecord
+
+    claim = "655 W panel Türkiye'de 4.800 TL"
+    package = EvidencePackage(
+        mission_id="mission_result",
+        agent_id="agent_mitos",
+        role=AgentRole.CUSTOM,
+        findings=(
+            EvidenceItem(
+                claim=claim,
+                source="https://example.com/panel",
+                evidence_kind="WEB_SOURCE",
+                provenance="MITOS:web_research",
+            ),
+        ),
+    )
+    verifier = SourceAwareVerifier(
+        (
+            SourceRecord(
+                "https://example.com/panel",
+                claim,
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+        ),
+        required_scope="TR",
+        allowed_authorities=("official",),
+        max_age_days=365,
+    )
+
+    result = DecisionLoop(memory=FractalMemory(":memory:")).run(
+        raw_input=claim + "? Kaynağı nedir?",
+        claim=claim,
+        parties=[Consciousness(id="user")],
+        evidence_packages=[package],
+        verifier=verifier,
+    )
+
+    assert result.state is not None
+    assert result.state.evidence_status == "available"
+    assert result.output["factual_status"] == "verified"
+    assert result.as_dict()["factual_status"] == "verified"
