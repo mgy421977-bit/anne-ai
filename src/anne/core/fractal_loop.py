@@ -22,6 +22,8 @@ from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
 from anne.mythos.generate import generate_candidates
 from anne.mythos.selection import CandidateSelector
+from anne.core.verification import ClaimVerifier
+from anne.mythos.agent_swarm import EvidencePackage
 
 
 @dataclass(frozen=True)
@@ -129,6 +131,8 @@ class FractalThinkingLoop:
         *,
         parties: Sequence[Consciousness] | None = None,
         task_mode: TaskMode = TaskMode.GENERAL,
+        evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (),
+        verifier: ClaimVerifier | None = None,
     ) -> FractalResult:
         people = list(parties) if parties else [Consciousness(id="user")]
         root_id = f"fc_{uuid4().hex[:12]}"
@@ -165,7 +169,13 @@ class FractalThinkingLoop:
                 nodes.append(node)
                 self._record(node, task_mode)
 
-            ff, state = self.pipeline.run_with_fail_fast(current_question, people, current)
+            ff, state = self.pipeline.run_with_fail_fast(
+                current_question,
+                people,
+                current,
+                evidence_packages,
+                verifier,
+            )
             if not ff.passed:
                 node.status = "failed"
                 node.stage_reached = "FAIL_FAST"
