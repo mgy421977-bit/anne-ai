@@ -246,6 +246,8 @@ class CognitiveOrchestrator:
                     hypothesis, task_mode=task_mode.value,
                     depth=retry_count, parent_cycle_id=parent_cycle_id,
                 )
+                # Candidate evidence status is MITOS proposal metadata only.
+                # It must never substitute for independent evidence verification.
                 state.context_map["candidate_evidence_status"] = selected.evidence_status
                 state.context_map["candidate_score_origin"] = selected.score_origin
                 state = self.pipeline.gor(state, [hypothesis])
