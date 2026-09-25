@@ -34,3 +34,35 @@ def test_one_unverified_atomic_claim_prevents_verified_whole():
     )
     assert result.status == FactualStatus.UNVERIFIED
     assert result.verified is False
+
+def test_realistic_panel_price_claim_reports_atomic_evidence():
+    verifier = SourceAwareVerifier(
+        (
+            SourceRecord(
+                "https://example.com/panel",
+                "655 W panel Türkiye'de 4.800 TL",
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+            SourceRecord(
+                "https://example.com/stock",
+                "şu anda satışta",
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+        ),
+        required_scope="TR",
+    )
+    result = EvidenceSemantics().assess(
+        "655 W panel Türkiye'de 4.800 TL ve şu anda satışta",
+        verifier,
+    )
+
+    assert result.status == FactualStatus.VERIFIED
+    assert result.verified is True
+    assert len(result.claims) == 2
+    assert all(item.status == FactualStatus.VERIFIED for item in result.claims)
