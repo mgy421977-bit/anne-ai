@@ -316,3 +316,49 @@ def test_evidence_intent_recognizes_common_natural_language_variants():
         frame = classifier.classify(phrase)
         assert frame.intent == IntentKind.EVIDENCE_REQUEST
         assert frame.requires_evidence is True
+
+
+def test_evidence_audit_metadata_survives_context_map_rebuild():
+    from datetime import date
+    from anne.core.source_verifier import SourceAwareVerifier, SourceRecord
+
+    package = EvidencePackage(
+        mission_id="mission_audit",
+        agent_id="agent_mitos",
+        role=AgentRole.CUSTOM,
+        findings=(
+            EvidenceItem(
+                claim="655 W panel Türkiye'de 4.800 TL",
+                source="https://example.com/panel",
+                evidence_kind="WEB_SOURCE",
+                provenance="MITOS:web_research",
+            ),
+        ),
+    )
+    verifier = SourceAwareVerifier(
+        (
+            SourceRecord(
+                "https://example.com/panel",
+                "655 W panel Türkiye'de 4.800 TL",
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+        ),
+        required_scope="TR",
+        allowed_authorities=("official",),
+        max_age_days=365,
+    )
+
+    result = DecisionLoop(memory=FractalMemory(":memory:")).run(
+        raw_input="655 W panel Türkiye'de 4.800 TL? Kaynağı nedir?",
+        claim="655 W panel Türkiye'de 4.800 TL",
+        parties=[Consciousness(id="user")],
+        evidence_packages=[package],
+        verifier=verifier,
+    )
+
+    assert result.state is not None
+    assert result.state.context_map["evidence_sources"] == ["https://example.com/panel"]
+    assert result.state.context_map["evidence_reason"] == "All atomic claims passed independent source verification."
