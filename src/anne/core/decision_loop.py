@@ -13,6 +13,7 @@ from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
+from anne.mythos.agent_swarm import EvidencePackage
 
 
 @dataclass
@@ -82,7 +83,7 @@ class DecisionLoop:
             probability=probability,
             source="decision_loop",
         )
-        ff, state = self.pipeline.run_with_fail_fast(raw_input, parties, hyp)
+        ff, state = self.pipeline.run_with_fail_fast(raw_input, parties, hyp, evidence_packages)
         if not ff.passed:
             return DecisionResult(
                 "ABORTED",
