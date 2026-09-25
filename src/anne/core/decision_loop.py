@@ -73,6 +73,7 @@ class DecisionLoop:
         parties: Sequence[Consciousness] | None = None,
         hypothesis: Hypothesis | None = None,
         probability: float = 0.7,
+        evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (),
     ) -> DecisionResult:
         parties = list(parties) if parties else [Consciousness(id="user")]
         text_claim = claim if claim is not None else raw_input
