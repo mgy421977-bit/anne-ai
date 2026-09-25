@@ -15,7 +15,8 @@ from typing import Protocol, Sequence
 from uuid import uuid4
 
 from anne.core.verification import FactualStatus
-from anne.research.web_search import WebResearchMission, WebSearchResult, WebSearchProvider, WebResearchRunner
+from anne.research.general import GeneralResearchEngine, ResearchMission
+from anne.research.web_search import WebSearchResult, WebSearchProvider
 
 
 @dataclass(frozen=True)
@@ -92,7 +93,7 @@ class PriceResearchRunner:
     """Bounded product/price workflow; never auto-approves commercial pricing."""
 
     def __init__(self, search_provider: WebSearchProvider, extractor: PriceExtractor) -> None:
-        self.search = WebResearchRunner(search_provider)
+        self.search = GeneralResearchEngine(search_provider)
         self.extractor = extractor
 
     @staticmethod
@@ -108,13 +109,15 @@ class PriceResearchRunner:
 
     def research(self, request: PriceResearchRequest) -> tuple[PriceObservation, ...]:
         request.validate()
-        mission = WebResearchMission(
-            objective=f"Research market price for {request.item}",
+        queries = self.build_queries(request)
+        mission = ResearchMission(
+            objective=queries[0],
             scope=request.market,
+            questions=queries[1:],
             max_searches=request.max_searches,
         )
-        report = self.search.run(mission, self.build_queries(request))
-        observations = tuple(self.extractor.extract(request, report.results))
+        report = self.search.research(mission)
+        observations = tuple(self.extractor.extract(request, report.sources))
         for observation in observations:
             observation.validate()
         return observations
