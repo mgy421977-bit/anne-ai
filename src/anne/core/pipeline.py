@@ -12,6 +12,7 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.ethic_core import EthicCore
 from anne.core.evidence import EvidenceGate
 from anne.core.evidence_validator import EvidenceValidator
+from anne.core.verification import ClaimVerifier
 from anne.mythos.agent_swarm import EvidencePackage
 from anne.core.fail_fast import FailFastGate, FailFastResult
 from anne.core.intent import IntentClassifier
