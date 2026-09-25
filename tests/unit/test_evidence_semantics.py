@@ -106,3 +106,38 @@ def test_conflicting_sources_block_verification():
     assert result.verified is False
     price_claim = next(item for item in result.claims if item.claim.value == "4.800")
     assert price_claim.status == FactualStatus.CONFLICTING
+
+def test_stale_source_does_not_verify_current_claim():
+    from datetime import timedelta
+
+    verifier = SourceAwareVerifier(
+        (
+            SourceRecord(
+                "https://example.com/old-panel-price",
+                "655 W panel Türkiye'de 4.800 TL",
+                "TR",
+                date.today() - timedelta(days=800),
+                True,
+                "official",
+            ),
+            SourceRecord(
+                "https://example.com/current-stock",
+                "şu anda satışta",
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+        ),
+        required_scope="TR",
+        max_age_days=365,
+    )
+    result = EvidenceSemantics().assess(
+        "655 W panel Türkiye'de 4.800 TL ve şu anda satışta",
+        verifier,
+    )
+
+    assert result.status == FactualStatus.UNVERIFIED
+    assert result.verified is False
+    price_claim = next(item for item in result.claims if item.claim.value == "4.800")
+    assert price_claim.status == FactualStatus.UNVERIFIED
