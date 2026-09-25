@@ -66,3 +66,43 @@ def test_realistic_panel_price_claim_reports_atomic_evidence():
     assert result.verified is True
     assert len(result.claims) == 2
     assert all(item.status == FactualStatus.VERIFIED for item in result.claims)
+
+def test_conflicting_sources_block_verification():
+    verifier = SourceAwareVerifier(
+        (
+            SourceRecord(
+                "https://example.com/source-a",
+                "655 W panel Türkiye'de 4.800 TL",
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+            SourceRecord(
+                "https://example.com/source-b",
+                "655 W panel Türkiye'de 4.800 TL",
+                "TR",
+                date.today(),
+                False,
+                "official",
+            ),
+            SourceRecord(
+                "https://example.com/stock",
+                "şu anda satışta",
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+        ),
+        required_scope="TR",
+    )
+    result = EvidenceSemantics().assess(
+        "655 W panel Türkiye'de 4.800 TL ve şu anda satışta",
+        verifier,
+    )
+
+    assert result.status == FactualStatus.CONFLICTING
+    assert result.verified is False
+    price_claim = next(item for item in result.claims if item.claim.value == "4.800")
+    assert price_claim.status == FactualStatus.CONFLICTING
