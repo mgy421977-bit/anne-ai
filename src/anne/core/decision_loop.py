@@ -10,9 +10,11 @@ from anne.core.cognitive_orchestrator import CognitiveOrchestrator, Orchestratio
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
+from anne.core.source_verifier import SourceAwareVerifier
 from anne.core.resource_profile import ResourceProfile
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
+from anne.mythos.agent_swarm import EvidencePackage
 
 
 @dataclass
@@ -72,6 +74,8 @@ class DecisionLoop:
         parties: Sequence[Consciousness] | None = None,
         hypothesis: Hypothesis | None = None,
         probability: float = 0.7,
+        evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (),
+        verifier: SourceAwareVerifier | None = None,
     ) -> DecisionResult:
         parties = list(parties) if parties else [Consciousness(id="user")]
         text_claim = claim if claim is not None else raw_input
@@ -82,7 +86,7 @@ class DecisionLoop:
             probability=probability,
             source="decision_loop",
         )
-        ff, state = self.pipeline.run_with_fail_fast(raw_input, parties, hyp)
+        ff, state = self.pipeline.run_with_fail_fast(raw_input, parties, hyp, evidence_packages, verifier)
         if not ff.passed:
             return DecisionResult(
                 "ABORTED",
