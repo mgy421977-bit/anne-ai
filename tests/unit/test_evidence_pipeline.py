@@ -42,3 +42,66 @@ def test_evidence_package_does_not_bypass_verification():
     assert result.state.evidence_status == "unverified"
     assert result.state.evidence_verified is False
     assert result.verdict == "ABSTAIN"
+
+def test_mitos_package_passes_only_after_independent_atomic_verification():
+    from datetime import date
+    from anne.core.source_verifier import SourceAwareVerifier, SourceRecord
+
+    package = EvidencePackage(
+        mission_id="mission_panel",
+        agent_id="agent_mitos",
+        role=AgentRole.CUSTOM,
+        findings=(
+            EvidenceItem(
+                claim="655 W panel Türkiye'de 4.800 TL",
+                source="https://example.com/panel",
+                evidence_kind="WEB_SOURCE",
+                confidence=0.9,
+                provenance="MITOS:web_research",
+            ),
+            EvidenceItem(
+                claim="şu anda satışta",
+                source="https://example.com/stock",
+                evidence_kind="WEB_SOURCE",
+                confidence=0.9,
+                provenance="MITOS:web_research",
+            ),
+        ),
+    )
+    verifier = SourceAwareVerifier(
+        (
+            SourceRecord(
+                "https://example.com/panel",
+                "655 W panel Türkiye'de 4.800 TL",
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+            SourceRecord(
+                "https://example.com/stock",
+                "şu anda satışta",
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+        ),
+        required_scope="TR",
+        allowed_authorities=("official",),
+        max_age_days=365,
+    )
+
+    loop = DecisionLoop(memory=FractalMemory(":memory:"))
+    result = loop.run(
+        raw_input="655 W panel Türkiye'de 4.800 TL ve şu anda satışta mı?",
+        claim="655 W panel Türkiye'de 4.800 TL ve şu anda satışta",
+        parties=[Consciousness(id="user")],
+        evidence_packages=[package],
+        verifier=verifier,
+    )
+
+    assert result.state is not None
+    assert result.state.evidence_status == "available"
+    assert result.state.evidence_verified is True
+    assert result.state.context_map["evidence_gate"] == "passed"
