@@ -480,3 +480,44 @@ def test_decision_result_preserves_verified_factual_status():
     assert result.state.evidence_status == "available"
     assert result.output["factual_status"] == "verified"
     assert result.as_dict()["factual_status"] == "verified"
+
+
+def test_mitos_candidate_evidence_status_never_promotes_to_factual_verification(monkeypatch):
+    from anne.mythos.candidate import HypothesisCandidate
+    from anne.mythos.engine import ExplorationMode
+
+    claim = "655 W panel Türkiye'de 4.800 TL? Kaynağı nedir?"
+    candidate = HypothesisCandidate(
+        id="cand_claimed_verified",
+        goal=claim,
+        claim=claim,
+        mode=ExplorationMode.HYPOTHESIS,
+        probability=0.99,
+        discovery_value=0.99,
+        novelty=0.9,
+        testability=1.0,
+        harm_risk=0.0,
+        reversibility=1.0,
+        expected_benefit=0.9,
+        test_cost=0.1,
+        evidence_status="VERIFIED",
+        score_origin="mitos_claim",
+    )
+    monkeypatch.setattr(
+        "anne.core.cognitive_orchestrator.generate_candidates",
+        lambda *args, **kwargs: [candidate],
+    )
+
+    result = DecisionLoop(memory=FractalMemory(":memory:")).run_cognitive(
+        claim,
+        parties=[Consciousness(id="user")],
+    )
+
+    assert result.state is not None
+    assert result.state.context_map["candidate_evidence_status"] == "VERIFIED"
+    assert result.state.evidence_status == "missing"
+    assert result.state.evidence_verified is False
+    assert result.state.context_map["evidence_gate"] == "blocked"
+    assert result.state.output["factual_status"] == "unverified"
+    assert result.status == "BOUNDED"
+    assert result.stop_reason == "retry_budget_exhausted"
