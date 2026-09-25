@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from anne.mythos.agent_swarm import EvidencePackage
 from anne.core.requirements import EvidenceStatus
 from anne.core.verification import ClaimVerifier, FactualStatus, verify_claim
+from anne.core.evidence_semantics import EvidenceSemantics
+from anne.core.source_verifier import SourceAwareVerifier
 
 
 @dataclass(frozen=True)
@@ -64,6 +66,37 @@ class EvidenceValidator:
             )
 
         if verifier is not None and claim:
+            if isinstance(verifier, SourceAwareVerifier):
+                semantic = EvidenceSemantics().assess(claim, verifier)
+                semantic_sources = tuple(
+                    source
+                    for item in semantic.claims
+                    for source in item.sources
+                )
+                if semantic.status == FactualStatus.VERIFIED:
+                    return EvidenceAssessment(
+                        EvidenceStatus.AVAILABLE,
+                        len(findings),
+                        True,
+                        tuple(dict.fromkeys(semantic_sources)) or sources,
+                        "All atomic claims passed independent source verification.",
+                    )
+                if semantic.status in {FactualStatus.REFUTED, FactualStatus.CONFLICTING}:
+                    return EvidenceAssessment(
+                        EvidenceStatus.CONFLICTING,
+                        len(findings),
+                        False,
+                        tuple(dict.fromkeys(semantic_sources)) or sources,
+                        "At least one atomic claim was refuted or conflicting.",
+                    )
+                return EvidenceAssessment(
+                    EvidenceStatus.UNVERIFIED,
+                    len(findings),
+                    False,
+                    tuple(dict.fromkeys(semantic_sources)) or sources,
+                    "Atomic claim verification did not establish the complete claim.",
+                )
+
             result = verify_claim(claim, verifier)
             if result.status == FactualStatus.VERIFIED:
                 return EvidenceAssessment(
@@ -73,15 +106,7 @@ class EvidenceValidator:
                     result.sources or sources,
                     result.reason,
                 )
-            if result.status == FactualStatus.REFUTED:
-                return EvidenceAssessment(
-                    EvidenceStatus.CONFLICTING,
-                    len(findings),
-                    False,
-                    result.sources or sources,
-                    result.reason,
-                )
-            if result.status == FactualStatus.CONFLICTING:
+            if result.status in {FactualStatus.REFUTED, FactualStatus.CONFLICTING}:
                 return EvidenceAssessment(
                     EvidenceStatus.CONFLICTING,
                     len(findings),
