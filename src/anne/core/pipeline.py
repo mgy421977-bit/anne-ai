@@ -78,6 +78,9 @@ class AnnePipeline:
         past = self.memory.get_similar_decisions(state.raw_input)
         state.related_memories = past
 
+        evidence_sources: list[str] = []
+        evidence_reason = ""
+
         if state.requires_evidence:
             assessment = self.evidence_validator.assess(
                 evidence_packages,
@@ -95,8 +98,8 @@ class AnnePipeline:
                 state.evidence_status = assessment.status.value
                 state.evidence_count = max(len(past), assessment.evidence_count)
                 state.evidence_verified = assessment.verified
-            state.context_map["evidence_sources"] = list(assessment.sources)
-            state.context_map["evidence_reason"] = assessment.reason
+            evidence_sources = list(assessment.sources)
+            evidence_reason = assessment.reason
         else:
             state.evidence_status = "not_required"
             state.evidence_count = 0
@@ -113,6 +116,8 @@ class AnnePipeline:
             "evidence_status": state.evidence_status,
             "evidence_count": state.evidence_count,
             "evidence_verified": state.evidence_verified,
+            "evidence_sources": evidence_sources,
+            "evidence_reason": evidence_reason,
             "authority_check_required": state.authority_check_required,
             "authority_check_passed": state.authority_check_passed,
             "consciousness_count": len(state.affected_consciousnesses),
