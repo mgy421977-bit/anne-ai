@@ -568,3 +568,47 @@ def test_context_factual_status_matches_verified_evidence():
     assert result.state is not None
     assert result.state.evidence_status == "available"
     assert result.state.context_map["factual_status"] == "verified"
+
+def test_fractal_path_accepts_independently_verified_evidence():
+    from datetime import date
+    from anne.core.source_verifier import SourceAwareVerifier, SourceRecord
+
+    claim = "655 W panel Türkiye'de 4.800 TL"
+    package = EvidencePackage(
+        mission_id="mission_fractal",
+        agent_id="agent_mitos",
+        role=AgentRole.CUSTOM,
+        findings=(
+            EvidenceItem(
+                claim=claim,
+                source="https://example.com/panel",
+                evidence_kind="WEB_SOURCE",
+                provenance="MITOS:web_research",
+            ),
+        ),
+    )
+    verifier = SourceAwareVerifier(
+        (
+            SourceRecord(
+                "https://example.com/panel",
+                claim,
+                "TR",
+                date.today(),
+                True,
+                "official",
+            ),
+        ),
+        required_scope="TR",
+        allowed_authorities=("official",),
+        max_age_days=365,
+    )
+
+    result = DecisionLoop(memory=FractalMemory(":memory:")).run_fractal(
+        raw_input=claim + "? Kaynağı nedir?",
+        parties=[Consciousness(id="user")],
+        evidence_packages=[package],
+        verifier=verifier,
+    )
+
+    assert result.status == "completed"
+    assert result.stop_reason == "validated"
