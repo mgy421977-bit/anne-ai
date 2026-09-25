@@ -240,7 +240,7 @@ class CognitiveOrchestrator:
                     topic=selected.goal[:48],
                     claim=selected.claim,
                     probability=selected.probability,
-                    source=f"MITOS:{selected.evidence_status}",
+                    source="MITOS:PROPOSAL",
                 )
                 self.pipeline.memory.save_hypothesis(
                     hypothesis, task_mode=task_mode.value,
