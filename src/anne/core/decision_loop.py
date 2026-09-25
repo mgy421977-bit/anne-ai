@@ -39,7 +39,7 @@ class DecisionResult:
             "anla_score": self.anla_score,
             "ethic_total": self.ethic_total,
             "reason": self.reason,
-            "factual_status": "unverified",
+            "factual_status": self.output.get("factual_status", "unverified"),
         }
 
 
@@ -129,6 +129,8 @@ class DecisionLoop:
         parties: Sequence[Consciousness] | None = None,
         task_mode: TaskMode = TaskMode.GENERAL,
         seed: int | None = None,
+        evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (),
+        verifier: SourceAwareVerifier | None = None,
     ) -> OrchestrationResult:
         """Run the Phase 1a executive path with MITOS proposal/ANNE selection."""
         return self.orchestrator.run(
@@ -136,6 +138,8 @@ class DecisionLoop:
             parties=parties,
             task_mode=task_mode,
             seed=seed,
+            evidence_packages=evidence_packages,
+            verifier=verifier,
         )
 
     def run_fractal(
