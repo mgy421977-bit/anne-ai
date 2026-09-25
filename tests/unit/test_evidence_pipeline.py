@@ -43,6 +43,7 @@ def test_evidence_package_does_not_bypass_verification():
     assert result.state.evidence_verified is False
     assert result.verdict == "ABSTAIN"
 
+
 def test_mitos_package_passes_only_after_independent_atomic_verification():
     from datetime import date
     from anne.core.source_verifier import SourceAwareVerifier, SourceRecord
@@ -94,7 +95,7 @@ def test_mitos_package_passes_only_after_independent_atomic_verification():
 
     loop = DecisionLoop(memory=FractalMemory(":memory:"))
     result = loop.run(
-        raw_input="655 W panel Türkiye'de 4.800 TL ve şu anda satışta mı?",
+        raw_input="655 W panel Türkiye'de 4.800 TL ve şu anda satışta mı? Kaynağı nedir?",
         claim="655 W panel Türkiye'de 4.800 TL ve şu anda satışta",
         parties=[Consciousness(id="user")],
         evidence_packages=[package],
