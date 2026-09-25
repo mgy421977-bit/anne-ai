@@ -294,6 +294,14 @@ class AnnePipeline:
                 "note": "Low-probability alternatives preserved.",
             }
 
+        factual_status = (
+            "verified"
+            if state.evidence_status == "available"
+            else "conflicting"
+            if state.evidence_status == "conflicting"
+            else "unverified"
+        )
+        output["factual_status"] = factual_status
         state.action = verdict
         state.output = output
         return state
