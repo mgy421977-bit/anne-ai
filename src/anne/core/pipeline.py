@@ -11,6 +11,8 @@ from anne.core.anla_score import MAX_ANLA_RETRIES, DEFAULT_TAU, passes_anla
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.ethic_core import EthicCore
 from anne.core.evidence import EvidenceGate
+from anne.core.evidence_validator import EvidenceValidator
+from anne.mythos.agent_swarm import EvidencePackage
 from anne.core.fail_fast import FailFastGate, FailFastResult
 from anne.core.intent import IntentClassifier
 from anne.core.requirements import CognitiveRequirements
@@ -29,6 +31,7 @@ class AnnePipeline:
         fail_fast_enabled: bool = True,
         fail_fast_gate: FailFastGate | None = None,
         intent_classifier: IntentClassifier | None = None,
+        evidence_validator: EvidenceValidator | None = None,
     ) -> None:
         self.memory = memory
         self.ethic = EthicCore()
@@ -38,6 +41,7 @@ class AnnePipeline:
         self.fail_fast_enabled = fail_fast_enabled
         self.fail_fast_gate = fail_fast_gate or FailFastGate(enabled=fail_fast_enabled)
         self.intent_classifier = intent_classifier or IntentClassifier()
+        self.evidence_validator = evidence_validator or EvidenceValidator()
 
     def fail_fast(self, raw_input: str) -> FailFastResult:
         """Deterministic pre-gate before cognitive stages."""
@@ -69,18 +73,28 @@ class AnnePipeline:
         state.authority_check_required = requirements.requires_authority_check
         return state
 
-    def bak(self, state: CognitiveState) -> CognitiveState:
+    def bak(self, state: CognitiveState, evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (), *, claim: str | None = None) -> CognitiveState:
         past = self.memory.get_similar_decisions(state.raw_input)
         state.related_memories = past
 
         if state.requires_evidence:
-            state.evidence_count = len(past)
-            if not past:
-                state.evidence_status = "missing"
+            assessment = self.evidence_validator.assess(
+                evidence_packages,
+                claim=claim or state.raw_input,
+            )
+            # Memory matches are contextual references, never proof. MITOS
+            # packages can move the state from MISSING to UNVERIFIED, while
+            # only an independent verifier may establish AVAILABLE.
+            if assessment.status.value == "missing" and past:
+                state.evidence_status = "unverified"
+                state.evidence_count = len(past)
                 state.evidence_verified = False
             else:
-                state.evidence_status = "unverified"
-                state.evidence_verified = False
+                state.evidence_status = assessment.status.value
+                state.evidence_count = max(len(past), assessment.evidence_count)
+                state.evidence_verified = assessment.verified
+            state.context_map["evidence_sources"] = list(assessment.sources)
+            state.context_map["evidence_reason"] = assessment.reason
         else:
             state.evidence_status = "not_required"
             state.evidence_count = 0
@@ -279,7 +293,8 @@ class AnnePipeline:
 
     def run_with_fail_fast(self, raw_input: str,
                            consciousnesses: Sequence[Consciousness],
-                           hypothesis: Hypothesis) -> tuple[FailFastResult, CognitiveState | None]:
+                           hypothesis: Hypothesis,
+                           evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = ()) -> tuple[FailFastResult, CognitiveState | None]:
         """Convenience: fail-fast then full stage chain if allowed."""
         ff = self.fail_fast(raw_input)
         if not ff.passed:
@@ -296,7 +311,7 @@ class AnnePipeline:
 
         state = self.duy(raw_input, consciousnesses)
         state.context_map["fail_fast"] = ff.as_dict()
-        state = self.bak(state)
+        state = self.bak(state, evidence_packages, claim=hypothesis.claim)
         state = self.gor(state, [hypothesis])
         state = self.anla(state, hypothesis)
         if state.logic_valid or state.ethic_score is not None:
