@@ -11,6 +11,7 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
 from anne.core.source_verifier import SourceAwareVerifier
+from anne.core.verification import ClaimVerifier
 from anne.core.resource_profile import ResourceProfile
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
@@ -152,6 +153,8 @@ class DecisionLoop:
         *,
         budget: FractalBudget | None = None,
         task_mode: TaskMode = TaskMode.GENERAL,
+        evidence_packages: tuple[EvidencePackage, ...] | list[EvidencePackage] = (),
+        verifier: ClaimVerifier | None = None,
     ) -> FractalResult:
         """Run bounded frame → branch → reframe recursion through ANNE gates."""
         parties = list(parties) if parties else [Consciousness(id="user")]
@@ -173,4 +176,6 @@ class DecisionLoop:
             hyp,
             parties=parties,
             task_mode=task_mode,
+            evidence_packages=evidence_packages,
+            verifier=verifier,
         )
