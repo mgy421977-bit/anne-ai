@@ -160,7 +160,9 @@ class AnnePipeline:
             return state
 
         state.context_map["evidence_gate"] = "passed"
-        state.context_map["factual_status"] = "unverified"
+        state.context_map["factual_status"] = (
+            "verified" if state.evidence_status == "available" else "unverified"
+        )
         text = hypothesis.claim or state.raw_input
         semantic_ok = True
         s_anla = 1.0
