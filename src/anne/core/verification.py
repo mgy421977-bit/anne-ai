@@ -44,7 +44,8 @@ class SemanticSupportEvaluator:
 
     @staticmethod
     def _normalize(value: str) -> str:
-        return " ".join(value.casefold().split())
+        value = re.sub(r"[^\\w]+", " ", value.casefold(), flags=re.UNICODE)
+        return " ".join(value.split())
 
     def classify(self, claim: str, passage: str, provenance: str) -> SupportStatus:
         if not isinstance(claim, str) or not isinstance(passage, str) or not isinstance(provenance, str):
@@ -62,7 +63,10 @@ class SemanticSupportEvaluator:
             city, country = capital.groups()
             support_variants = (
                 f"{city} is the capital city of {country}",
+                f"{city} city and capital of {country}",
+                f"{city} is the capital of {country}",
                 f"{country}'s capital city is {city}",
+                f"{country}'s capital is {city}",
                 f"{city} is {country}'s capital",
             )
             contradict_variants = tuple(f"{variant} not" for variant in support_variants) + (
