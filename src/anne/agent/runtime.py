@@ -45,6 +45,7 @@ from anne.tools.github_repo import GitHubRepoTool
 from anne.tools.local_files import LocalFilesTool
 from anne.learning.evidence import EvidenceLedgerEntry, EvidenceStatus
 from anne.learning.web_research import WebResearcher
+from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 
 
 @dataclass
@@ -232,6 +233,7 @@ omit only when no semantic extraction is useful.
         self.memory = memory
         self.local_tools = LocalFilesTool(workspace or Path.cwd())
         self.planner = HierarchicalPlanner()
+        self.research_planner = ResearchPlanner()
         self.metacognition = Metacognition()
         self.semantic_validator = NeuroSymbolicValidator()
         self.ontology = Ontology()
@@ -267,6 +269,10 @@ omit only when no semantic extraction is useful.
                     "github_search": self.github_tools.search_code,
                 }
             )
+
+    def _create_research_plan(self, query: str) -> ResearchPlan:
+        """Create a bounded, inspectable plan before web research executes."""
+        return self.research_planner.create_plan(query)
 
     def _web_research(self, query: str) -> dict[str, Any]:
         """Run bounded public-web retrieval and preserve source provenance."""
