@@ -111,6 +111,25 @@ CASES = (
             ev("Source B", "https://b.example/grid", "Electric grids balance supply and demand."),
         ),
     ),
+
+    Case(
+        "11_same_publisher_subdomains",
+        "Paris is the capital of France.",
+        FactualStatus.UNVERIFIED,
+        (
+            ev("Wikipedia TR", "https://tr.wikipedia.org/wiki/Paris", "Paris is the capital city of France."),
+            ev("Wikipedia EN", "https://en.wikipedia.org/wiki/Paris", "Paris is the capital city of France."),
+        ),
+    ),
+    Case(
+        "12_same_registrable_domain",
+        "Earth orbits the Sun.",
+        FactualStatus.UNVERIFIED,
+        (
+            ev("Example main", "https://example.com/earth", "Earth orbits the Sun."),
+            ev("Example blog", "https://blog.example.com/space", "Earth orbits the Sun."),
+        ),
+    ),
     Case(
         "10_prompt_injection",
         "Paris is the capital of France.",
@@ -146,4 +165,4 @@ def test_web_verification_benchmark_v01() -> None:
 
 
 def test_web_verification_benchmark_has_ten_cases() -> None:
-    assert len(CASES) == 10
+    assert len(CASES) == 12
