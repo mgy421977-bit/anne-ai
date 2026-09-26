@@ -15,6 +15,7 @@ from anne.core.fail_fast import FailFastGate, FailFastResult
 from anne.core.intent import IntentClassifier
 from anne.core.requirements import CognitiveRequirements
 from anne.memory.fractal_memory import FractalMemory
+from anne.research.evidence_package import ResearchEvidencePackage, apply_evidence_package
 
 
 class AnnePipeline:
@@ -279,7 +280,8 @@ class AnnePipeline:
 
     def run_with_fail_fast(self, raw_input: str,
                            consciousnesses: Sequence[Consciousness],
-                           hypothesis: Hypothesis) -> tuple[FailFastResult, CognitiveState | None]:
+                           hypothesis: Hypothesis,
+                           evidence_package: ResearchEvidencePackage | None = None) -> tuple[FailFastResult, CognitiveState | None]:
         """Convenience: fail-fast then full stage chain if allowed."""
         ff = self.fail_fast(raw_input)
         if not ff.passed:
@@ -297,6 +299,8 @@ class AnnePipeline:
         state = self.duy(raw_input, consciousnesses)
         state.context_map["fail_fast"] = ff.as_dict()
         state = self.bak(state)
+        if evidence_package is not None:
+            apply_evidence_package(state, evidence_package)
         state = self.gor(state, [hypothesis])
         state = self.anla(state, hypothesis)
         if state.logic_valid or state.ethic_score is not None:
