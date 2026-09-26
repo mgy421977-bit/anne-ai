@@ -141,6 +141,12 @@ class LanguageLearningEngine:
         self._profiles[code] = profile
         return profile
 
+    def authorization(self, code: str) -> LearningAuthorization | None:
+        for authorization in self._authorizations.values():
+            if authorization.code == code:
+                return authorization
+        return None
+
     def start_mission(self, mission: LanguageLearningMission) -> LanguageLearningMission:
         mission.validate()
         profile = self._profiles.get(mission.code)
