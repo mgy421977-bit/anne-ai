@@ -19,7 +19,12 @@ from anne.core.cognitive_runtime import (
     Metacognition,
 )
 from anne.core.decision_loop import DecisionLoop
-from anne.core.verification import ClaimVerifier, FactualStatus, verify_claim
+from anne.core.verification import (
+    BoundedMultiSourceVerifier,
+    ClaimVerifier,
+    FactualStatus,
+    verify_claim,
+)
 from anne.memory.local_memory import LocalMemory
 from anne.multi_agent import (
     AgentRole,
@@ -269,6 +274,7 @@ omit only when no semantic extraction is useful.
         evidence = self.web_researcher.research(query)
         workspace = getattr(self, "workspace", None)
         serialized = []
+        response_verifier = getattr(self, "response_verifier", None)
         for item in evidence:
             entry = EvidenceLedgerEntry(
                 claim=item.claim,
@@ -277,8 +283,12 @@ omit only when no semantic extraction is useful.
                 confidence=item.confidence,
                 status=EvidenceStatus.UNVERIFIED,
                 passage=item.passage,
+                support=item.support,
             )
-            verification = verify_claim(entry.claim, getattr(self, "response_verifier", None))
+            if isinstance(response_verifier, BoundedMultiSourceVerifier):
+                verification = response_verifier.verify_evidence(entry.claim, tuple(evidence))
+            else:
+                verification = verify_claim(entry.claim, response_verifier)
             if verification.status is not FactualStatus.UNVERIFIED:
                 entry = replace(
                     entry,
@@ -293,6 +303,7 @@ omit only when no semantic extraction is useful.
                     "confidence": entry.confidence,
                     "status": entry.status.value,
                     "passage": entry.passage,
+                    "support": entry.support,
                     "retrieved_at": entry.retrieved_at,
                     "verification_sources": list(verification.sources),
                     "verification_reason": verification.reason,
@@ -601,6 +612,7 @@ omit only when no semantic extraction is useful.
                     "confidence": entry.confidence,
                     "status": entry.status.value,
                     "passage": entry.passage,
+                    "support": entry.support,
                     "retrieved_at": entry.retrieved_at,
                 }
                 for entry in self.workspace.evidence_ledger

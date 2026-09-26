@@ -1,0 +1,113 @@
+from anne.core.evidence import EvidenceGate
+from anne.agent.runtime import AnneAgent
+from anne.core.verification import (
+    BoundedMultiSourceVerifier,
+    FactualStatus,
+    SupportStatus,
+)
+from anne.learning.evidence import EvidenceItem
+
+
+def evidence(source: str, passage: str, support: SupportStatus, url: str) -> EvidenceItem:
+    return EvidenceItem(
+        source=source,
+        claim="Paris is the capital of France.",
+        kind="web",
+        provenance=url,
+        confidence=0.9,
+        passage=passage,
+        support=support,
+    )
+
+
+def test_two_independent_supporting_sources_are_verified() -> None:
+    verifier = BoundedMultiSourceVerifier(
+        (
+            evidence("A", "Paris is the capital of France.", SupportStatus.SUPPORTS, "https://a.test/x"),
+            evidence("B", "Paris is the capital of France.", SupportStatus.SUPPORTS, "https://b.test/x"),
+        )
+    )
+    result = verifier.verify("Paris is the capital of France.")
+    assert result.status is FactualStatus.VERIFIED
+    assert len(result.trace) == 2
+
+
+def test_support_and_contradiction_are_conflicting() -> None:
+    verifier = BoundedMultiSourceVerifier(
+        (
+            evidence("A", "Paris is the capital of France.", SupportStatus.SUPPORTS, "https://a.test/x"),
+            evidence("B", "Paris is not the capital of France.", SupportStatus.CONTRADICTS, "https://b.test/x"),
+        )
+    )
+    assert verifier.verify("Paris is the capital of France.").status is FactualStatus.CONFLICTING
+
+
+def test_unclear_sources_are_unverified() -> None:
+    verifier = BoundedMultiSourceVerifier(
+        (
+            evidence("A", "Paris is a major European city.", SupportStatus.UNCLEAR, "https://a.test/x"),
+            evidence("B", "Paris has many museums.", SupportStatus.UNCLEAR, "https://b.test/x"),
+        )
+    )
+    assert verifier.verify("Paris is the capital of France.").status is FactualStatus.UNVERIFIED
+
+
+def test_two_independent_contradictions_are_refuted() -> None:
+    verifier = BoundedMultiSourceVerifier(
+        (
+            evidence("A", "Paris is not the capital of France.", SupportStatus.CONTRADICTS, "https://a.test/x"),
+            evidence("B", "Paris is not the capital of France.", SupportStatus.CONTRADICTS, "https://b.test/x"),
+        )
+    )
+    assert verifier.verify("Paris is the capital of France.").status is FactualStatus.REFUTED
+
+
+def test_one_supporting_source_is_not_verified() -> None:
+    verifier = BoundedMultiSourceVerifier(
+        (evidence("A", "Paris is the capital of France.", SupportStatus.SUPPORTS, "https://a.test/x"),)
+    )
+    assert verifier.verify("Paris is the capital of France.").status is FactualStatus.UNVERIFIED
+
+
+def test_same_domain_is_not_independent() -> None:
+    verifier = BoundedMultiSourceVerifier(
+        (
+            evidence("A", "Paris is the capital of France.", SupportStatus.SUPPORTS, "https://same.test/a"),
+            evidence("A mirror", "Paris is the capital of France.", SupportStatus.SUPPORTS, "https://same.test/b"),
+        )
+    )
+    assert verifier.verify("Paris is the capital of France.").status is FactualStatus.UNVERIFIED
+
+
+def test_missing_provenance_fails_closed() -> None:
+    class MissingProvenance:
+        claim = "Paris is the capital of France."
+        source = "A"
+        provenance = ""
+        passage = "Paris is the capital of France."
+        support = SupportStatus.SUPPORTS
+
+    verifier = BoundedMultiSourceVerifier((MissingProvenance(),))
+    assert verifier.verify("Paris is the capital of France.").status is FactualStatus.UNVERIFIED
+
+
+def test_gate_blocks_conflicting_and_allows_verified() -> None:
+    assert not EvidenceGate.allows_decision(required=True, status="conflicting")
+    assert EvidenceGate.allows_decision(required=True, status="available")
+
+
+def test_agent_preserves_multi_source_verdict_and_passages(monkeypatch) -> None:
+    class FakeResearcher:
+        def research(self, query):
+            return (
+                evidence("A", "Paris is the capital of France.", SupportStatus.SUPPORTS, "https://a.test/x"),
+                evidence("B", "Paris is the capital of France.", SupportStatus.SUPPORTS, "https://b.test/x"),
+            )
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = FakeResearcher()
+    agent.response_verifier = BoundedMultiSourceVerifier()
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+    result = agent._web_research("Paris is the capital of France.")
+    assert {row["status"] for row in result["evidence"]} == {FactualStatus.VERIFIED.value}
+    assert all(row["passage"] for row in result["evidence"])

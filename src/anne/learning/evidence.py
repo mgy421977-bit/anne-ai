@@ -6,6 +6,12 @@ from datetime import UTC, datetime
 from enum import StrEnum
 
 
+class SupportStatus(StrEnum):
+    SUPPORTS = "supports"
+    CONTRADICTS = "contradicts"
+    UNCLEAR = "unclear"
+
+
 @dataclass(frozen=True)
 class EvidenceItem:
     """A provenance-carrying, non-authoritative piece of evidence."""
@@ -16,6 +22,7 @@ class EvidenceItem:
     provenance: str
     confidence: float
     passage: str = ""
+    support: str = SupportStatus.UNCLEAR.value
 
     def __post_init__(self) -> None:
         if not self.source.strip():
@@ -50,6 +57,7 @@ class EvidenceLedgerEntry:
     status: EvidenceStatus = EvidenceStatus.UNVERIFIED
     passage: str = ""
     retrieved_at: str = ""
+    support: str = SupportStatus.UNCLEAR.value
 
     def __post_init__(self) -> None:
         if not self.claim.strip():
@@ -65,4 +73,4 @@ class EvidenceLedgerEntry:
             object.__setattr__(self, "retrieved_at", datetime.now(UTC).isoformat())
 
 
-__all__ = ["EvidenceItem", "EvidenceLedgerEntry", "EvidenceStatus"]
+__all__ = ["EvidenceItem", "EvidenceLedgerEntry", "EvidenceStatus", "SupportStatus"]
