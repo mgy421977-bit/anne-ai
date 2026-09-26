@@ -10,10 +10,11 @@ from typing import Any, Optional, Sequence
 from anne.core.anla_score import MAX_ANLA_RETRIES, DEFAULT_TAU, passes_anla
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.ethic_core import EthicCore
-from anne.core.evidence import EvidenceGate
+from anne.core.evidence import EvidenceGate, evidence_status_from_verification
+from anne.core.verification import ClaimVerifier, verify_claim
 from anne.core.fail_fast import FailFastGate, FailFastResult
 from anne.core.intent import IntentClassifier
-from anne.core.requirements import CognitiveRequirements
+from anne.core.requirements import CognitiveRequirements, EvidenceStatus
 from anne.memory.fractal_memory import FractalMemory
 
 
@@ -29,6 +30,7 @@ class AnnePipeline:
         fail_fast_enabled: bool = True,
         fail_fast_gate: FailFastGate | None = None,
         intent_classifier: IntentClassifier | None = None,
+        claim_verifier: ClaimVerifier | None = None,
     ) -> None:
         self.memory = memory
         self.ethic = EthicCore()
@@ -38,6 +40,7 @@ class AnnePipeline:
         self.fail_fast_enabled = fail_fast_enabled
         self.fail_fast_gate = fail_fast_gate or FailFastGate(enabled=fail_fast_enabled)
         self.intent_classifier = intent_classifier or IntentClassifier()
+        self.claim_verifier = claim_verifier
 
     def fail_fast(self, raw_input: str) -> FailFastResult:
         """Deterministic pre-gate before cognitive stages."""
@@ -127,6 +130,22 @@ class AnnePipeline:
 
     def anla(self, state: CognitiveState, hypothesis: Hypothesis) -> CognitiveState:
         """Semantic validation and ethical synthesis, with evidence enforcement."""
+        # Independent verification may elevate candidate status to AVAILABLE.
+        # Search/memory/model never set AVAILABLE.
+        if state.requires_evidence and self.claim_verifier is not None:
+            claim = (hypothesis.claim or state.raw_input or "").strip()
+            vr = verify_claim(claim, self.claim_verifier)
+            mapped = evidence_status_from_verification(vr)
+            state.evidence_status = mapped.value
+            state.evidence_verified = mapped == EvidenceStatus.AVAILABLE
+            state.context_map["verification_status"] = (
+                vr.status.value if hasattr(vr.status, "value") else str(vr.status)
+            )
+            state.context_map["verification_sources"] = list(vr.sources)
+            state.context_map["verification_reason"] = vr.reason
+            state.context_map["evidence_status"] = state.evidence_status
+            state.context_map["evidence_verified"] = state.evidence_verified
+
         if not EvidenceGate.allows_decision(
             required=state.requires_evidence,
             status=state.evidence_status,
