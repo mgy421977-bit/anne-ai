@@ -186,18 +186,17 @@ class AnneRuntime:
                 ),
             )
             started = self.language_engine.start_mission(mission)
-            report = self.research_engine.research(
-                self.decision_loop.make_research_mission(
-                    started.objective,
-                    scope=f"language:{code}",
-                    questions=(
-                        f"{language} grammar rules",
-                        f"{language} vocabulary and usage",
-                    ),
-                    max_searches=request.max_searches,
-                    max_results_per_search=request.max_results_per_search,
-                )
+            mission = self.decision_loop.make_research_mission(
+                started.objective,
+                scope=f"language:{code}",
+                questions=(
+                    f"{language} grammar rules",
+                    f"{language} vocabulary and usage",
+                ),
+                max_searches=request.max_searches,
+                max_results_per_search=request.max_results_per_search,
             )
+            report = self.research_engine.research(mission)
             return AnneResponse(
                 mode="LANGUAGE_LEARNING",
                 result=None,
@@ -224,7 +223,8 @@ class AnneRuntime:
             )
             mission_id = None
             if result.state:
-                mission_id = result.state.context_map.get("research_mission_id")
+                evidence = result.state.context_map.get("research_evidence", {})
+                mission_id = evidence.get("mission_id")
             return AnneResponse(
                 mode="RESEARCH",
                 result=result,
