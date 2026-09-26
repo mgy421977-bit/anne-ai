@@ -124,12 +124,16 @@ class ResearchPlanner:
         min_independent_sources: int = 2,
         max_queries: int = 8,
         max_sources: int = 12,
+        stop_on_diminishing_returns: bool = True,
+        stop_on_unresolved_contradiction: bool = False,
     ) -> None:
         self.stop_conditions = StopConditions(
             min_independent_sources=min_independent_sources,
             max_subquestions=max_subquestions,
             max_queries=max_queries,
             max_sources=max_sources,
+            stop_on_diminishing_returns=stop_on_diminishing_returns,
+            stop_on_unresolved_contradiction=stop_on_unresolved_contradiction,
         )
 
     def create_plan(
