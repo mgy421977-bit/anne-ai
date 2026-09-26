@@ -39,7 +39,7 @@ class DecisionResult:
             "anla_score": self.anla_score,
             "ethic_total": self.ethic_total,
             "reason": self.reason,
-            "factual_status": "unverified",
+            "factual_status": (self.state.context_map.get("factual_status") if self.state else None) or "unverified",
         }
 
 
