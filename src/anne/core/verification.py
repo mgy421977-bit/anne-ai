@@ -204,8 +204,35 @@ class BoundedMultiSourceVerifier:
 
     @staticmethod
     def _identity(provenance: str) -> str:
+        """Return a bounded publisher-family identity, not just a hostname."""
         parsed = urlparse(provenance)
-        return (parsed.netloc or parsed.path.split("/", 1)[0]).casefold()
+        host = (parsed.netloc or parsed.path.split("/", 1)[0]).casefold()
+        if not host:
+            return ""
+        host = host.split(":", 1)[0]
+        if host == "wikipedia.org" or host.endswith(".wikipedia.org"):
+            return "wikipedia.org"
+        if host == "duckduckgo.com" or host.endswith(".duckduckgo.com"):
+            return "duckduckgo.com"
+
+        parts = [part for part in host.split(".") if part]
+        if len(parts) < 2:
+            return host
+
+        # Bounded handling for common multi-label public suffixes. This is
+        # intentionally conservative; it is not a full public-suffix service.
+        multi_label_suffixes = {
+            "co.uk", "org.uk", "ac.uk", "gov.uk",
+            "com.au", "net.au", "org.au",
+            "co.nz", "com.br", "com.tr", "co.jp", "co.kr",
+            "com.cn", "com.mx", "com.ar", "co.za", "com.sg",
+            "com.hk", "com.tw", "com.my", "com.ph", "co.in",
+            "co.il", "co.id", "com.vn", "com.sa", "com.eg",
+        }
+        suffix = ".".join(parts[-2:])
+        if suffix in multi_label_suffixes and len(parts) >= 3:
+            return ".".join(parts[-3:])
+        return ".".join(parts[-2:])
 
     def verify(self, claim: str) -> VerificationResult:
         normalized = self._normalize(claim)
