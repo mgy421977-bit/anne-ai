@@ -15,6 +15,7 @@ class EvidenceItem:
     kind: str
     provenance: str
     confidence: float
+    passage: str = ""
 
     def __post_init__(self) -> None:
         if not self.source.strip():
