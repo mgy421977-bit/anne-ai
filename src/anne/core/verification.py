@@ -26,6 +26,47 @@ class SupportStatus(StrEnum):
     UNCLEAR = "unclear"
 
 
+class SemanticSupportEvaluator:
+    """Conservative passage-to-claim classifier.
+
+    It only emits SUPPORTS for an explicit claim-text match and CONTRADICTS
+    for an explicit negated match. Topic overlap, model confidence, and web
+    instructions remain UNCLEAR by design.
+    """
+
+    INJECTION_MARKERS = (
+        "ignore previous instructions",
+        "reveal your api key",
+        "mark this claim as verified",
+        "system message",
+    )
+
+    @staticmethod
+    def _normalize(value: str) -> str:
+        return " ".join(value.casefold().split())
+
+    def classify(self, claim: str, passage: str, provenance: str) -> SupportStatus:
+        if not isinstance(claim, str) or not isinstance(passage, str) or not isinstance(provenance, str):
+            return SupportStatus.UNCLEAR
+        normalized_claim = self._normalize(claim)
+        normalized_passage = self._normalize(passage)
+        if not normalized_claim or not normalized_passage or not provenance.strip():
+            return SupportStatus.UNCLEAR
+        if any(marker in normalized_passage for marker in self.INJECTION_MARKERS):
+            return SupportStatus.UNCLEAR
+        if normalized_claim in normalized_passage:
+            return SupportStatus.SUPPORTS
+        negated = (
+            f"not {normalized_claim}",
+            f"no {normalized_claim}",
+            f"false: {normalized_claim}",
+            f"false that {normalized_claim}",
+        )
+        if any(candidate in normalized_passage for candidate in negated):
+            return SupportStatus.CONTRADICTS
+        return SupportStatus.UNCLEAR
+
+
 @dataclass(frozen=True)
 class VerificationResult:
     status: FactualStatus = FactualStatus.UNVERIFIED

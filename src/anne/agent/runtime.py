@@ -23,6 +23,7 @@ from anne.core.verification import (
     BoundedMultiSourceVerifier,
     ClaimVerifier,
     FactualStatus,
+    SemanticSupportEvaluator,
     verify_claim,
 )
 from anne.memory.local_memory import LocalMemory
@@ -275,7 +276,20 @@ omit only when no semantic extraction is useful.
         workspace = getattr(self, "workspace", None)
         serialized = []
         response_verifier = getattr(self, "response_verifier", None)
-        for item in evidence:
+        verification_records = []
+        support_evaluator = SemanticSupportEvaluator()
+        classified_evidence = tuple(
+            replace(
+                item,
+                support=(
+                    item.support
+                    if item.support != "unclear"
+                    else support_evaluator.classify(item.claim, item.passage, item.provenance).value
+                ),
+            )
+            for item in evidence
+        )
+        for item in classified_evidence:
             entry = EvidenceLedgerEntry(
                 claim=item.claim,
                 source=item.source,
@@ -286,9 +300,10 @@ omit only when no semantic extraction is useful.
                 support=item.support,
             )
             if isinstance(response_verifier, BoundedMultiSourceVerifier):
-                verification = response_verifier.verify_evidence(entry.claim, tuple(evidence))
+                verification = response_verifier.verify_evidence(entry.claim, classified_evidence)
             else:
                 verification = verify_claim(entry.claim, response_verifier)
+            verification_records.append(verification)
             if verification.status is not FactualStatus.UNVERIFIED:
                 entry = replace(
                     entry,
@@ -316,7 +331,21 @@ omit only when no semantic extraction is useful.
             "query": query.strip(),
             "evidence": serialized,
             "evidence_count": len(serialized),
-            "independent_verification": "not_performed",
+            "independent_verification": (
+                "performed"
+                if isinstance(response_verifier, BoundedMultiSourceVerifier)
+                else "not_performed"
+            ),
+            "verification": (
+                verification_records[0].as_dict()
+                if verification_records
+                else {
+                    "status": FactualStatus.UNVERIFIED.value,
+                    "sources": [],
+                    "reason": "No evidence was retrieved.",
+                    "trace": [],
+                }
+            ),
         }
 
     def collaborate(self, task: str, workers: dict[str, Worker]) -> CollaborationResult:
