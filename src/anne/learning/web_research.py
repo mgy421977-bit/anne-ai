@@ -7,6 +7,7 @@ not in the retrieval engine.
 """
 from __future__ import annotations
 
+import base64
 import json
 import re
 import urllib.parse
@@ -310,6 +311,27 @@ class WebResearcher:
             items.append(EvidenceItem(source="DuckDuckGo Web Search", claim=claim[:2200], kind="web", provenance=href or url, confidence=min(0.84, 0.44 + score * 0.40), passage=passage[:1200]))
         return items
 
+    @staticmethod
+    def _resolve_bing_url(href: str) -> str:
+        """Decode Bing's bounded result redirect to the destination URL."""
+        if not href:
+            return href
+        try:
+            parsed = urllib.parse.urlparse(href)
+            host = parsed.netloc.casefold()
+            if not host.endswith("bing.com"):
+                return href
+            encoded = urllib.parse.parse_qs(parsed.query).get("u", [""])[0]
+            if encoded.startswith("a1"):
+                payload = encoded[2:]
+                payload += "=" * ((4 - len(payload) % 4) % 4)
+                decoded = base64.urlsafe_b64decode(payload).decode("utf-8", errors="replace")
+                if decoded.startswith(("http://", "https://")):
+                    return decoded
+        except Exception:
+            pass
+        return href
+
     def _bing_search(self, query: str) -> list[EvidenceItem]:
         encoded = urllib.parse.quote_plus(query)
         url = f"https://www.bing.com/search?q={encoded}&count=10&setlang=en-US"
@@ -320,14 +342,15 @@ class WebResearcher:
             claim = f"{title}: {snippet}" if snippet else title
             if not self._is_relevant(query, claim, title):
                 continue
+            destination = self._resolve_bing_url(href)
             passage = snippet
-            if href:
+            if destination:
                 try:
-                    passage = self._extract_passage(self._get_text(href), query) or snippet
+                    passage = self._extract_passage(self._get_text(destination), query) or snippet
                 except Exception:
                     passage = snippet
             score = self._relevance(query, claim, title)
-            items.append(EvidenceItem(source="Bing Web Search", claim=claim[:2200], kind="web", provenance=href or url, confidence=min(0.84, 0.44 + score * 0.40), passage=passage[:1200]))
+            items.append(EvidenceItem(source="Bing Web Search", claim=claim[:2200], kind="web", provenance=destination or href or url, confidence=min(0.84, 0.44 + score * 0.40), passage=passage[:1200]))
         return items
 
     def research(self, query: str) -> list[EvidenceItem]:
