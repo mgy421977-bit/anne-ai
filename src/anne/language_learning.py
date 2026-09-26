@@ -84,6 +84,7 @@ class LanguageLearningEngine:
 
     def __init__(self, profiles: tuple[LanguageProfile, ...] = ()) -> None:
         self._profiles = {profile.code: profile for profile in profiles}
+        self._authorizations: dict[str, LearningAuthorization] = {}
 
     def authorize(
         self,
@@ -101,6 +102,7 @@ class LanguageLearningEngine:
             code=code,
             granted_by=granted_by,
         )
+        self._authorizations[authorization.authorization_id] = authorization
         self._profiles[code] = LanguageProfile(
             language=language,
             code=code,
@@ -120,8 +122,13 @@ class LanguageLearningEngine:
     ) -> LanguageProfile:
         if source is not LearningSource.HUMAN_TEACHER and authorization is None:
             raise PermissionError("seed requires authorization for non-teacher sources")
-        if source is not LearningSource.HUMAN_TEACHER and authorization and not authorization.active:
-            raise PermissionError("authorization is inactive")
+        if source is not LearningSource.HUMAN_TEACHER:
+            assert authorization is not None
+            stored = self._authorizations.get(authorization.authorization_id)
+            if stored is None or not stored.active:
+                raise PermissionError("authorization is missing or inactive")
+            if stored.language != language or stored.code != code:
+                raise PermissionError("authorization does not match requested language")
         if not language.strip() or not code.strip():
             raise ValueError("language and code are required")
         profile = LanguageProfile(
@@ -139,6 +146,12 @@ class LanguageLearningEngine:
         profile = self._profiles.get(mission.code)
         if not profile or not profile.authorized:
             raise PermissionError("language is not authorized for learning")
+        if mission.source is not LearningSource.HUMAN_TEACHER:
+            authorization = self._authorizations.get(mission.authorization_id or "")
+            if authorization is None or not authorization.active:
+                raise PermissionError("authorization is missing or inactive")
+            if authorization.language != mission.language or authorization.code != mission.code:
+                raise PermissionError("authorization does not match requested language")
         return mission
 
     def profile(self, code: str) -> LanguageProfile | None:
