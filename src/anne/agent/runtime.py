@@ -29,6 +29,7 @@ from anne.neuro_symbolic.audit import NeuroSymbolicValidator
 from anne.providers.gemini import GeminiProvider
 from anne.providers.local import LocalProvider
 from anne.providers.openrouter import OpenRouterProvider
+from anne.runtime import AnneRuntime
 from anne.safety.policy import ToolPolicy, redact_sensitive
 from anne.semantics.core import frame_from_text
 from anne.semantics.structured import Ontology, parse_structured_frame
@@ -176,6 +177,7 @@ omit only when no semantic extraction is useful.
             max_rounds=2,
         )
         self.decision_loop = decision_loop if decision_loop is not None else DecisionLoop()
+        self.runtime = AnneRuntime(decision_loop=self.decision_loop)
         self.workspace: CognitiveWorkspace | None = None
         self.tools: dict[str, Callable[..., Any]] = {
             "local_list": self.local_tools.list,
@@ -385,7 +387,7 @@ omit only when no semantic extraction is useful.
 
         # The deterministic decision loop is a mandatory preflight.  It does
         # not replace model reasoning; it controls whether reasoning proceeds.
-        preflight = self.decision_loop.run(user_input, probability=0.7)
+        preflight = self.runtime.run(user_input)
         if preflight.status == "ABORTED":
             response = preflight.output.get("reason", "Request blocked by ANNE safety gates.")
             learning = "A request was blocked during deterministic preflight."

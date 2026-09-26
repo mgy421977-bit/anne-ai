@@ -4,19 +4,23 @@ Flow: FailFast → DUY → BAK → AMBIGUITY → GÖR → MITOS → SELECT → A
 MITOS proposes; ANNE selects. Recovery can reframe a failed cycle but cannot
 bypass existing safety, semantic, evidence, ethics, or agency boundaries.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 from uuid import uuid4
 
+from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
 from anne.core.ambiguity import AmbiguityBoundary
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fail_fast import FailFastResult
 from anne.core.failure_recovery import FailureRecoveryController, FailureSignal
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
+from anne.core.verification import ClaimVerifier
 from anne.mythos.candidate import SelectionResult, TaskMode
+from anne.mythos.engine import ExplorationMode, HypothesisCandidate
 from anne.mythos.generate import generate_candidates
 from anne.mythos.selection import CandidateSelector
 
@@ -64,15 +68,88 @@ class CognitiveOrchestrator:
     @staticmethod
     def _failure_reason(state: CognitiveState) -> str:
         output = state.output or {}
-        return str(
-            output.get("reason")
-            or output.get("reasoning")
-            or "logic_or_semantic_failure"
-        )
+        return str(output.get("reason") or output.get("reasoning") or "logic_or_semantic_failure")
 
     @staticmethod
     def _is_success(state: CognitiveState) -> bool:
-        return bool(state.logic_valid) and state.action != "HALT"
+        return (
+            bool(state.logic_valid)
+            and state.action not in {"HALT", "ABSTAIN", "REVIEW", "CLARIFY"}
+            and state.context_map.get("agency_gate", "ALLOW") == ActionDecision.ALLOW.value
+        )
+
+    @staticmethod
+    def _caller_candidate(hypothesis: Hypothesis, fallback_goal: str) -> HypothesisCandidate:
+        probability = max(0.0, min(1.0, float(hypothesis.probability)))
+        return HypothesisCandidate(
+            id=hypothesis.id,
+            goal=hypothesis.topic or fallback_goal,
+            claim=hypothesis.claim or fallback_goal,
+            mode=ExplorationMode.HYPOTHESIS,
+            probability=probability,
+            discovery_value=probability,
+            novelty=0.5,
+            testability=0.5,
+            harm_risk=0.0,
+            reversibility=1.0,
+            expected_benefit=probability,
+            test_cost=0.1,
+            evidence_status="UNVERIFIED",
+            score_origin="caller_supplied",
+        )
+
+    @staticmethod
+    def _apply_agency_gate(
+        state: CognitiveState,
+        hypothesis: Hypothesis,
+    ) -> CognitiveState:
+        """Make authority-required actions explicit REVIEW outcomes.
+
+        The pipeline already gates ordinary proposals. This boundary handles
+        the separate human-authority requirement, which must never be inferred
+        from a caller or silently converted into ALLOW.
+        """
+        if not (state.authority_check_required and not state.authority_check_passed):
+            return state
+        if state.context_map.get("evidence_gate") == "blocked":
+            return state
+
+        gate = state.context_map.get("agency_gate")
+        if gate == ActionDecision.REVIEW.value:
+            return state
+
+        authorization = ActionProposal(
+            action=str(state.output.get("action", "PROCEED")),
+            target=hypothesis.id,
+            reversible=True,
+            risk=0.0,
+            provenance=(f"hypothesis:{hypothesis.id}",),
+        )
+        result = state.output
+        decision = state.context_map.get("verification_status")
+        outcome = state.context_map.get("agency_gate")
+        # ``CognitiveState`` is deliberately not given an executor. The
+        # orchestrator records the pending human gate; no side effect occurs.
+        approval = AgencyGate().authorize(
+            authorization,
+            safety_allowed=True,
+            human_review_required=True,
+            verification_status=decision,
+            needs_verification=bool(outcome == ActionDecision.DENY.value),
+        )
+        state.context_map["agency_gate"] = approval.decision.value
+        state.context_map["agency_gate_reason"] = approval.reason
+        state.output = {
+            **result,
+            "verdict": "REVIEW" if approval.decision is ActionDecision.REVIEW else "ABSTAIN",
+            "action": "REVIEW" if approval.decision is ActionDecision.REVIEW else "HALT",
+            "reason": approval.reason,
+            "agency_decision": approval.decision.value,
+            "agency_reason": approval.reason,
+            "human_review_required": True,
+        }
+        state.action = state.output["action"]
+        return state
 
     @staticmethod
     def _base_trace() -> list[str]:
@@ -85,12 +162,30 @@ class CognitiveOrchestrator:
         parties: Sequence[Consciousness] | None = None,
         task_mode: TaskMode = TaskMode.GENERAL,
         seed: int | None = None,
+        hypothesis: Hypothesis | None = None,
+        verifier: ClaimVerifier | None = None,
+        group_a: Sequence[Consciousness] | None = None,
+        group_b: Sequence[Consciousness] | None = None,
     ) -> OrchestrationResult:
         people = list(parties) if parties else [Consciousness(id="user")]
         ff = self.pipeline.fail_fast(raw_input)
         if not ff.passed:
+            self.pipeline.memory.save_failure_trace(
+                cycle_id=f"or_{uuid4().hex[:12]}",
+                stage="FAIL_FAST",
+                raw_input=raw_input,
+                reason=ff.reason,
+                meta_tag=ff.rule_id or "fail_fast",
+                hypothesis_id=hypothesis.id if hypothesis is not None else "",
+                ethic_total=0.0,
+            )
             return OrchestrationResult(
-                "ABORTED", ff, None, None, ("FAIL_FAST",), ff.reason,
+                "ABORTED",
+                ff,
+                None,
+                None,
+                ("FAIL_FAST",),
+                ff.reason,
                 stop_reason="fail_fast",
             )
 
@@ -98,8 +193,12 @@ class CognitiveOrchestrator:
         if not current_question:
             state = self.pipeline.duy(raw_input, people)
             return OrchestrationResult(
-                "ABORTED", ff, state, None,
-                tuple(["FAIL_FAST", "DUY"]), "empty_input",
+                "ABORTED",
+                ff,
+                state,
+                None,
+                tuple(["FAIL_FAST", "DUY"]),
+                "empty_input",
                 stop_reason="empty_input",
             )
 
@@ -123,13 +222,25 @@ class CognitiveOrchestrator:
                 ff = self.pipeline.fail_fast(current_question)
                 if not ff.passed:
                     self.pipeline.memory.save_failure_trace(
-                        cycle_id=cycle_id, parent_cycle_id=parent_cycle_id, depth=retry_count,
-                        stage="FAIL_FAST", raw_input=current_question, reason=ff.reason,
-                        meta_tag="executive_retry", task_mode=task_mode.value,
+                        cycle_id=cycle_id,
+                        parent_cycle_id=parent_cycle_id,
+                        depth=retry_count,
+                        stage="FAIL_FAST",
+                        raw_input=current_question,
+                        reason=ff.reason,
+                        meta_tag="executive_retry",
+                        task_mode=task_mode.value,
                     )
                     return OrchestrationResult(
-                        "ABORTED", ff, None, last_selection, tuple(trace), ff.reason,
-                        retry_count=retry_count, lineage=tuple(lineage), stop_reason="fail_fast",
+                        "ABORTED",
+                        ff,
+                        None,
+                        last_selection,
+                        tuple(trace),
+                        ff.reason,
+                        retry_count=retry_count,
+                        lineage=tuple(lineage),
+                        stop_reason="fail_fast",
                     )
                 trace.extend(["DUY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"])
             state = self.pipeline.duy(current_question, people)
@@ -156,8 +267,12 @@ class CognitiveOrchestrator:
                     "ambiguity_level": ambiguity.level.value,
                 }
                 return OrchestrationResult(
-                    "BOUNDED", ff, state, None,
-                    tuple(trace[:4]), ambiguity.reason,
+                    "BOUNDED",
+                    ff,
+                    state,
+                    None,
+                    tuple(trace[:4]),
+                    ambiguity.reason,
                     retry_count=retry_count,
                     lineage=tuple(lineage),
                     stop_reason="ambiguity_high",
@@ -172,8 +287,12 @@ class CognitiveOrchestrator:
                     "ambiguity_level": ambiguity.level.value,
                 }
                 return OrchestrationResult(
-                    "BOUNDED", ff, state, None,
-                    tuple(trace[:4]), "clarification_required",
+                    "BOUNDED",
+                    ff,
+                    state,
+                    None,
+                    tuple(trace[:4]),
+                    "clarification_required",
                     retry_count=retry_count,
                     lineage=tuple(lineage),
                     stop_reason="ambiguity_medium",
@@ -183,11 +302,14 @@ class CognitiveOrchestrator:
 
             engine_seed = None if seed is None else seed + retry_count
             engine = MitosEngine(seed=engine_seed)
-            candidates = generate_candidates(
-                current_question,
-                batch_size=self.candidate_batch_size,
-                engine=engine,
-            )
+            if hypothesis is not None:
+                candidates = [self._caller_candidate(hypothesis, current_question)]
+            else:
+                candidates = generate_candidates(
+                    current_question,
+                    batch_size=self.candidate_batch_size,
+                    engine=engine,
+                )
             selection = self.selector.select(candidates, task_mode=task_mode)
             last_selection = selection
 
@@ -234,25 +356,36 @@ class CognitiveOrchestrator:
                     source=f"MITOS:{selected.evidence_status}",
                 )
                 self.pipeline.memory.save_hypothesis(
-                    hypothesis, task_mode=task_mode.value,
-                    depth=retry_count, parent_cycle_id=parent_cycle_id,
+                    hypothesis,
+                    task_mode=task_mode.value,
+                    depth=retry_count,
+                    parent_cycle_id=parent_cycle_id,
                 )
                 state.context_map["candidate_evidence_status"] = selected.evidence_status
                 state.context_map["candidate_score_origin"] = selected.score_origin
                 state = self.pipeline.gor(state, [hypothesis])
                 trace.append("ANLA")
-                state = self.pipeline.anla(state, hypothesis)
+                state = self.pipeline.anla(
+                    state,
+                    hypothesis,
+                    claim_verifier=verifier,
+                )
                 if state.logic_valid or state.ethic_score is not None:
                     trace.append("HİSSET")
                     state = self.pipeline.hisset(state)
                 trace.append("YAP")
-                state = self.pipeline.yap(state, hypothesis)
+                state = self.pipeline.yap(state, hypothesis, group_a, group_b)
+                state = self._apply_agency_gate(state, hypothesis)
                 state.output["candidate_evidence_status"] = selected.evidence_status
-                state.output["factual_status"] = "unverified"
-                last_state = state
-                confidence = float(
-                    state.context_map.get("anla_score") or selected.probability
+                state.output["factual_status"] = (
+                    "verified"
+                    if state.evidence_status == "available"
+                    else "conflicting"
+                    if state.evidence_status == "conflicting"
+                    else "unverified"
                 )
+                last_state = state
+                confidence = float(state.context_map.get("anla_score") or selected.probability)
                 if self._is_success(state):
                     if retry_count and previous_confidence is not None:
                         delta = confidence - previous_confidence
@@ -270,8 +403,12 @@ class CognitiveOrchestrator:
                                 scale_role="frame",
                             )
                             return OrchestrationResult(
-                                "BOUNDED", ff, state, selection,
-                                tuple(trace), last_reason,
+                                "BOUNDED",
+                                ff,
+                                state,
+                                selection,
+                                tuple(trace),
+                                last_reason,
                                 retry_count=retry_count,
                                 lineage=tuple(lineage),
                                 stop_reason=last_reason,
@@ -287,14 +424,14 @@ class CognitiveOrchestrator:
                             depth=retry_count,
                             task_mode=task_mode.value,
                         )
-                    reason = str(
-                        state.output.get("reason")
-                        or state.output.get("reasoning")
-                        or ""
-                    )
+                    reason = str(state.output.get("reason") or state.output.get("reasoning") or "")
                     return OrchestrationResult(
-                        "EXECUTED", ff, state, selection,
-                        tuple(trace), reason,
+                        "EXECUTED",
+                        ff,
+                        state,
+                        selection,
+                        tuple(trace),
+                        reason,
                         retry_count=retry_count,
                         lineage=tuple(lineage),
                         stop_reason="validated",
@@ -323,15 +460,21 @@ class CognitiveOrchestrator:
 
             if retry_count >= self.max_retries:
                 return OrchestrationResult(
-                    "BOUNDED", ff, last_state, last_selection,
-                    tuple(trace), last_reason,
+                    "BOUNDED",
+                    ff,
+                    last_state,
+                    last_selection,
+                    tuple(trace),
+                    last_reason,
                     retry_count=retry_count,
                     lineage=tuple(lineage),
                     stop_reason="retry_budget_exhausted",
                 )
 
             plan = FailureRecoveryController.plan(
-                failure, current_question, attempt=retry_count + 1,
+                failure,
+                current_question,
+                attempt=retry_count + 1,
             )
             retry = FailureRecoveryController.authorize_retry(
                 attempt=retry_count,
@@ -352,8 +495,12 @@ class CognitiveOrchestrator:
                     scale_role="frame",
                 )
                 return OrchestrationResult(
-                    "BOUNDED", ff, last_state, last_selection,
-                    tuple(trace), retry.reason,
+                    "BOUNDED",
+                    ff,
+                    last_state,
+                    last_selection,
+                    tuple(trace),
+                    retry.reason,
                     retry_count=retry_count,
                     lineage=tuple(lineage),
                     stop_reason=retry.reason,

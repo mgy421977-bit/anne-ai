@@ -5,15 +5,18 @@ Order: optional FailFast → DUY → BAK → GÖR → ANLA → HİSSET → YAP.
 
 from __future__ import annotations
 
-from typing import Any, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-from anne.core.anla_score import MAX_ANLA_RETRIES, DEFAULT_TAU, passes_anla
+from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
+from anne.core.anla_score import DEFAULT_TAU, MAX_ANLA_RETRIES, passes_anla
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.ethic_core import EthicCore
-from anne.core.evidence import EvidenceGate
+from anne.core.evidence import EvidenceGate, evidence_status_from_verification
 from anne.core.fail_fast import FailFastGate, FailFastResult
 from anne.core.intent import IntentClassifier
-from anne.core.requirements import CognitiveRequirements
+from anne.core.requirements import CognitiveRequirements, EvidenceStatus
+from anne.core.verification import ClaimVerifier, verify_claim
 from anne.memory.fractal_memory import FractalMemory
 
 
@@ -29,6 +32,8 @@ class AnnePipeline:
         fail_fast_enabled: bool = True,
         fail_fast_gate: FailFastGate | None = None,
         intent_classifier: IntentClassifier | None = None,
+        claim_verifier: ClaimVerifier | None = None,
+        agency_gate: AgencyGate | None = None,
     ) -> None:
         self.memory = memory
         self.ethic = EthicCore()
@@ -38,6 +43,8 @@ class AnnePipeline:
         self.fail_fast_enabled = fail_fast_enabled
         self.fail_fast_gate = fail_fast_gate or FailFastGate(enabled=fail_fast_enabled)
         self.intent_classifier = intent_classifier or IntentClassifier()
+        self.claim_verifier = claim_verifier
+        self.agency_gate = agency_gate or AgencyGate()
 
     def fail_fast(self, raw_input: str) -> FailFastResult:
         """Deterministic pre-gate before cognitive stages."""
@@ -114,19 +121,46 @@ class AnnePipeline:
         state.priority_score = best.probability
         lowest = hypotheses[-1]
         if lowest.probability < 0.3:
-            state.low_prob_preserved.append({
-                "hypothesis": lowest.claim,
-                "probability": lowest.probability,
-                "note": "Low probability – preserved",
-            })
+            state.low_prob_preserved.append(
+                {
+                    "hypothesis": lowest.claim,
+                    "probability": lowest.probability,
+                    "note": "Low probability – preserved",
+                }
+            )
         if state.related_memories:
             scores = [m[1] for m in state.related_memories if m[1]]
             if scores:
-                state.priority_score = state.priority_score * 0.7 + (sum(scores) / len(scores)) * 0.3
+                state.priority_score = (
+                    state.priority_score * 0.7 + (sum(scores) / len(scores)) * 0.3
+                )
         return state
 
-    def anla(self, state: CognitiveState, hypothesis: Hypothesis) -> CognitiveState:
+    def anla(
+        self,
+        state: CognitiveState,
+        hypothesis: Hypothesis,
+        *,
+        claim_verifier: ClaimVerifier | None = None,
+    ) -> CognitiveState:
         """Semantic validation and ethical synthesis, with evidence enforcement."""
+        verifier = claim_verifier if claim_verifier is not None else self.claim_verifier
+        if state.requires_evidence and verifier is not None:
+            claim = (hypothesis.claim or state.raw_input).strip()
+            verification = verify_claim(claim, verifier)
+            mapped_status = evidence_status_from_verification(verification)
+            state.evidence_status = mapped_status.value
+            state.evidence_verified = mapped_status is EvidenceStatus.AVAILABLE
+            state.context_map.update(
+                {
+                    "verification_status": verification.status.value,
+                    "verification_sources": list(verification.sources),
+                    "verification_reason": verification.reason,
+                    "evidence_status": state.evidence_status,
+                    "evidence_verified": state.evidence_verified,
+                }
+            )
+
         if not EvidenceGate.allows_decision(
             required=state.requires_evidence,
             status=state.evidence_status,
@@ -139,7 +173,9 @@ class AnnePipeline:
             return state
 
         state.context_map["evidence_gate"] = "passed"
-        state.context_map["factual_status"] = "unverified"
+        state.context_map["factual_status"] = (
+            "verified" if state.evidence_status == EvidenceStatus.AVAILABLE else "unverified"
+        )
         text = hypothesis.claim or state.raw_input
         semantic_ok = True
         s_anla = 1.0
@@ -199,9 +235,13 @@ class AnnePipeline:
         state.empathy_map = empathy_map
         return state
 
-    def yap(self, state: CognitiveState, hypothesis: Hypothesis,
-            group_a: Optional[Sequence[Consciousness]] = None,
-            group_b: Optional[Sequence[Consciousness]] = None) -> CognitiveState:
+    def yap(
+        self,
+        state: CognitiveState,
+        hypothesis: Hypothesis,
+        group_a: Sequence[Consciousness] | None = None,
+        group_b: Sequence[Consciousness] | None = None,
+    ) -> CognitiveState:
         if state.authority_check_required and not state.authority_check_passed:
             state.action = "HALT"
             state.output = {
@@ -218,7 +258,9 @@ class AnnePipeline:
             state.output = {
                 "verdict": "ABSTAIN",
                 "action": "HALT",
-                "reason": state.context_map.get("evidence_gate_reason", "Evidence requirement was not satisfied."),
+                "reason": state.context_map.get(
+                    "evidence_gate_reason", "Evidence requirement was not satisfied."
+                ),
                 "evidence_status": state.evidence_status,
                 "evidence_verified": state.evidence_verified,
             }
@@ -245,8 +287,14 @@ class AnnePipeline:
                 "verdict": verdict,
                 "action": "SEPARATE_SOLUTIONS",
                 "reason": rationale,
-                "group_a": {"for": [c.id for c in group_a], "recommendation": "Independent process for Group A"},
-                "group_b": {"for": [c.id for c in group_b], "recommendation": "Independent process for Group B"},
+                "group_a": {
+                    "for": [c.id for c in group_a],
+                    "recommendation": "Independent process for Group A",
+                },
+                "group_b": {
+                    "for": [c.id for c in group_b],
+                    "recommendation": "Independent process for Group B",
+                },
                 "note": "No side taken. 1 == 1.",
             }
             for ca in group_a:
@@ -261,7 +309,9 @@ class AnnePipeline:
                 "confidence": hypothesis.probability,
                 "reason": rationale,
                 "reasoning": rationale,
-                "empathy_summary": {cid: v["estimated_impact"] for cid, v in state.empathy_map.items()},
+                "empathy_summary": {
+                    cid: v["estimated_impact"] for cid, v in state.empathy_map.items()
+                },
             }
         else:
             output = {
@@ -273,13 +323,52 @@ class AnnePipeline:
                 "note": "Low-probability alternatives preserved.",
             }
 
-        state.action = verdict
+        verification_status = state.context_map.get("verification_status")
+        authorization = self.agency_gate.authorize(
+            ActionProposal(
+                action=str(output.get("action", "HALT")),
+                target=hypothesis.id,
+                reversible=True,
+                risk=0.0,
+                provenance=(f"hypothesis:{hypothesis.id}",),
+            ),
+            safety_allowed=True,
+            verification_status=(verification_status if state.requires_evidence else None),
+            needs_verification=state.requires_evidence and not state.evidence_verified,
+        )
+        state.context_map["agency_gate"] = authorization.decision.value
+        state.context_map["agency_gate_reason"] = authorization.reason
+        output["agency_decision"] = authorization.decision.value
+        output["agency_reason"] = authorization.reason
+        if authorization.decision is ActionDecision.DENY:
+            output = {
+                "verdict": "ABSTAIN",
+                "action": "HALT",
+                "reason": authorization.reason,
+                "agency_decision": authorization.decision.value,
+                "agency_reason": authorization.reason,
+            }
+        elif authorization.decision is ActionDecision.REVIEW:
+            output = {
+                **output,
+                "verdict": "REVIEW",
+                "action": "REVIEW",
+                "reason": authorization.reason,
+                "human_review_required": True,
+            }
+
+        state.action = str(output.get("verdict", verdict))
         state.output = output
         return state
 
-    def run_with_fail_fast(self, raw_input: str,
-                           consciousnesses: Sequence[Consciousness],
-                           hypothesis: Hypothesis) -> tuple[FailFastResult, CognitiveState | None]:
+    def run_with_fail_fast(
+        self,
+        raw_input: str,
+        consciousnesses: Sequence[Consciousness],
+        hypothesis: Hypothesis,
+        *,
+        claim_verifier: ClaimVerifier | None = None,
+    ) -> tuple[FailFastResult, CognitiveState | None]:
         """Convenience: fail-fast then full stage chain if allowed."""
         ff = self.fail_fast(raw_input)
         if not ff.passed:
@@ -298,7 +387,7 @@ class AnnePipeline:
         state.context_map["fail_fast"] = ff.as_dict()
         state = self.bak(state)
         state = self.gor(state, [hypothesis])
-        state = self.anla(state, hypothesis)
+        state = self.anla(state, hypothesis, claim_verifier=claim_verifier)
         if state.logic_valid or state.ethic_score is not None:
             state = self.hisset(state)
         state = self.yap(state, hypothesis)

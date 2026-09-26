@@ -43,6 +43,13 @@ verification instructions, changes, and remaining limitations.
 - MITOS random fixture scores explicitly retain `SIMULATION` provenance.
 - Retry frames recheck FailFast and retain evidence/authority requirements and lineage.
 - A frozen-response paired replay records false acceptance/rejection and gate latency.
+- The canonical core path is `AnneAgent → AnneRuntime → DecisionLoop → CognitiveOrchestrator`;
+  legacy Mythos integration is routed through the same guarded path.
+- Evidence-required decisions remain blocked until an independent verifier returns
+  a provenance-bearing `VERIFIED` result; memory, MITOS, search results, and model
+  confidence do not become `AVAILABLE` on their own.
+- Action requests without an explicit authority decision remain `REVIEW` and never
+  become `ALLOW` implicitly.
 
 The default conversational mode can still return factually incorrect, explicitly
 unverified text. ANLA is a heuristic filter, not a general fact checker. An optional

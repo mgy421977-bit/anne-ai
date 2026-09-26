@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -30,7 +30,7 @@ class Hypothesis:
     probability: float
     iteration: int = 0
     tested: bool = False
-    result: Optional[str] = None
+    result: str | None = None
     confidence_delta: float = 0.0
     source: str = "placeholder"  # "api" | "placeholder"
 
@@ -61,7 +61,7 @@ class CognitiveState:
     ambiguity: float = 1.0
 
     # Cognitive requirements / evidence boundary
-    evidence_status: str = "not_required"  # available | missing | conflicting | unverified
+    evidence_status: str = "not_required"  # see EvidenceStatus in requirements.py
     evidence_count: int = 0
     evidence_verified: bool = False
     authority_check_required: bool = False
@@ -78,7 +78,7 @@ class CognitiveState:
 
     # ANLA
     logic_valid: bool = False
-    ethic_score: Optional[EthicScore] = None
+    ethic_score: EthicScore | None = None
 
     # HİSSET
     empathy_map: dict[str, Any] = field(default_factory=dict)

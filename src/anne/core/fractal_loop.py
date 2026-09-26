@@ -18,6 +18,7 @@ from anne.core.failure_recovery import (
 from anne.core.gap_fill import GapFiller
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
+from anne.core.verification import ClaimVerifier
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
 from anne.mythos.generate import generate_candidates
@@ -69,6 +70,7 @@ class FractalThinkingLoop:
         selector: CandidateSelector | None = None,
         gap_filler: GapFiller | None = None,
         resource_profile: ResourceProfile | None = None,
+        claim_verifier: ClaimVerifier | None = None,
     ) -> None:
         self.memory = memory
         self.pipeline = pipeline or AnnePipeline(memory=memory)
@@ -80,6 +82,7 @@ class FractalThinkingLoop:
         self.budget = budget or profile_budget
         self.selector = selector or CandidateSelector()
         self.gap_filler = gap_filler or GapFiller()
+        self.claim_verifier = claim_verifier
 
     @staticmethod
     def _gap(text: str) -> bool:
@@ -165,7 +168,12 @@ class FractalThinkingLoop:
                 nodes.append(node)
                 self._record(node, task_mode)
 
-            ff, state = self.pipeline.run_with_fail_fast(current_question, people, current)
+            ff, state = self.pipeline.run_with_fail_fast(
+                current_question,
+                people,
+                current,
+                claim_verifier=self.claim_verifier,
+            )
             if not ff.passed:
                 node.status = "failed"
                 node.stage_reached = "FAIL_FAST"
@@ -273,7 +281,9 @@ class FractalThinkingLoop:
                 question=normalized_next,
             )
             if not retry.allowed or normalized_plan in seen_questions:
-                reason = "oscillation_detected" if normalized_plan in seen_questions else retry.reason
+                reason = (
+                    "oscillation_detected" if normalized_plan in seen_questions else retry.reason
+                )
                 node.status = "stopped"
                 node.stage_reached = "STOP"
                 node.metadata["stop_detail"] = reason
