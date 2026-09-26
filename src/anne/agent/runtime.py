@@ -36,6 +36,7 @@ from anne.semantics.core import frame_from_text
 from anne.semantics.structured import Ontology, parse_structured_frame
 from anne.tools.github_repo import GitHubRepoTool
 from anne.tools.local_files import LocalFilesTool
+from anne.learning.evidence import EvidenceLedgerEntry, EvidenceStatus
 from anne.learning.web_research import WebResearcher
 
 
@@ -265,21 +266,34 @@ omit only when no semantic extraction is useful.
         if not isinstance(query, str) or not query.strip():
             return {"ok": False, "error": "Research query must be a non-empty string."}
         evidence = self.web_researcher.research(query)
+        workspace = getattr(self, "workspace", None)
+        serialized = []
+        for item in evidence:
+            entry = EvidenceLedgerEntry(
+                claim=item.claim,
+                source=item.source,
+                provenance=item.provenance,
+                confidence=item.confidence,
+                status=EvidenceStatus.UNVERIFIED,
+            )
+            serialized.append(
+                {
+                    "source": entry.source,
+                    "claim": entry.claim,
+                    "kind": item.kind,
+                    "provenance": entry.provenance,
+                    "confidence": entry.confidence,
+                    "status": entry.status.value,
+                    "retrieved_at": entry.retrieved_at,
+                }
+            )
+            if workspace is not None:
+                workspace.record_evidence(entry)
         return {
             "ok": True,
             "query": query.strip(),
-            "evidence": [
-                {
-                    "source": item.source,
-                    "claim": item.claim,
-                    "kind": item.kind,
-                    "provenance": item.provenance,
-                    "confidence": item.confidence,
-                    "status": "unverified",
-                }
-                for item in evidence
-            ],
-            "evidence_count": len(evidence),
+            "evidence": serialized,
+            "evidence_count": len(serialized),
             "independent_verification": "not_performed",
         }
 
