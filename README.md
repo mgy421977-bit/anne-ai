@@ -84,5 +84,8 @@ Discipline: **Run. Measure. Verify. Then claim.**
 | [V1 core spec](docs/spec/ANNE-V1-CORE.md) | Target V1.0 definition |
 | [V1 gap analysis](docs/spec/ANNE-V1-GAP-ANALYSIS.md) | Honest implementation gaps |
 | [Vitavolt / VITA](docs/applications/VITAVOLT-VITA.md) | Application boundary only |
+| [Platform README (install, tree, examples)](docs/README-PLATFORM.md) | Continued technical sections from prior README |
 
 ---
+
+For install, architecture tree, examples, citation, and legacy hardening notes, continue in **[docs/README-PLATFORM.md](docs/README-PLATFORM.md)**.
