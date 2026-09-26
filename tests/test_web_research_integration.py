@@ -305,3 +305,44 @@ def test_conflicting_research_verification_blocks_evidence_gate(tmp_path) -> Non
     assert decision.state.context_map["evidence_gate"] == "blocked"
     assert decision.action == "HALT"
     assert decision.verdict == "ABSTAIN"
+
+
+
+def test_evidence_ledger_retains_source_passage(monkeypatch) -> None:
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim="Paris is the capital of France.",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    confidence=0.8,
+                    passage="Independent source passage: Paris is the capital of France.",
+                )
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    agent.workspace = CognitiveWorkspace(task="capital")
+    agent.response_verifier = None
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    result = agent._web_research("capital")
+
+    assert result["evidence"][0]["passage"].startswith("Independent source passage")
+    assert agent.workspace.evidence_ledger[0].passage.startswith("Independent source passage")
+
+
+def test_source_passage_extraction_is_query_near() -> None:
+    html = """
+    <html><body>
+    <p>Unrelated introduction.</p>
+    <p>Paris is the capital of France and has been its political center.</p>
+    <p>Unrelated conclusion.</p>
+    </body></html>
+    """
+
+    passage = WebResearcher._extract_passage(html, "capital France", max_chars=120)
+
+    assert "Paris is the capital of France" in passage
