@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from anne.learning.evidence import EvidenceLedgerEntry
+
 
 @dataclass
 class Goal:
@@ -32,6 +34,7 @@ class CognitiveWorkspace:
     active_hypotheses: list[str] = field(default_factory=list)
     observations: list[str] = field(default_factory=list)
     tool_results: list[dict[str, Any]] = field(default_factory=list)
+    evidence_ledger: list[EvidenceLedgerEntry] = field(default_factory=list)
     semantic_frame: Any = None
     reasoning_audit: dict[str, Any] = field(default_factory=dict)
     uncertainty: float = 1.0
@@ -51,6 +54,10 @@ class CognitiveWorkspace:
 
     def record_tool_result(self, name: str, result: Any, ok: bool) -> None:
         self.tool_results.append({"name": name, "result": result, "ok": ok})
+
+    def record_evidence(self, entry: EvidenceLedgerEntry) -> None:
+        """Retain provenance-bearing evidence without changing its epistemic status."""
+        self.evidence_ledger.append(entry)
 
 
 class HierarchicalPlanner:
