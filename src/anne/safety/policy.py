@@ -81,6 +81,7 @@ class ToolPolicy:
             "github_search",
             "local_list",
             "local_read",
+            "web_research",
         }
         self.allowed_tools = set(defaults if allowed_tools is None else allowed_tools)
         read_only = ToolMetadata(
