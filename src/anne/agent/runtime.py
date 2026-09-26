@@ -18,6 +18,10 @@ from anne.core.cognitive_runtime import (
 )
 from anne.core.decision_loop import DecisionLoop
 from anne.core.verification import ClaimVerifier, FactualStatus, verify_claim
+from anne.language_learning import LanguageLearningEngine, LanguageLearningMission, LearningSource
+from anne.research.evidence_package import ResearchEvidencePackage
+from anne.research.general import GeneralResearchEngine
+from anne.research.web_search import WebSearchProvider
 from anne.memory.local_memory import LocalMemory
 from anne.multi_agent import (
     AgentRole,
@@ -155,6 +159,8 @@ omit only when no semantic extraction is useful.
         response_verifier: ClaimVerifier | None = None,
         require_verified_response: bool = False,
         decision_loop: DecisionLoop | None = None,
+        research_provider: WebSearchProvider | None = None,
+        language_engine: LanguageLearningEngine | None = None,
     ) -> None:
         self.model = model
         self.response_verifier = response_verifier
@@ -176,6 +182,12 @@ omit only when no semantic extraction is useful.
             max_rounds=2,
         )
         self.decision_loop = decision_loop if decision_loop is not None else DecisionLoop()
+        self.research_engine = (
+            GeneralResearchEngine(research_provider)
+            if research_provider is not None
+            else None
+        )
+        self.language_engine = language_engine or LanguageLearningEngine()
         self.workspace: CognitiveWorkspace | None = None
         self.tools: dict[str, Callable[..., Any]] = {
             "local_list": self.local_tools.list,
@@ -375,7 +387,98 @@ omit only when no semantic extraction is useful.
             tools_used,
         )
 
+    @staticmethod
+    def _needs_research(user_input: str) -> bool:
+        lowered = user_input.casefold()
+        return any(
+            marker in lowered
+            for marker in (
+                "araştır", "research", "kaynak", "güncel", "latest",
+                "today", "mevzuat", "fiyat", "hangi", "how", "why",
+            )
+        )
+
+    @staticmethod
+    def _language_request(user_input: str) -> tuple[str, str] | None:
+        lowered = user_input.casefold()
+        if "türkçe öğren" in lowered or "learn turkish" in lowered:
+            return "Türkçe", "tr"
+        if "ingilizce öğren" in lowered or "learn english" in lowered:
+            return "English", "en"
+        return None
+
+    def _research_candidate_package(self, user_input: str) -> ResearchEvidencePackage | None:
+        if self.research_engine is None or not self._needs_research(user_input):
+            return None
+        mission = self.decision_loop.make_research_mission(
+            user_input,
+            scope="general",
+            max_searches=5,
+            max_results_per_search=10,
+        )
+        report = self.research_engine.research(mission)
+        return ResearchEvidencePackage.from_report(report)
+
+    def _language_learning_gate(self, user_input: str) -> AgentResult | None:
+        requested = self._language_request(user_input)
+        if requested is None:
+            return None
+        language, code = requested
+        profile = self.language_engine.profile(code)
+        if not profile or not profile.authorized:
+            return AgentResult(
+                "ANNE cannot start autonomous research-based language learning without explicit authorization.",
+                "No language-learning state was changed.",
+                0.2,
+                None,
+                [],
+                {"mode": "LANGUAGE_LEARNING", "authorization_required": True},
+                {"status": "unverified", "response_withheld": True},
+            )
+        authorization = self.language_engine.authorization(code)
+        mission = LanguageLearningMission(
+            language=language,
+            code=code,
+            objective=user_input,
+            source=LearningSource.RESEARCH,
+            authorization_id=authorization.authorization_id if authorization else None,
+        )
+        self.language_engine.start_mission(mission)
+        package = self._research_candidate_package(user_input)
+        if package is None:
+            return AgentResult(
+                "ANNE is authorized to learn this language, but no research provider is connected.",
+                "Learning remains unchanged.",
+                0.3,
+                None,
+                [],
+                {"mode": "LANGUAGE_LEARNING", "research_provider": False},
+                {"status": "unverified", "response_withheld": True},
+            )
+        return AgentResult(
+            "ANNE started a bounded language-learning research mission; the collected material remains unverified until independent verification.",
+            "Language-learning research was started under explicit authorization.",
+            0.3,
+            None,
+            [],
+            {
+                "mode": "LANGUAGE_LEARNING",
+                "mission_id": package.mission_id,
+                "evidence_status": package.evidence_status,
+            },
+            {
+                "status": package.factual_status.value,
+                "response_withheld": True,
+            },
+        )
+
     def run(self, user_input: str) -> AgentResult:
+        language_result = self._language_learning_gate(user_input)
+        if language_result is not None:
+            return language_result
+
+        research_package = self._research_candidate_package(user_input)
+
         self.workspace = CognitiveWorkspace(task=user_input)
         self.workspace.semantic_frame = frame_from_text(user_input)
         self.workspace.active_hypotheses.append("User input is context, not verified evidence")
@@ -385,7 +488,11 @@ omit only when no semantic extraction is useful.
 
         # The deterministic decision loop is a mandatory preflight.  It does
         # not replace model reasoning; it controls whether reasoning proceeds.
-        preflight = self.decision_loop.run(user_input, probability=0.7)
+        preflight = self.decision_loop.run(
+            user_input,
+            probability=0.7,
+            evidence_package=research_package,
+        )
         if preflight.status == "ABORTED":
             response = preflight.output.get("reason", "Request blocked by ANNE safety gates.")
             learning = "A request was blocked during deterministic preflight."
@@ -403,6 +510,18 @@ omit only when no semantic extraction is useful.
 
         self.workspace.transition("GÖR")
         memory_context = self.memory.context(limit=8)
+        if research_package is not None:
+            memory_context += (
+                "\n\nRESEARCH EVIDENCE CANDIDATES (UNVERIFIED):\n"
+                + json.dumps(
+                    {
+                        "mission_id": research_package.mission_id,
+                        "claims": research_package.claims,
+                        "sources": research_package.sources,
+                    },
+                    ensure_ascii=False,
+                )
+            )
         if isinstance(self.model, OpenRouterProvider):
             raw, tools_used = self._openrouter_run(
                 user_input, memory_context
