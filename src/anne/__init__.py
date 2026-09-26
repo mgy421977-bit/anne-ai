@@ -13,6 +13,15 @@ from anne.core.fail_fast import FailFastGate
 from anne.core.pipeline import AnnePipeline
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.engine import MythosEngine
+from anne.language_learning import (
+    LanguageLearningEngine,
+    LanguageLearningMission,
+    LanguageObservation,
+    LanguageProfile,
+    LanguageStatus,
+    LearningAuthorization,
+    LearningSource,
+)
 
 __version__ = "0.1.0"
 __all__ = [
@@ -28,4 +37,11 @@ __all__ = [
     "FailFastGate",
     "FractalMemory",
     "MythosEngine",
+    "LanguageLearningEngine",
+    "LanguageLearningMission",
+    "LanguageObservation",
+    "LanguageProfile",
+    "LanguageStatus",
+    "LearningAuthorization",
+    "LearningSource",
 ]
