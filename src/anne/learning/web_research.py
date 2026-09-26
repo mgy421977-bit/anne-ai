@@ -82,6 +82,28 @@ class WebResearcher:
     def _get_json(cls, url: str) -> dict:
         return json.loads(cls._get_text(url))
 
+    @classmethod
+    def _extract_passage(cls, html: str, query: str, max_chars: int = 1200) -> str:
+        """Extract a bounded, query-near passage from a fetched source page."""
+        text = cls._clean_html(html)
+        if not text:
+            return ""
+        terms = cls._tokens(query)
+        if not terms:
+            return text[:max_chars]
+        normalized = cls._normalize(text)
+        positions = [
+            normalized.find(cls._normalize(term))
+            for term in terms
+            if cls._normalize(term) in normalized
+        ]
+        if not positions:
+            return text[:max_chars]
+        center = min(positions)
+        ratio = len(text) / max(1, len(normalized))
+        start = max(0, int(center * ratio) - max_chars // 3)
+        return text[start:start + max_chars].strip()
+
     @staticmethod
     def _clean_html(text: str) -> str:
         text = re.sub(r"<script\b[^>]*>.*?</script>", " ", text, flags=re.I | re.S)
@@ -203,7 +225,7 @@ class WebResearcher:
         if not extract or not self._is_relevant(query, extract, title):
             return None
         score = self._relevance(query, extract, title)
-        return EvidenceItem(source=f"Wikipedia ({language})", claim=f"{title}: {extract[:2200]}", kind="web", provenance=url, confidence=min(0.95, 0.62 + score * 0.33))
+        return EvidenceItem(source=f"Wikipedia ({language})", claim=f"{title}: {extract[:2200]}", kind="web", provenance=url, confidence=min(0.95, 0.62 + score * 0.33), passage=extract[:1200])
 
     def _duckduckgo_instant(self, query: str) -> EvidenceItem | None:
         encoded = urllib.parse.quote(query)
@@ -225,8 +247,14 @@ class WebResearcher:
             claim = f"{title}: {snippet}" if snippet else title
             if not self._is_relevant(query, claim, title):
                 continue
+            passage = snippet
+            if href:
+                try:
+                    passage = self._extract_passage(self._get_text(href), query) or snippet
+                except Exception:
+                    passage = snippet
             score = self._relevance(query, claim, title)
-            items.append(EvidenceItem(source="DuckDuckGo Web Search", claim=claim[:2200], kind="web", provenance=href or url, confidence=min(0.84, 0.44 + score * 0.40)))
+            items.append(EvidenceItem(source="DuckDuckGo Web Search", claim=claim[:2200], kind="web", provenance=href or url, confidence=min(0.84, 0.44 + score * 0.40), passage=passage[:1200]))
         return items
 
     def research(self, query: str) -> list[EvidenceItem]:
