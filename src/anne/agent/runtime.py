@@ -588,7 +588,22 @@ omit only when no semantic extraction is useful.
             evidence=self.workspace.semantic_frame.evidence,
             assumptions=self.workspace.active_hypotheses,
         ).__dict__
-        review_data = {**review.__dict__, "reasoning_audit": self.workspace.reasoning_audit}
+        review_data = {
+            **review.__dict__,
+            "reasoning_audit": self.workspace.reasoning_audit,
+            "evidence_ledger": [
+                {
+                    "claim": entry.claim,
+                    "source": entry.source,
+                    "provenance": entry.provenance,
+                    "confidence": entry.confidence,
+                    "status": entry.status.value,
+                    "passage": entry.passage,
+                    "retrieved_at": entry.retrieved_at,
+                }
+                for entry in self.workspace.evidence_ledger
+            ],
+        }
         factual_data = {
             **factual.as_dict(),
             "heuristic_passed": verification.status != "ABORTED",
