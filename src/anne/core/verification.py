@@ -91,6 +91,19 @@ class SemanticSupportEvaluator:
             negated.append(normalized_claim.replace(" do ", " do not ", 1))
         if " can " in normalized_claim:
             negated.append(normalized_claim.replace(" can ", " cannot ", 1))
+        # Third-person singular predicates need an explicit "does not" form.
+        # Keep the morphology intentionally small and deterministic.
+        simple_subject = re.fullmatch(r"(.+?) ([a-z]+s) (.+)", normalized_claim)
+        if simple_subject:
+            subject, verb, rest = simple_subject.groups()
+            if verb.endswith("ies") and len(verb) > 3:
+                base_verb = verb[:-3] + "y"
+            elif verb.endswith("es") and len(verb) > 2:
+                base_verb = verb[:-2]
+            else:
+                base_verb = verb[:-1]
+            if base_verb:
+                negated.append(f"{subject} does not {base_verb} {rest}")
         if any(candidate in normalized_passage for candidate in negated):
             return SupportStatus.CONTRADICTS
         return SupportStatus.UNCLEAR
