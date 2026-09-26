@@ -65,11 +65,9 @@ class SemanticSupportEvaluator:
                 f"{city} is the capital city of {country}",
                 f"{city} city and capital of {country}",
                 f"{city} is the capital of {country}",
-                f"{country}s capital city is {city}",
-                f"{country}s capital is {city}",
-                f"{country}'s capital city is {city}",
-                f"{country}'s capital is {city}",
-                f"{city} is {country}'s capital",
+                f"{country} s capital city is {city}",
+                f"{country} s capital is {city}",
+                f"{city} is {country} s capital",
             )
             contradict_variants = tuple(f"{variant} not" for variant in support_variants) + (
                 f"{city} is not the capital of {country}",
