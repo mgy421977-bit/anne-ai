@@ -126,6 +126,7 @@ class CognitiveOrchestrator:
             provenance=(f"hypothesis:{hypothesis.id}",),
             authority_required=True,
             evidence_required=state.requires_evidence,
+            side_effect=False,
             human_review_required=True,
         )
         result = state.output

@@ -48,6 +48,7 @@ def test_anne_real_stack_verified_candidate_can_execute() -> None:
         reversible=True,
         risk=0.10,
         provenance=verification.sources + (candidate.id,),
+        side_effect=False,
     )
     authorization = AgencyGate().authorize(
         proposal,
@@ -91,6 +92,7 @@ def test_anne_real_stack_blocks_unverified_candidate() -> None:
         reversible=True,
         risk=0.10,
         provenance=(candidate.id,),
+        side_effect=False,
     )
     authorization = AgencyGate().authorize(
         proposal,

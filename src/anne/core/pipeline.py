@@ -338,6 +338,7 @@ class AnnePipeline:
                 provenance=(f"hypothesis:{hypothesis.id}",),
                 authority_required=state.authority_check_required,
                 evidence_required=state.requires_evidence,
+                side_effect=False,
                 human_review_required=state.authority_check_required
                 and not state.authority_check_passed,
             ),

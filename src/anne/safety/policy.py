@@ -55,8 +55,20 @@ class ToolDecision:
     reversible: bool | None = None
     authority_required: bool | None = None
     evidence_required: bool | None = None
-    side_effect: str | None = None
+    side_effect: bool | None = None
     human_review_required: bool | None = None
+
+
+@dataclass(frozen=True)
+class ToolMetadata:
+    """Explicit policy facts for one registered tool."""
+
+    risk: float | None
+    reversible: bool | None
+    authority_required: bool | None
+    evidence_required: bool | None
+    side_effect: bool | None
+    human_review_required: bool | None
 
 
 class ToolPolicy:
@@ -71,6 +83,17 @@ class ToolPolicy:
             "local_read",
         }
         self.allowed_tools = set(defaults if allowed_tools is None else allowed_tools)
+        read_only = ToolMetadata(
+            risk=0.10,
+            reversible=True,
+            authority_required=False,
+            evidence_required=False,
+            side_effect=False,
+            human_review_required=False,
+        )
+        self.tool_metadata: dict[str, ToolMetadata] = {
+            name: read_only for name in defaults
+        }
 
     def authorize(self, name: str, arguments: dict[str, Any] | None = None) -> ToolDecision:
         if name not in self.allowed_tools:
@@ -81,7 +104,23 @@ class ToolPolicy:
                 token in value.lower() for token in suspicious
             ):
                 return ToolDecision(False, "Suspicious tool argument blocked")
-        return ToolDecision(True, "allowlisted read operation")
+        metadata = self.tool_metadata.get(name, ToolMetadata(None, None, None, None, None, None))
+        return ToolDecision(
+            True,
+            "allowlisted read operation",
+            risk=metadata.risk,
+            reversible=metadata.reversible,
+            authority_required=metadata.authority_required,
+            evidence_required=metadata.evidence_required,
+            side_effect=metadata.side_effect,
+            human_review_required=metadata.human_review_required,
+        )
 
 
-__all__ = ["ToolDecision", "ToolPolicy", "redact_data", "redact_sensitive"]
+__all__ = [
+    "ToolDecision",
+    "ToolMetadata",
+    "ToolPolicy",
+    "redact_data",
+    "redact_sensitive",
+]

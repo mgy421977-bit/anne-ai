@@ -50,6 +50,10 @@ verification instructions, changes, and remaining limitations.
   confidence do not become `AVAILABLE` on their own.
 - Action requests without an explicit authority decision remain `REVIEW` and never
   become `ALLOW` implicitly.
+- Tool execution receives explicit metadata from `ToolPolicy`—risk, reversibility,
+  authority, evidence, human-review, and side-effect status—before reaching
+  `AgencyGate`; unknown metadata remains fail-closed and `side_effect` is a real
+  AgencyGate decision input, not display-only context.
 
 The default conversational mode can still return factually incorrect, explicitly
 unverified text. ANLA is a heuristic filter, not a general fact checker. An optional

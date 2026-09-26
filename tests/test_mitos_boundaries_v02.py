@@ -41,7 +41,9 @@ def test_agency_gate_requires_provenance_and_reviews_risky_actions():
     missing = gate.authorize(ActionProposal("x", risk=0.1), safety_allowed=True)
     assert missing.decision is ActionDecision.DENY
     risky = gate.authorize(
-        ActionProposal("x", risk=0.9, reversible=True, provenance=("e1",)),
+        ActionProposal(
+            "x", risk=0.9, reversible=True, provenance=("e1",), side_effect=False
+        ),
         safety_allowed=True,
     )
     assert risky.decision is ActionDecision.REVIEW

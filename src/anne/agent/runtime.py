@@ -48,6 +48,36 @@ class AgentResult:
     verification: dict[str, Any] = field(default_factory=dict)
 
 
+class _GuardedToolRegistry:
+    """Registry whose public callables cannot execute outside the agent gate."""
+
+    def __init__(self) -> None:
+        self._tools: dict[str, Callable[..., Any]] = {}
+
+    def __setitem__(self, name: str, tool: Callable[..., Any]) -> None:
+        self._tools[name] = tool
+
+    def update(self, tools: dict[str, Callable[..., Any]]) -> None:
+        self._tools.update(tools)
+
+    def get_for_execution(self, name: str) -> Callable[..., Any] | None:
+        return self._tools.get(name)
+
+    def __getitem__(self, name: str) -> Callable[..., Any]:
+        if name not in self._tools:
+            raise KeyError(name)
+
+        def blocked_direct_call(**arguments: Any) -> dict[str, Any]:
+            del arguments
+            return {
+                "ok": False,
+                "error": "Direct tool calls require AnneAgent._execute_tool authorization",
+                "agency_decision": ActionDecision.DENY.value,
+            }
+
+        return blocked_direct_call
+
+
 class AnneAgent:
     """Coordinates reasoning models, safe tools, and persistent GitHub memory."""
 
@@ -179,10 +209,13 @@ omit only when no semantic extraction is useful.
         self.decision_loop = decision_loop if decision_loop is not None else DecisionLoop()
         self.runtime = AnneRuntime(decision_loop=self.decision_loop)
         self.workspace: CognitiveWorkspace | None = None
-        self.tools: dict[str, Callable[..., Any]] = {
-            "local_list": self.local_tools.list,
-            "local_read": self.local_tools.read,
-        }
+        self.tools = _GuardedToolRegistry()
+        self.tools.update(
+            {
+                "local_list": self.local_tools.list,
+                "local_read": self.local_tools.read,
+            }
+        )
         if isinstance(memory, GitHubMemory):
             self.github_tools = GitHubRepoTool(
                 memory.token, memory.repository, memory.branch
@@ -210,7 +243,7 @@ omit only when no semantic extraction is useful.
         decision = self.tool_policy.authorize(name, arguments)
         if not decision.allowed:
             return {"ok": False, "error": decision.reason}
-        tool = self.tools.get(name)
+        tool = self.tools.get_for_execution(name)
         if tool is None:
             return {"ok": False, "error": f"Unknown tool: {name}"}
         authorization = self.agency_gate.authorize(

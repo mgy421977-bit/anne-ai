@@ -17,7 +17,7 @@ from anne.core.verification import (
 from anne.memory.fractal_memory import FractalMemory
 from anne.memory.local_memory import LocalMemory
 from anne.providers.local import LocalProvider
-from anne.safety.policy import ToolDecision
+from anne.safety.policy import ToolDecision, ToolPolicy
 
 
 def test_verified_transition_requires_provenance() -> None:
@@ -123,10 +123,15 @@ def test_agent_tool_deny_and_review_never_execute(tmp_path, monkeypatch) -> None
         assert not calls
 
 
-def test_agent_tool_unknown_context_fails_closed(tmp_path) -> None:
+def test_agent_tool_unknown_context_fails_closed(tmp_path, monkeypatch) -> None:
     agent = _tool_agent(tmp_path)
     calls: list[dict[str, str]] = []
     agent.tools["local_read"] = lambda **arguments: calls.append(arguments) or "content"
+    monkeypatch.setattr(
+        agent.tool_policy,
+        "authorize",
+        lambda name, arguments: ToolDecision(True, "unknown test policy"),
+    )
     result = agent._execute_tool("local_read", {"path": "sample.txt"})
 
     assert result["ok"] is False
@@ -148,7 +153,7 @@ def test_agent_tool_uses_explicit_policy_context_before_allow(tmp_path, monkeypa
             reversible=True,
             authority_required=False,
             evidence_required=False,
-            side_effect="none",
+            side_effect=False,
             human_review_required=False,
         ),
     )
@@ -170,10 +175,79 @@ def test_agent_tool_proposal_has_explicit_safe_context(tmp_path) -> None:
     agent.agency_gate.authorize = capture  # type: ignore[method-assign]
     agent.tools["local_read"] = lambda **arguments: "content"
     result = agent._execute_tool("local_read", {"path": "sample.txt"})
-    assert not result["ok"]
-    assert captured[0].risk is None
-    assert captured[0].reversible is None
-    assert captured[0].evidence_required is None
+    assert result["ok"]
+    assert captured[0].risk == 0.10
+    assert captured[0].reversible is True
+    assert captured[0].authority_required is False
+    assert captured[0].evidence_required is False
+    assert captured[0].side_effect is False
+    assert captured[0].human_review_required is False
+
+
+def test_tool_policy_read_tools_have_explicit_metadata() -> None:
+    policy = ToolPolicy()
+    for name in policy.allowed_tools:
+        decision = policy.authorize(name, {})
+        assert decision.allowed
+        assert decision.risk == 0.10
+        assert decision.reversible is True
+        assert decision.authority_required is False
+        assert decision.evidence_required is False
+        assert decision.side_effect is False
+        assert decision.human_review_required is False
+
+
+def test_unknown_registered_tool_metadata_stays_unknown() -> None:
+    policy = ToolPolicy({"custom_tool"})
+    decision = policy.authorize("custom_tool", {})
+    assert decision.allowed
+    assert decision.risk is None
+    assert decision.side_effect is None
+
+
+def test_direct_tools_access_cannot_execute_tool(tmp_path) -> None:
+    agent = _tool_agent(tmp_path)
+    calls: list[dict[str, str]] = []
+    agent.tools["local_read"] = lambda **arguments: calls.append(arguments) or "content"
+
+    result = agent.tools["local_read"](path="sample.txt")
+
+    assert result["ok"] is False
+    assert result["agency_decision"] == ActionDecision.DENY.value
+    assert not calls
+
+
+def test_policy_metadata_propagates_exactly_to_action_proposal(tmp_path, monkeypatch) -> None:
+    agent = _tool_agent(tmp_path)
+    metadata = ToolDecision(
+        True,
+        "custom policy",
+        risk=0.35,
+        reversible=False,
+        authority_required=True,
+        evidence_required=True,
+        side_effect=True,
+        human_review_required=True,
+    )
+    captured: list[ActionProposal] = []
+    monkeypatch.setattr(agent.tool_policy, "authorize", lambda name, arguments: metadata)
+    monkeypatch.setattr(
+        agent.agency_gate,
+        "authorize",
+        lambda proposal, **kwargs: captured.append(proposal)
+        or Authorization(ActionDecision.REVIEW, "review"),
+    )
+    agent.tools["local_read"] = lambda **arguments: "must not run"
+
+    result = agent._execute_tool("local_read", {"path": "sample.txt"})
+
+    assert result["ok"] is False
+    assert captured[0].risk == metadata.risk
+    assert captured[0].reversible == metadata.reversible
+    assert captured[0].authority_required == metadata.authority_required
+    assert captured[0].evidence_required == metadata.evidence_required
+    assert captured[0].side_effect == metadata.side_effect
+    assert captured[0].human_review_required == metadata.human_review_required
 
 
 def test_only_anne_runtime_is_top_level_public_entry() -> None:
@@ -194,6 +268,64 @@ def test_unknown_risk_and_reversibility_fail_closed() -> None:
         ActionProposal("x", risk=0.1, reversible=None, provenance=("source",)),
         safety_allowed=True,
     ).decision is ActionDecision.DENY
+
+
+def test_unknown_agency_metadata_never_allows() -> None:
+    fields = {
+        "authority_required": None,
+        "evidence_required": None,
+        "human_review_required": None,
+        "side_effect": None,
+    }
+    for field, value in fields.items():
+        kwargs = {
+            "risk": 0.1,
+            "reversible": True,
+            "provenance": ("source",),
+            "side_effect": False,
+            "authority_required": False,
+            "evidence_required": False,
+            "human_review_required": False,
+        }
+        kwargs[field] = value
+        result = AgencyGate().authorize(
+            ActionProposal("x", **kwargs), safety_allowed=True
+        )
+        assert result.decision is not ActionDecision.ALLOW
+
+
+def test_side_effect_false_with_explicit_metadata_allows() -> None:
+    result = AgencyGate().authorize(
+        ActionProposal(
+            "read",
+            risk=0.1,
+            reversible=True,
+            provenance=("source",),
+            authority_required=False,
+            evidence_required=False,
+            side_effect=False,
+            human_review_required=False,
+        ),
+        safety_allowed=True,
+    )
+    assert result.decision is ActionDecision.ALLOW
+
+
+def test_side_effect_true_requires_explicit_authority_review() -> None:
+    result = AgencyGate().authorize(
+        ActionProposal(
+            "write",
+            risk=0.1,
+            reversible=True,
+            provenance=("source",),
+            authority_required=True,
+            evidence_required=False,
+            side_effect=True,
+            human_review_required=False,
+        ),
+        safety_allowed=True,
+    )
+    assert result.decision is ActionDecision.REVIEW
 
 
 def test_retry_preserves_evidence_requirement_and_unverified_status(tmp_path) -> None:

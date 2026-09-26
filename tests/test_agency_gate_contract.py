@@ -9,6 +9,7 @@ def proposal() -> ActionProposal:
         risk=0.10,
         reversible=True,
         provenance=("source_A",),
+        side_effect=False,
     )
 
 

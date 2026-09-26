@@ -21,7 +21,7 @@ class ActionProposal:
     provenance: tuple[str, ...] = ()
     authority_required: bool | None = False
     evidence_required: bool | None = False
-    side_effect: str | None = None
+    side_effect: bool | None = None
     human_review_required: bool | None = False
 
 
@@ -72,6 +72,8 @@ class AgencyGate:
             return Authorization(ActionDecision.DENY, "unknown evidence requirement")
         if proposal.human_review_required is None:
             return Authorization(ActionDecision.REVIEW, "unknown human review requirement")
+        if proposal.side_effect is None:
+            return Authorization(ActionDecision.DENY, "unknown side-effect metadata")
         if not safety_allowed:
             return Authorization(ActionDecision.DENY, "safety policy rejected action")
         if (
@@ -90,6 +92,11 @@ class AgencyGate:
             return Authorization(ActionDecision.DENY, "missing provenance")
         if not proposal.reversible:
             return Authorization(ActionDecision.REVIEW, "irreversible action requires review")
+        if proposal.side_effect and proposal.authority_required:
+            return Authorization(
+                ActionDecision.REVIEW,
+                "side-effect action requires explicit authority review",
+            )
         if proposal.risk >= self.review_risk_threshold:
             return Authorization(ActionDecision.REVIEW, "risk exceeds review threshold")
         if proposal.human_review_required or human_review_required:
