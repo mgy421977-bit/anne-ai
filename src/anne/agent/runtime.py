@@ -276,6 +276,7 @@ omit only when no semantic extraction is useful.
                 provenance=item.provenance,
                 confidence=item.confidence,
                 status=EvidenceStatus.UNVERIFIED,
+                passage=item.passage,
             )
             verification = verify_claim(entry.claim, getattr(self, "response_verifier", None))
             if verification.status is not FactualStatus.UNVERIFIED:
