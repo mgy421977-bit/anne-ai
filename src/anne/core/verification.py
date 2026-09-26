@@ -44,7 +44,7 @@ class SemanticSupportEvaluator:
 
     @staticmethod
     def _normalize(value: str) -> str:
-        value = re.sub(r"[^\\w]+", " ", value.casefold(), flags=re.UNICODE)
+        value = re.sub(r"[^\w]+", " ", value.casefold(), flags=re.UNICODE)
         return " ".join(value.split())
 
     def classify(self, claim: str, passage: str, provenance: str) -> SupportStatus:
