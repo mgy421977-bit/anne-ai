@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import weakref
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -51,20 +52,26 @@ class AgentResult:
 class _GuardedToolRegistry:
     """Registry whose public callables cannot execute outside the agent gate."""
 
+    __slots__ = ("__weakref__",)
+
     def __init__(self) -> None:
-        self._tools: dict[str, Callable[..., Any]] = {}
+        _REGISTRY_TOOLS[self] = {}
 
     def __setitem__(self, name: str, tool: Callable[..., Any]) -> None:
-        self._tools[name] = tool
+        _REGISTRY_TOOLS[self][name] = tool
 
     def update(self, tools: dict[str, Callable[..., Any]]) -> None:
-        self._tools.update(tools)
+        _REGISTRY_TOOLS[self].update(tools)
 
-    def get_for_execution(self, name: str) -> Callable[..., Any] | None:
-        return self._tools.get(name)
+    def get_for_execution(
+        self, name: str, capability: object | None = None
+    ) -> Callable[..., Any] | None:
+        if capability is not _TOOL_EXECUTION_CAPABILITY:
+            return None
+        return _REGISTRY_TOOLS[self].get(name)
 
     def __getitem__(self, name: str) -> Callable[..., Any]:
-        if name not in self._tools:
+        if name not in _REGISTRY_TOOLS[self]:
             raise KeyError(name)
 
         def blocked_direct_call(**arguments: Any) -> dict[str, Any]:
@@ -76,6 +83,12 @@ class _GuardedToolRegistry:
             }
 
         return blocked_direct_call
+
+
+_TOOL_EXECUTION_CAPABILITY = object()
+_REGISTRY_TOOLS: weakref.WeakKeyDictionary[
+    _GuardedToolRegistry, dict[str, Callable[..., Any]]
+] = weakref.WeakKeyDictionary()
 
 
 class AnneAgent:
@@ -243,7 +256,7 @@ omit only when no semantic extraction is useful.
         decision = self.tool_policy.authorize(name, arguments)
         if not decision.allowed:
             return {"ok": False, "error": decision.reason}
-        tool = self.tools.get_for_execution(name)
+        tool = self.tools.get_for_execution(name, _TOOL_EXECUTION_CAPABILITY)
         if tool is None:
             return {"ok": False, "error": f"Unknown tool: {name}"}
         authorization = self.agency_gate.authorize(

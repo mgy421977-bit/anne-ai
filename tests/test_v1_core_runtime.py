@@ -217,6 +217,27 @@ def test_direct_tools_access_cannot_execute_tool(tmp_path) -> None:
     assert not calls
 
 
+def test_public_get_for_execution_cannot_obtain_real_callable(tmp_path) -> None:
+    agent = _tool_agent(tmp_path)
+    calls: list[dict[str, str]] = []
+    agent.tools["local_read"] = lambda **arguments: calls.append(arguments) or "content"
+
+    tool = agent.tools.get_for_execution("local_read")
+
+    assert tool is None
+    assert not calls
+
+
+def test_registry_has_no_public_callable_iteration_or_storage_path(tmp_path) -> None:
+    agent = _tool_agent(tmp_path)
+    registry = agent.tools
+
+    assert not hasattr(registry, "values")
+    assert not hasattr(registry, "items")
+    assert not hasattr(registry, "_tools")
+    assert not hasattr(registry, "__dict__")
+
+
 def test_policy_metadata_propagates_exactly_to_action_proposal(tmp_path, monkeypatch) -> None:
     agent = _tool_agent(tmp_path)
     metadata = ToolDecision(
