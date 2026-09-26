@@ -182,7 +182,7 @@ def test_research_evidence_alone_does_not_unlock_pipeline(tmp_path) -> None:
     from anne.memory.fractal_memory import FractalMemory
 
     loop = DecisionLoop(memory=FractalMemory(tmp_path / "anne.db"))
-    result = loop.run("The capital of France is Paris.")
+    result = loop.run("What is the capital of France?")
 
     assert result.state is not None
     assert result.state.evidence_status != EvidenceStatus.AVAILABLE.value
@@ -191,8 +191,6 @@ def test_research_evidence_alone_does_not_unlock_pipeline(tmp_path) -> None:
 
 def test_agent_exposes_end_to_end_evidence_trace(monkeypatch) -> None:
     from anne.core.verification import ReferenceClaim, ReferenceVerifier
-    from anne.memory.local_memory import LocalMemory
-
     class FakeResearcher:
         def research(self, query):
             return [
