@@ -36,6 +36,7 @@ from anne.semantics.core import frame_from_text
 from anne.semantics.structured import Ontology, parse_structured_frame
 from anne.tools.github_repo import GitHubRepoTool
 from anne.tools.local_files import LocalFilesTool
+from anne.learning.web_research import WebResearcher
 
 
 @dataclass
@@ -188,6 +189,22 @@ omit only when no semantic extraction is useful.
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "web_research",
+                "description": (
+                    "Research a question using bounded public web sources. "
+                    "Returns provenance-bearing evidence items; results are "
+                    "evidence, not automatically verified truth."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}},
+                    "required": ["query"],
+                },
+            },
+        },
     ]
 
     def __init__(
@@ -222,11 +239,13 @@ omit only when no semantic extraction is useful.
         self.decision_loop = decision_loop if decision_loop is not None else DecisionLoop()
         self.runtime = AnneRuntime(decision_loop=self.decision_loop)
         self.workspace: CognitiveWorkspace | None = None
+        self.web_researcher = WebResearcher()
         self.tools = _GuardedToolRegistry()
         self.tools.update(
             {
                 "local_list": self.local_tools.list,
                 "local_read": self.local_tools.read,
+                "web_research": self._web_research,
             }
         )
         if isinstance(memory, GitHubMemory):
@@ -240,6 +259,29 @@ omit only when no semantic extraction is useful.
                     "github_search": self.github_tools.search_code,
                 }
             )
+
+    def _web_research(self, query: str) -> dict[str, Any]:
+        """Run bounded public-web retrieval and preserve source provenance."""
+        if not isinstance(query, str) or not query.strip():
+            return {"ok": False, "error": "Research query must be a non-empty string."}
+        evidence = self.web_researcher.research(query)
+        return {
+            "ok": True,
+            "query": query.strip(),
+            "evidence": [
+                {
+                    "source": item.source,
+                    "claim": item.claim,
+                    "kind": item.kind,
+                    "provenance": item.provenance,
+                    "confidence": item.confidence,
+                    "status": "unverified",
+                }
+                for item in evidence
+            ],
+            "evidence_count": len(evidence),
+            "independent_verification": "not_performed",
+        }
 
     def collaborate(self, task: str, workers: dict[str, Worker]) -> CollaborationResult:
         """Run bounded specialist collaboration without erasing dissent."""
