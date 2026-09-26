@@ -179,6 +179,17 @@ class WebResearcher:
         if normalized != clean.lower():
             variants.append(normalized)
         lowered = clean.lower()
+        temporal_stripped = re.sub(
+            r"\s+(?:in|as of|on|during)\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}\b",
+            "",
+            clean,
+            flags=re.I,
+        ).strip()
+        if temporal_stripped and temporal_stripped.lower() != clean.lower():
+            variants.append(temporal_stripped)
+        year_stripped = re.sub(r"\s+(?:in|as of|on|during)\s+\d{4}\b", "", clean, flags=re.I).strip()
+        if year_stripped and year_stripped.lower() != clean.lower():
+            variants.append(year_stripped)
         if lowered.endswith("nedir") or " nedir" in lowered:
             subject = re.sub(r"\bnedir\b", "", clean, flags=re.I).strip()
             if subject:
