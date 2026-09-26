@@ -3,6 +3,7 @@ from anne.core.cognitive_runtime import CognitiveWorkspace
 from anne.learning.evidence import EvidenceItem, EvidenceLedgerEntry, EvidenceStatus
 from anne.learning.web_research import WebResearcher
 from anne.safety.policy import ToolPolicy
+from anne.core.verification import FactualStatus, ReferenceClaim, ReferenceVerifier
 
 
 def test_web_research_is_allowlisted_as_read_only() -> None:
@@ -91,3 +92,86 @@ def test_evidence_ledger_rejects_missing_provenance() -> None:
         assert "provenance" in str(exc)
     else:
         raise AssertionError("missing provenance must fail closed")
+
+
+def test_web_research_claim_can_be_verified_by_independent_verifier(monkeypatch) -> None:
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim="The capital of France is Paris.",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    confidence=0.8,
+                )
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    agent.workspace = CognitiveWorkspace(task="test query")
+    agent.response_verifier = ReferenceVerifier(
+        (ReferenceClaim("The capital of France is Paris.", "atlas:1", True),)
+    )
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    result = agent._web_research("capital")
+
+    assert result["evidence"][0]["status"] == "verified"
+    assert result["evidence"][0]["verification_sources"] == ["atlas:1"]
+    assert agent.workspace.evidence_ledger[0].status is EvidenceStatus.VERIFIED
+
+
+def test_web_research_conflict_stays_conflicting(monkeypatch) -> None:
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim="The capital of France is Paris.",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    confidence=0.8,
+                )
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    agent.workspace = CognitiveWorkspace(task="test query")
+    agent.response_verifier = ReferenceVerifier(
+        (
+            ReferenceClaim("The capital of France is Paris.", "atlas:1", True),
+            ReferenceClaim("The capital of France is Paris.", "atlas:2", False),
+        )
+    )
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    result = agent._web_research("capital")
+
+    assert result["evidence"][0]["status"] == FactualStatus.CONFLICTING.value
+    assert agent.workspace.evidence_ledger[0].status is EvidenceStatus.CONFLICTING
+
+
+def test_web_research_without_verifier_remains_unverified(monkeypatch) -> None:
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim="A claim from the web.",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    confidence=0.8,
+                )
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    agent.workspace = CognitiveWorkspace(task="test query")
+    agent.response_verifier = None
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    result = agent._web_research("claim")
+
+    assert result["evidence"][0]["status"] == EvidenceStatus.UNVERIFIED.value
+    assert agent.workspace.evidence_ledger[0].status is EvidenceStatus.UNVERIFIED
