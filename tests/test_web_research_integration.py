@@ -234,3 +234,74 @@ def test_agent_exposes_end_to_end_evidence_trace(monkeypatch) -> None:
             "status": "verified",
         }
     ]
+
+
+
+def test_research_verification_reaches_evidence_gate_and_decision(tmp_path, monkeypatch) -> None:
+    from anne.core.decision_loop import DecisionLoop
+    from anne.memory.fractal_memory import FractalMemory
+
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim="The capital of France is Paris.",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    confidence=0.8,
+                )
+            ]
+
+    verifier = ReferenceVerifier(
+        (ReferenceClaim("The capital of France is Paris.", "independent:1", True),)
+    )
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    agent.workspace = CognitiveWorkspace(task="capital")
+    agent.response_verifier = verifier
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    research = agent._web_research("capital")
+    assert research["evidence"][0]["status"] == EvidenceStatus.VERIFIED.value
+    assert agent.workspace.evidence_ledger[0].status is EvidenceStatus.VERIFIED
+
+    loop = DecisionLoop(memory=FractalMemory(tmp_path / "anne.db"))
+    decision = loop.run(
+        "Kaynağı nedir?",
+        claim="The capital of France is Paris.",
+        verifier=verifier,
+    )
+
+    assert decision.state is not None
+    assert decision.state.evidence_status == RequirementEvidenceStatus.AVAILABLE.value
+    assert decision.state.evidence_verified is True
+    assert decision.state.context_map["evidence_gate"] == "passed"
+    assert decision.state.context_map["verification_status"] == FactualStatus.VERIFIED.value
+    assert decision.output["factual_status"] == "verified"
+
+
+def test_conflicting_research_verification_blocks_evidence_gate(tmp_path) -> None:
+    from anne.core.decision_loop import DecisionLoop
+    from anne.memory.fractal_memory import FractalMemory
+
+    verifier = ReferenceVerifier(
+        (
+            ReferenceClaim("The capital of France is Paris.", "independent:1", True),
+            ReferenceClaim("The capital of France is Paris.", "independent:2", False),
+        )
+    )
+
+    loop = DecisionLoop(memory=FractalMemory(tmp_path / "anne.db"))
+    decision = loop.run(
+        "Kaynağı nedir?",
+        claim="The capital of France is Paris.",
+        verifier=verifier,
+    )
+
+    assert decision.state is not None
+    assert decision.state.evidence_status == RequirementEvidenceStatus.CONFLICTING.value
+    assert decision.state.context_map["evidence_gate"] == "blocked"
+    assert decision.action == "HALT"
+    assert decision.verdict == "ABSTAIN"
