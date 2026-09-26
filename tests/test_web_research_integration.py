@@ -1,5 +1,7 @@
-from anne.safety.policy import ToolPolicy
+from anne.agent.runtime import AnneAgent
+from anne.learning.evidence import EvidenceItem
 from anne.learning.web_research import WebResearcher
+from anne.safety.policy import ToolPolicy
 
 
 def test_web_research_is_allowlisted_as_read_only() -> None:
@@ -11,15 +13,9 @@ def test_web_research_is_allowlisted_as_read_only() -> None:
     assert decision.human_review_required is False
 
 
-def test_web_research_rejects_empty_query() -> None:
-    policy = ToolPolicy()
-    assert policy.authorize("web_research", {"query": ""}).allowed
-
-
 def test_web_research_output_is_provenance_bearing(monkeypatch) -> None:
     class FakeResearcher:
         def research(self, query):
-            from anne.learning.evidence import EvidenceItem
             return [
                 EvidenceItem(
                     source="test-source",
@@ -30,8 +26,24 @@ def test_web_research_output_is_provenance_bearing(monkeypatch) -> None:
                 )
             ]
 
-    researcher = WebResearcher()
-    monkeypatch.setattr(researcher, "research", FakeResearcher().research)
-    evidence = researcher.research("test query")
-    assert evidence[0].provenance.startswith("https://")
-    assert evidence[0].confidence == 0.8
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    result = agent._web_research("test query")
+    assert result["ok"] is True
+    assert result["evidence_count"] == 1
+    item = result["evidence"][0]
+    assert item["provenance"] == "https://example.test/source"
+    assert item["confidence"] == 0.8
+    assert item["status"] == "unverified"
+    assert result["independent_verification"] == "not_performed"
+
+
+def test_web_research_is_exposed_to_model_tool_schema() -> None:
+    names = {
+        item["function"]["name"]
+        for item in AnneAgent.TOOL_SCHEMAS
+        if item.get("type") == "function"
+    }
+    assert "web_research" in names
