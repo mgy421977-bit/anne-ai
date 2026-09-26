@@ -13,6 +13,8 @@ from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
+from anne.research.evidence_package import ResearchEvidencePackage
+from anne.research.general import GeneralResearchEngine, ResearchMission, ResearchReport
 
 
 @dataclass
@@ -72,6 +74,7 @@ class DecisionLoop:
         parties: Sequence[Consciousness] | None = None,
         hypothesis: Hypothesis | None = None,
         probability: float = 0.7,
+        evidence_package: ResearchEvidencePackage | None = None,
     ) -> DecisionResult:
         parties = list(parties) if parties else [Consciousness(id="user")]
         text_claim = claim if claim is not None else raw_input
@@ -82,7 +85,7 @@ class DecisionLoop:
             probability=probability,
             source="decision_loop",
         )
-        ff, state = self.pipeline.run_with_fail_fast(raw_input, parties, hyp)
+        ff, state = self.pipeline.run_with_fail_fast(raw_input, parties, hyp, evidence_package=evidence_package)
         if not ff.passed:
             return DecisionResult(
                 "ABORTED",
@@ -116,6 +119,78 @@ class DecisionLoop:
             ethic_total,
             state,
             str(out.get("reason") or out.get("note") or ""),
+        )
+
+
+    @staticmethod
+    def make_research_mission(
+        question: str,
+        *,
+        scope: str = "general",
+        questions: Sequence[str] = (),
+        max_searches: int = 5,
+        max_results_per_search: int = 10,
+    ) -> ResearchMission:
+        """Turn a user question into a bounded research mission."""
+        return ResearchMission(
+            objective=question,
+            scope=scope,
+            questions=tuple(questions),
+            max_searches=max_searches,
+            max_results_per_search=max_results_per_search,
+        )
+
+    @staticmethod
+    def research(
+        question: str,
+        research_engine: GeneralResearchEngine,
+        *,
+        scope: str = "general",
+        questions: Sequence[str] = (),
+        max_searches: int = 5,
+        max_results_per_search: int = 10,
+    ) -> ResearchReport:
+        """Research first; verification remains a separate evidence boundary."""
+        mission = DecisionLoop.make_research_mission(
+            question,
+            scope=scope,
+            questions=questions,
+            max_searches=max_searches,
+            max_results_per_search=max_results_per_search,
+        )
+        return research_engine.research(mission)
+
+    def run_with_research(
+        self,
+        raw_input: str,
+        research_engine: GeneralResearchEngine,
+        *,
+        claim: str | None = None,
+        parties: Sequence[Consciousness] | None = None,
+        hypothesis: Hypothesis | None = None,
+        probability: float = 0.7,
+        scope: str = "general",
+        questions: Sequence[str] = (),
+        max_searches: int = 5,
+        max_results_per_search: int = 10,
+    ) -> DecisionResult:
+        """Run question → research → candidate evidence → reasoning."""
+        report = self.research(
+            raw_input,
+            research_engine,
+            scope=scope,
+            questions=questions,
+            max_searches=max_searches,
+            max_results_per_search=max_results_per_search,
+        )
+        package = ResearchEvidencePackage.from_report(report)
+        return self.run(
+            raw_input,
+            claim=claim,
+            parties=parties,
+            hypothesis=hypothesis,
+            probability=probability,
+            evidence_package=package,
         )
 
     def run_cognitive(
