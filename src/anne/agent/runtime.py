@@ -218,13 +218,19 @@ omit only when no semantic extraction is useful.
                 action=name,
                 target=str(arguments.get("path", arguments.get("query", ""))),
                 reversible=True,
-                risk=0.0,
+                risk=0.10,
                 provenance=("runtime:allowlisted_read_tool",),
+                evidence_required=False,
             ),
             safety_allowed=decision.allowed,
         )
         if authorization.decision != ActionDecision.ALLOW:
-            return {"ok": False, "error": authorization.reason}
+            return {
+                "ok": False,
+                "error": authorization.reason,
+                "human_review_required": authorization.decision is ActionDecision.REVIEW,
+                "agency_decision": authorization.decision.value,
+            }
         try:
             result = tool(**arguments)
             workspace = getattr(self, "workspace", None)

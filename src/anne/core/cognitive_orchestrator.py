@@ -121,9 +121,12 @@ class CognitiveOrchestrator:
         authorization = ActionProposal(
             action=str(state.output.get("action", "PROCEED")),
             target=hypothesis.id,
-            reversible=True,
-            risk=0.0,
+            reversible=state.context_map.get("action_reversible"),
+            risk=state.context_map.get("action_risk"),
             provenance=(f"hypothesis:{hypothesis.id}",),
+            authority_required=True,
+            evidence_required=state.requires_evidence,
+            human_review_required=True,
         )
         result = state.output
         decision = state.context_map.get("verification_status")

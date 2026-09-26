@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class ActionDecision(str, Enum):
+class ActionDecision(StrEnum):
     DENY = "DENY"
     REVIEW = "REVIEW"
     ALLOW = "ALLOW"
@@ -16,9 +16,12 @@ class ActionDecision(str, Enum):
 class ActionProposal:
     action: str
     target: str = ""
-    reversible: bool = True
-    risk: float = 0.0
+    reversible: bool | None = True
+    risk: float | None = None
     provenance: tuple[str, ...] = ()
+    authority_required: bool = False
+    evidence_required: bool = False
+    human_review_required: bool = False
 
 
 @dataclass(frozen=True)
@@ -56,20 +59,32 @@ class AgencyGate:
         only an explicitly verified claim can pass the factual assurance gate, and a
         metacognitive request for further verification always denies execution.
         """
+        if proposal.risk is None:
+            return Authorization(ActionDecision.DENY, "unknown action risk")
+        if proposal.reversible is None:
+            return Authorization(ActionDecision.DENY, "unknown action reversibility")
         if not 0.0 <= proposal.risk <= 1.0:
             raise ValueError("risk must be in [0, 1]")
         if not safety_allowed:
             return Authorization(ActionDecision.DENY, "safety policy rejected action")
-        if verification_status is not None and self._verification_value(verification_status) != "verified":
+        if (
+            verification_status is not None
+            and self._verification_value(verification_status) != "verified"
+        ):
             return Authorization(ActionDecision.DENY, "factual verification is not established")
         if needs_verification:
-            return Authorization(ActionDecision.DENY, "metacognitive review requires further verification")
+            return Authorization(
+                ActionDecision.DENY,
+                "metacognitive review requires further verification",
+            )
+        if proposal.evidence_required and verification_status is None:
+            return Authorization(ActionDecision.DENY, "evidence context is missing")
         if not proposal.provenance:
             return Authorization(ActionDecision.DENY, "missing provenance")
         if not proposal.reversible:
             return Authorization(ActionDecision.REVIEW, "irreversible action requires review")
         if proposal.risk >= self.review_risk_threshold:
             return Authorization(ActionDecision.REVIEW, "risk exceeds review threshold")
-        if human_review_required:
+        if proposal.human_review_required or human_review_required:
             return Authorization(ActionDecision.REVIEW, "policy requires review")
         return Authorization(ActionDecision.ALLOW, "explicit policy gate passed")

@@ -106,6 +106,8 @@ class AnnePipeline:
             "evidence_verified": state.evidence_verified,
             "authority_check_required": state.authority_check_required,
             "authority_check_passed": state.authority_check_passed,
+            "action_risk": 1.0 if state.authority_check_required else 0.1,
+            "action_reversible": not state.authority_check_required,
             "consciousness_count": len(state.affected_consciousnesses),
             "past_similar_count": len(past),
             "has_prior_knowledge": len(past) > 0,
@@ -324,13 +326,20 @@ class AnnePipeline:
             }
 
         verification_status = state.context_map.get("verification_status")
+        action_risk = state.context_map.get("action_risk")
+        if not isinstance(action_risk, (int, float)):
+            action_risk = 1.0 if state.authority_check_required else None
         authorization = self.agency_gate.authorize(
             ActionProposal(
                 action=str(output.get("action", "HALT")),
                 target=hypothesis.id,
-                reversible=True,
-                risk=0.0,
+                reversible=state.context_map.get("action_reversible"),
+                risk=action_risk,
                 provenance=(f"hypothesis:{hypothesis.id}",),
+                authority_required=state.authority_check_required,
+                evidence_required=state.requires_evidence,
+                human_review_required=state.authority_check_required
+                and not state.authority_check_passed,
             ),
             safety_allowed=True,
             verification_status=(verification_status if state.requires_evidence else None),
