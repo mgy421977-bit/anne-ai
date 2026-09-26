@@ -1,0 +1,38 @@
+name: Live Web Verification Benchmark
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "benchmarks/web_verification_v02.json"
+      - "benchmarks/scripts/run_web_verification_v02.py"
+      - ".github/workflows/web-verification-benchmark.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  live-web-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run live benchmark
+        run: python benchmarks/scripts/run_web_verification_v02.py
+
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: anne-web-verification-v02
+          path: benchmarks/results/web_verification_v02_*.json
+          retention-days: 30
