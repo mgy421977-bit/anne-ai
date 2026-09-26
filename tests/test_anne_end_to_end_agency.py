@@ -88,6 +88,7 @@ def test_anne_real_stack_blocks_unverified_candidate() -> None:
     proposal = ActionProposal(
         action="external-action",
         target="test-ledger",
+        reversible=True,
         risk=0.10,
         provenance=(candidate.id,),
     )

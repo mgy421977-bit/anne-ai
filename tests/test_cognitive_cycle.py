@@ -26,7 +26,7 @@ def test_prediction_bounds_and_outcome():
 
 def test_agency_gate_fails_closed():
     gate = AgencyGate()
-    proposal = ActionProposal("external-action", risk=0.1)
+    proposal = ActionProposal("external-action", risk=0.1, reversible=True)
     result = gate.authorize(proposal, safety_allowed=False)
     assert result.decision is ActionDecision.DENY
 

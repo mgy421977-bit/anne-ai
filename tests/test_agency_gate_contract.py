@@ -7,6 +7,7 @@ def proposal() -> ActionProposal:
     return ActionProposal(
         "external-action",
         risk=0.10,
+        reversible=True,
         provenance=("source_A",),
     )
 

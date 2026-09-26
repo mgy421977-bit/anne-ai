@@ -16,7 +16,7 @@ class ActionDecision(StrEnum):
 class ActionProposal:
     action: str
     target: str = ""
-    reversible: bool | None = True
+    reversible: bool | None = None
     risk: float | None = None
     provenance: tuple[str, ...] = ()
     authority_required: bool = False
