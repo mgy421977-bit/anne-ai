@@ -175,3 +175,63 @@ def test_web_research_without_verifier_remains_unverified(monkeypatch) -> None:
 
     assert result["evidence"][0]["status"] == EvidenceStatus.UNVERIFIED.value
     assert agent.workspace.evidence_ledger[0].status is EvidenceStatus.UNVERIFIED
+
+
+def test_research_evidence_alone_does_not_unlock_pipeline(tmp_path) -> None:
+    from anne.core.decision_loop import DecisionLoop
+    from anne.memory.fractal_memory import FractalMemory
+
+    loop = DecisionLoop(memory=FractalMemory(tmp_path / "anne.db"))
+    result = loop.run("The capital of France is Paris.")
+
+    assert result.state is not None
+    assert result.state.evidence_status != EvidenceStatus.AVAILABLE.value
+    assert result.state.output.get("factual_status") != "verified"
+
+
+def test_agent_exposes_end_to_end_evidence_trace(monkeypatch) -> None:
+    from anne.core.verification import ReferenceClaim, ReferenceVerifier
+    from anne.memory.local_memory import LocalMemory
+
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim="The capital of France is Paris.",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    confidence=0.8,
+                )
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    agent.workspace = CognitiveWorkspace(task="capital")
+    agent.response_verifier = ReferenceVerifier(
+        (ReferenceClaim("The capital of France is Paris.", "independent:1", True),)
+    )
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    result = agent._web_research("capital")
+
+    assert result["evidence_count"] == 1
+    assert agent.workspace.evidence_ledger[0].status is EvidenceStatus.VERIFIED
+
+    trace = [
+        {
+            "claim": entry.claim,
+            "source": entry.source,
+            "provenance": entry.provenance,
+            "status": entry.status.value,
+        }
+        for entry in agent.workspace.evidence_ledger
+    ]
+    assert trace == [
+        {
+            "claim": "The capital of France is Paris.",
+            "source": "test-source",
+            "provenance": "https://example.test/source",
+            "status": "verified",
+        }
+    ]
