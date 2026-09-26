@@ -6,6 +6,7 @@ import json
 import re
 import weakref
 from collections.abc import Callable
+from dataclasses import replace
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
@@ -276,6 +277,12 @@ omit only when no semantic extraction is useful.
                 confidence=item.confidence,
                 status=EvidenceStatus.UNVERIFIED,
             )
+            verification = verify_claim(entry.claim, self.response_verifier)
+            if verification.status is not FactualStatus.UNVERIFIED:
+                entry = replace(
+                    entry,
+                    status=EvidenceStatus(verification.status.value),
+                )
             serialized.append(
                 {
                     "source": entry.source,
@@ -285,6 +292,8 @@ omit only when no semantic extraction is useful.
                     "confidence": entry.confidence,
                     "status": entry.status.value,
                     "retrieved_at": entry.retrieved_at,
+                    "verification_sources": list(verification.sources),
+                    "verification_reason": verification.reason,
                 }
             )
             if workspace is not None:
