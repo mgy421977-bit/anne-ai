@@ -277,7 +277,7 @@ omit only when no semantic extraction is useful.
                 confidence=item.confidence,
                 status=EvidenceStatus.UNVERIFIED,
             )
-            verification = verify_claim(entry.claim, self.response_verifier)
+            verification = verify_claim(entry.claim, getattr(self, "response_verifier", None))
             if verification.status is not FactualStatus.UNVERIFIED:
                 entry = replace(
                     entry,
