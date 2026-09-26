@@ -17,6 +17,7 @@ class EvidenceGate:
             EvidenceStatus.MISSING,
             EvidenceStatus.UNVERIFIED,
             EvidenceStatus.CONFLICTING,
+            EvidenceStatus.REFUTED,
         }
     )
 
@@ -38,6 +39,8 @@ class EvidenceGate:
             return "Evidence references exist, but they have not been independently verified."
         if status == EvidenceStatus.CONFLICTING:
             return "Evidence references conflict and cannot support a bounded decision."
+        if status == EvidenceStatus.REFUTED:
+            return "Evidence was independently refuted and cannot support a bounded decision."
         return "Evidence requirement was not satisfied by a trusted evidence state."
 
 

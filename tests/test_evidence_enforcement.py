@@ -1,4 +1,5 @@
 from anne.core.cognitive_state import Consciousness, EthicScore, Hypothesis
+from anne.core.evidence import EvidenceGate
 from anne.core.pipeline import AnnePipeline
 from anne.memory.fractal_memory import FractalMemory
 
@@ -19,6 +20,11 @@ def test_missing_evidence_blocks_decision(tmp_path):
     assert state.action == "ABSTAIN"
     assert state.output["action"] == "HALT"
     assert state.evidence_status == "missing"
+
+
+def test_refuted_evidence_never_allows_authoritative_decision():
+    assert not EvidenceGate.allows_decision(required=True, status="refuted")
+    assert "refuted" in EvidenceGate.reason("refuted").lower()
 
 
 def test_unverified_memory_does_not_enable_decision(tmp_path):

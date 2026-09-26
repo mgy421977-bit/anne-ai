@@ -18,6 +18,7 @@ class EvidenceStatus(StrEnum):
     MISSING = "missing"
     CONFLICTING = "conflicting"
     UNVERIFIED = "unverified"
+    REFUTED = "refuted"
     NOT_REQUIRED = "not_required"
 
 
