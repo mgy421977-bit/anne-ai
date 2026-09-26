@@ -179,9 +179,11 @@ class AnneRuntime:
                 code=code,
                 objective=text,
                 source=LearningSource.RESEARCH,
-                authorization_id=self.language_engine._authorizations.get(code).authorization_id
-                if code in self.language_engine._authorizations
-                else None,
+                authorization_id=(
+                    self.language_engine.authorization(code).authorization_id
+                    if self.language_engine.authorization(code)
+                    else None
+                ),
             )
             started = self.language_engine.start_mission(mission)
             report = self.research_engine.research(
