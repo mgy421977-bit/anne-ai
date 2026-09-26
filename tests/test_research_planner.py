@@ -90,7 +90,7 @@ def test_unresolved_contradiction_is_not_silently_resolved() -> None:
         {"max_sources": 0},
     ],
 )
-def test_invalid_limits_fail_closed(**kwargs: int) -> None:
+def test_invalid_limits_fail_closed(kwargs: dict[str, int]) -> None:
     with pytest.raises(ValueError):
         ResearchPlanner(**kwargs)
 
