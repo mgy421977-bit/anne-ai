@@ -1,4 +1,4 @@
-"""ANNE tool-using agent runtime with bounded native tool calling."""
+"""ANNE canonical agent entry point with bounded native tool calling and research."""
 
 from __future__ import annotations
 
@@ -407,8 +407,10 @@ omit only when no semantic extraction is useful.
             return "English", "en"
         return None
 
-    def _research_candidate_package(self, user_input: str) -> ResearchEvidencePackage | None:
-        if self.research_engine is None or not self._needs_research(user_input):
+    def _research_candidate_package(
+        self, user_input: str, *, force: bool = False
+    ) -> ResearchEvidencePackage | None:
+        if self.research_engine is None or (not force and not self._needs_research(user_input)):
             return None
         mission = self.decision_loop.make_research_mission(
             user_input,
@@ -472,12 +474,49 @@ omit only when no semantic extraction is useful.
             },
         )
 
-    def run(self, user_input: str) -> AgentResult:
+    def authorize_language_learning(
+        self,
+        language: str,
+        code: str,
+        *,
+        granted_by: str = "human",
+    ):
+        """Explicitly authorize autonomous research-based language learning."""
+        return self.language_engine.authorize(
+            language,
+            code,
+            granted_by=granted_by,
+        )
+
+    def teach_language(
+        self,
+        language: str,
+        code: str,
+        *,
+        units: tuple[str, ...],
+        teacher: str = "human",
+    ):
+        """Seed a language profile from a human-provided curriculum."""
+        return self.language_engine.seed(
+            language,
+            code,
+            source=LearningSource.HUMAN_TEACHER,
+            units=units,
+        )
+
+    def run(
+        self,
+        user_input: str,
+        *,
+        force_research: bool = False,
+    ) -> AgentResult:
         language_result = self._language_learning_gate(user_input)
         if language_result is not None:
             return language_result
 
-        research_package = self._research_candidate_package(user_input)
+        research_package = self._research_candidate_package(
+            user_input, force=force_research
+        )
 
         self.workspace = CognitiveWorkspace(task=user_input)
         self.workspace.semantic_frame = frame_from_text(user_input)

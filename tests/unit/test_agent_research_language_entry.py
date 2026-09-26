@@ -54,3 +54,24 @@ def test_authorized_language_learning_can_start_research(tmp_path):
     result = agent.run("ANNE İngilizce öğren")
     assert result.cognitive_review["mode"] == "LANGUAGE_LEARNING"
     assert result.cognitive_review["mission_id"]
+
+
+def test_agent_entry_point_can_force_research_for_client_requests(tmp_path):
+    memory = LocalMemory(tmp_path / "memory")
+    agent = AnneAgent(
+        FakeModel(),
+        memory,
+        research_provider=FakeSearchProvider(),
+    )
+    result = agent.run("What is the current status?", force_research=True)
+    assert result.verification["status"] == "unverified"
+
+
+def test_agent_entry_point_exposes_explicit_language_authorization(tmp_path):
+    memory = LocalMemory(tmp_path / "memory")
+    agent = AnneAgent(FakeModel(), memory)
+    profile = agent.authorize_language_learning(
+        "Deutsch", "de", granted_by="human"
+    )
+    assert profile.authorized is True
+    assert profile.code == "de"

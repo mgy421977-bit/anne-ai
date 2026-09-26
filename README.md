@@ -403,3 +403,17 @@ See [`ROADMAP.md`](ROADMAP.md) for milestone-level criteria.
 Apache License 2.0 — see [`LICENSE`](LICENSE).
 
 **Author:** Mustafa Gökhan Yılmaz · ORCID [0009-0002-6591-0163](https://orcid.org/0009-0002-6591-0163) · İzmir, Türkiye
+
+
+## Canonical client entry
+
+`AnneAgent` is the canonical client-facing entry point for ANNE. Clients such as Tinker and VITA Intelligence should call the agent rather than depend on internal research classes.
+
+Example: `agent.run("What is the current status?", force_research=True)`
+
+- Normal questions use `agent.run(text)`.
+- A client that explicitly requests research uses `agent.run(text, force_research=True)`.
+- Research remains candidate evidence until ANNE's independent verification boundary accepts it.
+- Language learning requires explicit authorization before research-based learning starts.
+- `GeminiProvider` and `OpenRouterProvider` remain optional model-provider compatibility paths; they are not required by the provider-neutral research engine.
+- VITA Intelligence and Tinker should remain clients of ANNE, not dependencies of the ANNE research core.
