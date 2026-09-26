@@ -72,14 +72,13 @@ def test_unresolved_contradiction_is_not_silently_resolved() -> None:
         contradiction_unresolved=True,
     )
 
-    strict = ResearchPlanner()
-    strict.stop_conditions  # immutable contract remains explicit
+    strict = ResearchPlanner(stop_on_unresolved_contradiction=True)
     assert strict.should_stop(
         independent_sources=1,
         queries_used=2,
         sources_used=2,
         contradiction_unresolved=True,
-    ) is False
+    )
 
 
 @pytest.mark.parametrize(
