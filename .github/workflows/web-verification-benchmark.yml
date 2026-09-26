@@ -6,6 +6,8 @@ on:
     paths:
       - "benchmarks/web_verification_v02.json"
       - "benchmarks/scripts/run_web_verification_v02.py"
+      - "src/anne/learning/web_research.py"
+      - "src/anne/core/verification.py"
       - ".github/workflows/web-verification-benchmark.yml"
 
 permissions:
