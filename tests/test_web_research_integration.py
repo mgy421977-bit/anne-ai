@@ -1,5 +1,6 @@
 from anne.agent.runtime import AnneAgent
 from anne.core.cognitive_runtime import CognitiveWorkspace
+from anne.core.requirements import EvidenceStatus as RequirementEvidenceStatus
 from anne.learning.evidence import EvidenceItem, EvidenceLedgerEntry, EvidenceStatus
 from anne.learning.web_research import WebResearcher
 from anne.safety.policy import ToolPolicy
@@ -185,7 +186,7 @@ def test_research_evidence_alone_does_not_unlock_pipeline(tmp_path) -> None:
     result = loop.run("What is the capital of France?")
 
     assert result.state is not None
-    assert result.state.evidence_status != EvidenceStatus.AVAILABLE.value
+    assert result.state.evidence_status != RequirementEvidenceStatus.AVAILABLE.value
     assert result.state.output.get("factual_status") != "verified"
 
 
