@@ -2,11 +2,41 @@
 
 Memory matches are references, not proof.  This gate prevents evidence-required
 cycles from producing an authoritative decision unless evidence has been
-explicitly verified by a future trusted evidence provider.
+explicitly verified by an independent verifier (not search, memory, or model).
 """
 from __future__ import annotations
 
 from anne.core.requirements import EvidenceStatus
+from anne.core.verification import FactualStatus, VerificationResult
+
+
+def evidence_status_from_verification(result: VerificationResult) -> EvidenceStatus:
+    """Map an independent VerificationResult to EvidenceStatus.
+
+    Only FactualStatus.VERIFIED (with provenance already enforced by
+    verify_claim / ReferenceVerifier) becomes AVAILABLE.
+    Nothing else elevates to AVAILABLE.
+    """
+    if not isinstance(result, VerificationResult):
+        return EvidenceStatus.UNVERIFIED
+    status = result.status
+    if not isinstance(status, FactualStatus):
+        try:
+            status = FactualStatus(status)
+        except ValueError:
+            return EvidenceStatus.UNVERIFIED
+    if status is FactualStatus.VERIFIED:
+        # Defense in depth: refuse AVAILABLE without provenance.
+        if not result.sources or any(
+            not isinstance(s, str) or not s.strip() for s in result.sources
+        ):
+            return EvidenceStatus.UNVERIFIED
+        return EvidenceStatus.AVAILABLE
+    if status is FactualStatus.REFUTED:
+        return EvidenceStatus.REFUTED
+    if status is FactualStatus.CONFLICTING:
+        return EvidenceStatus.CONFLICTING
+    return EvidenceStatus.UNVERIFIED
 
 
 class EvidenceGate:
@@ -29,7 +59,10 @@ class EvidenceGate:
             evidence_status = EvidenceStatus(status)
         except ValueError:
             return False
-        return evidence_status not in cls.BLOCKING and evidence_status == EvidenceStatus.AVAILABLE
+        return (
+            evidence_status not in cls.BLOCKING
+            and evidence_status == EvidenceStatus.AVAILABLE
+        )
 
     @classmethod
     def reason(cls, status: str) -> str:
@@ -44,4 +77,4 @@ class EvidenceGate:
         return "Evidence requirement was not satisfied by a trusted evidence state."
 
 
-__all__ = ["EvidenceGate"]
+__all__ = ["EvidenceGate", "evidence_status_from_verification"]
