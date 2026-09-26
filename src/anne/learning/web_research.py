@@ -58,6 +58,54 @@ class _DuckDuckGoParser(HTMLParser):
             self._mode = None
 
 
+class _BingParser(HTMLParser):
+    """Extract ordinary Bing web result titles, links and snippets."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.results: list[tuple[str, str, str]] = []
+        self._title = ""
+        self._href = ""
+        self._snippet = ""
+        self._mode: str | None = None
+        self._in_result = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = dict(attrs)
+        classes = attributes.get("class") or ""
+        href = attributes.get("href") or ""
+        if tag == "li" and "b_algo" in classes:
+            self._title = ""
+            self._href = ""
+            self._snippet = ""
+            self._mode = None
+            self._in_result = True
+        elif self._in_result and tag == "h2":
+            self._mode = "title"
+        elif self._in_result and tag == "a" and self._mode == "title" and href:
+            self._href = href
+        elif self._in_result and tag == "p":
+            self._mode = "snippet"
+
+    def handle_data(self, data: str) -> None:
+        if self._mode == "title":
+            self._title += data
+        elif self._mode == "snippet":
+            self._snippet += data
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "h2" and self._mode == "title":
+            self._mode = None
+        elif tag == "p" and self._mode == "snippet":
+            self._mode = None
+        elif tag == "li" and self._in_result:
+            title = self._title.strip()
+            if title and self._href:
+                self.results.append((title, self._href, self._snippet.strip()))
+            self._in_result = False
+            self._mode = None
+
+
 class WebResearcher:
     """Search public web sources without hard-coding domain-specific topics."""
 
@@ -195,9 +243,14 @@ class WebResearcher:
     def _add_unique(evidence: list[EvidenceItem], item: EvidenceItem) -> None:
         if not item.claim.strip():
             return
-        key = re.sub(r"\W+", " ", item.claim.lower()).strip()
-        if any(re.sub(r"\W+", " ", old.claim.lower()).strip() == key for old in evidence):
-            return
+        claim_key = re.sub(r"\W+", " ", item.claim.lower()).strip()
+        host = urllib.parse.urlparse(item.provenance).netloc.casefold()
+        key = (claim_key, host)
+        for old in evidence:
+            old_claim = re.sub(r"\W+", " ", old.claim.lower()).strip()
+            old_host = urllib.parse.urlparse(old.provenance).netloc.casefold()
+            if (old_claim, old_host) == key:
+                return
         evidence.append(item)
 
     def _wikipedia_search(self, query: str, language: str) -> list[EvidenceItem]:
@@ -257,6 +310,26 @@ class WebResearcher:
             items.append(EvidenceItem(source="DuckDuckGo Web Search", claim=claim[:2200], kind="web", provenance=href or url, confidence=min(0.84, 0.44 + score * 0.40), passage=passage[:1200]))
         return items
 
+    def _bing_search(self, query: str) -> list[EvidenceItem]:
+        encoded = urllib.parse.quote_plus(query)
+        url = f"https://www.bing.com/search?q={encoded}&count=10&setlang=en-US"
+        parser = _BingParser()
+        parser.feed(self._get_text(url))
+        items: list[EvidenceItem] = []
+        for title, href, snippet in parser.results[:10]:
+            claim = f"{title}: {snippet}" if snippet else title
+            if not self._is_relevant(query, claim, title):
+                continue
+            passage = snippet
+            if href:
+                try:
+                    passage = self._extract_passage(self._get_text(href), query) or snippet
+                except Exception:
+                    passage = snippet
+            score = self._relevance(query, claim, title)
+            items.append(EvidenceItem(source="Bing Web Search", claim=claim[:2200], kind="web", provenance=href or url, confidence=min(0.84, 0.44 + score * 0.40), passage=passage[:1200]))
+        return items
+
     def research(self, query: str) -> list[EvidenceItem]:
         query = query.strip()
         if not query:
@@ -296,6 +369,11 @@ class WebResearcher:
                 continue
             try:
                 for item in self._duckduckgo_search(search_query):
+                    self._add_unique(evidence, item)
+            except Exception:
+                continue
+            try:
+                for item in self._bing_search(search_query):
                     self._add_unique(evidence, item)
             except Exception:
                 continue
