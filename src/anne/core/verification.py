@@ -72,12 +72,25 @@ class SemanticSupportEvaluator:
                 return SupportStatus.CONTRADICTS
             if any(variant in normalized_passage for variant in support_variants):
                 return SupportStatus.SUPPORTS
-        negated = (
+        negated = [
             f"not {normalized_claim}",
             f"no {normalized_claim}",
             f"false: {normalized_claim}",
             f"false that {normalized_claim}",
-        )
+        ]
+        # Bounded natural-language negation patterns. These are deliberately
+        # limited to simple predicate forms rather than attempting open-ended
+        # semantic entailment.
+        if " is " in normalized_claim:
+            negated.append(normalized_claim.replace(" is ", " is not ", 1))
+        if " are " in normalized_claim:
+            negated.append(normalized_claim.replace(" are ", " are not ", 1))
+        if " does " in normalized_claim:
+            negated.append(normalized_claim.replace(" does ", " does not ", 1))
+        if " do " in normalized_claim:
+            negated.append(normalized_claim.replace(" do ", " do not ", 1))
+        if " can " in normalized_claim:
+            negated.append(normalized_claim.replace(" can ", " cannot ", 1))
         if any(candidate in normalized_passage for candidate in negated):
             return SupportStatus.CONTRADICTS
         return SupportStatus.UNCLEAR
