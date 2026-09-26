@@ -125,6 +125,20 @@ def test_semantic_support_requires_claim_text_in_passage() -> None:
     ) is SupportStatus.SUPPORTS
 
 
+def test_semantic_support_accepts_bounded_capital_paraphrases() -> None:
+    evaluator = SemanticSupportEvaluator()
+    assert evaluator.classify(
+        "Paris is the capital of France.",
+        "Paris is the capital city of France.",
+        "https://example.test/source",
+    ) is SupportStatus.SUPPORTS
+    assert evaluator.classify(
+        "Paris is the capital of France.",
+        "France's capital city is Paris.",
+        "https://example.test/source",
+    ) is SupportStatus.SUPPORTS
+
+
 def test_topic_relevance_without_claim_support_is_unclear() -> None:
     assert SemanticSupportEvaluator().classify(
         "Company X installed 500 MW of solar capacity in 2026.",
@@ -145,3 +159,34 @@ def test_missing_passage_or_provenance_is_unclear() -> None:
     evaluator = SemanticSupportEvaluator()
     assert evaluator.classify("A claim", "", "https://example.test/source") is SupportStatus.UNCLEAR
     assert evaluator.classify("A claim", "A claim", "") is SupportStatus.UNCLEAR
+
+
+def test_different_source_claims_support_one_target_claim() -> None:
+    verifier = BoundedMultiSourceVerifier()
+    result = verifier.verify_evidence(
+        claim="Paris is the capital of France.",
+        evidence=(
+            EvidenceItem(
+                source="A",
+                claim="Paris is the capital city of France.",
+                kind="web",
+                provenance="https://a.test/x",
+                confidence=0.9,
+                passage="Paris is the capital city of France.",
+            ),
+            EvidenceItem(
+                source="B",
+                claim="France's capital city is Paris.",
+                kind="web",
+                provenance="https://b.test/x",
+                confidence=0.9,
+                passage="France's capital city is Paris.",
+            ),
+        ),
+    )
+    assert result.status is FactualStatus.VERIFIED
+    assert {row["target_claim"] for row in result.trace} == {"Paris is the capital of France."}
+    assert {row["source_claim"] for row in result.trace} == {
+        "Paris is the capital city of France.",
+        "France's capital city is Paris.",
+    }

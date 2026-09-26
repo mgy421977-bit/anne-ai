@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from enum import StrEnum
+import re
 from typing import Any, Protocol
 from urllib.parse import urlparse
 
@@ -56,6 +57,21 @@ class SemanticSupportEvaluator:
             return SupportStatus.UNCLEAR
         if normalized_claim in normalized_passage:
             return SupportStatus.SUPPORTS
+        capital = re.fullmatch(r"(.+?) is the capital of (.+?)\.?", normalized_claim)
+        if capital:
+            city, country = capital.groups()
+            support_variants = (
+                f"{city} is the capital city of {country}",
+                f"{country}'s capital city is {city}",
+                f"{city} is {country}'s capital",
+            )
+            contradict_variants = tuple(f"{variant} not" for variant in support_variants) + (
+                f"{city} is not the capital of {country}",
+            )
+            if any(variant in normalized_passage for variant in contradict_variants):
+                return SupportStatus.CONTRADICTS
+            if any(variant in normalized_passage for variant in support_variants):
+                return SupportStatus.SUPPORTS
         negated = (
             f"not {normalized_claim}",
             f"no {normalized_claim}",
@@ -133,7 +149,28 @@ class BoundedMultiSourceVerifier:
         self.evidence = tuple(evidence)
 
     def verify_evidence(self, claim: str, evidence: tuple[Any, ...]) -> VerificationResult:
-        return BoundedMultiSourceVerifier(tuple(evidence)).verify(claim)
+        evaluator = SemanticSupportEvaluator()
+        rows: list[dict[str, str]] = []
+        usable: list[tuple[str, str]] = []
+        for item in evidence:
+            provenance = getattr(item, "provenance", "")
+            passage = getattr(item, "passage", "")
+            if not isinstance(provenance, str) or not provenance.strip():
+                continue
+            identity = self._identity(provenance)
+            if not identity:
+                continue
+            support = evaluator.classify(claim, passage, provenance).value
+            usable.append((identity, support))
+            rows.append({
+                "target_claim": claim,
+                "source_claim": str(getattr(item, "claim", "")),
+                "source": str(getattr(item, "source", "")),
+                "provenance": provenance,
+                "passage": str(passage),
+                "support": support,
+            })
+        return self._verdict(rows, usable)
 
     @staticmethod
     def _normalize(value: str) -> str:
@@ -173,6 +210,10 @@ class BoundedMultiSourceVerifier:
                 "support": support,
             })
 
+        return self._verdict(rows, usable)
+
+    @staticmethod
+    def _verdict(rows: list[dict[str, str]], usable: list[tuple[str, str]]) -> VerificationResult:
         independent: dict[str, set[str]] = {}
         for identity, support in usable:
             independent.setdefault(support, set()).add(identity)

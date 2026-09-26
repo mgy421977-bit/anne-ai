@@ -275,6 +275,7 @@ omit only when no semantic extraction is useful.
         evidence = self.web_researcher.research(query)
         workspace = getattr(self, "workspace", None)
         serialized = []
+        target_claim = query.strip()
         response_verifier = getattr(self, "response_verifier", None)
         verification_records = []
         support_evaluator = SemanticSupportEvaluator()
@@ -284,7 +285,7 @@ omit only when no semantic extraction is useful.
                 support=(
                     item.support
                     if item.support != "unclear"
-                    else support_evaluator.classify(item.claim, item.passage, item.provenance).value
+                    else support_evaluator.classify(target_claim, item.passage, item.provenance).value
                 ),
             )
             for item in evidence
@@ -300,7 +301,7 @@ omit only when no semantic extraction is useful.
                 support=item.support,
             )
             if isinstance(response_verifier, BoundedMultiSourceVerifier):
-                verification = response_verifier.verify_evidence(entry.claim, classified_evidence)
+                verification = response_verifier.verify_evidence(target_claim, classified_evidence)
             else:
                 verification = verify_claim(entry.claim, response_verifier)
             verification_records.append(verification)
@@ -313,6 +314,8 @@ omit only when no semantic extraction is useful.
                 {
                     "source": entry.source,
                     "claim": entry.claim,
+                    "target_claim": target_claim,
+                    "source_claim": entry.claim,
                     "kind": item.kind,
                     "provenance": entry.provenance,
                     "confidence": entry.confidence,
@@ -329,6 +332,7 @@ omit only when no semantic extraction is useful.
         return {
             "ok": True,
             "query": query.strip(),
+            "target_claim": target_claim,
             "evidence": serialized,
             "evidence_count": len(serialized),
             "independent_verification": (
