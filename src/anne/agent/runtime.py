@@ -292,6 +292,7 @@ omit only when no semantic extraction is useful.
                     "provenance": entry.provenance,
                     "confidence": entry.confidence,
                     "status": entry.status.value,
+                    "passage": entry.passage,
                     "retrieved_at": entry.retrieved_at,
                     "verification_sources": list(verification.sources),
                     "verification_reason": verification.reason,
