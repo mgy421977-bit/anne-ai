@@ -51,6 +51,12 @@ def redact_data(value: Any) -> Any:
 class ToolDecision:
     allowed: bool
     reason: str
+    risk: float | None = None
+    reversible: bool | None = None
+    authority_required: bool | None = None
+    evidence_required: bool | None = None
+    side_effect: str | None = None
+    human_review_required: bool | None = None
 
 
 class ToolPolicy:

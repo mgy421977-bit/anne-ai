@@ -217,10 +217,13 @@ omit only when no semantic extraction is useful.
             ActionProposal(
                 action=name,
                 target=str(arguments.get("path", arguments.get("query", ""))),
-                reversible=True,
-                risk=0.10,
+                reversible=decision.reversible,
+                risk=decision.risk,
                 provenance=("runtime:allowlisted_read_tool",),
-                evidence_required=False,
+                authority_required=decision.authority_required,
+                evidence_required=decision.evidence_required,
+                side_effect=decision.side_effect,
+                human_review_required=decision.human_review_required,
             ),
             safety_allowed=decision.allowed,
         )

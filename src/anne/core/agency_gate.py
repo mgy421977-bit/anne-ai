@@ -19,9 +19,10 @@ class ActionProposal:
     reversible: bool | None = None
     risk: float | None = None
     provenance: tuple[str, ...] = ()
-    authority_required: bool = False
-    evidence_required: bool = False
-    human_review_required: bool = False
+    authority_required: bool | None = False
+    evidence_required: bool | None = False
+    side_effect: str | None = None
+    human_review_required: bool | None = False
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,12 @@ class AgencyGate:
             return Authorization(ActionDecision.DENY, "unknown action reversibility")
         if not 0.0 <= proposal.risk <= 1.0:
             raise ValueError("risk must be in [0, 1]")
+        if proposal.authority_required is None:
+            return Authorization(ActionDecision.DENY, "unknown authority requirement")
+        if proposal.evidence_required is None:
+            return Authorization(ActionDecision.DENY, "unknown evidence requirement")
+        if proposal.human_review_required is None:
+            return Authorization(ActionDecision.REVIEW, "unknown human review requirement")
         if not safety_allowed:
             return Authorization(ActionDecision.DENY, "safety policy rejected action")
         if (

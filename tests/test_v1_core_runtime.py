@@ -17,6 +17,7 @@ from anne.core.verification import (
 from anne.memory.fractal_memory import FractalMemory
 from anne.memory.local_memory import LocalMemory
 from anne.providers.local import LocalProvider
+from anne.safety.policy import ToolDecision
 
 
 def test_verified_transition_requires_provenance() -> None:
@@ -122,10 +123,35 @@ def test_agent_tool_deny_and_review_never_execute(tmp_path, monkeypatch) -> None
         assert not calls
 
 
-def test_agent_tool_allow_executes_only_after_gate(tmp_path) -> None:
+def test_agent_tool_unknown_context_fails_closed(tmp_path) -> None:
     agent = _tool_agent(tmp_path)
     calls: list[dict[str, str]] = []
     agent.tools["local_read"] = lambda **arguments: calls.append(arguments) or "content"
+    result = agent._execute_tool("local_read", {"path": "sample.txt"})
+
+    assert result["ok"] is False
+    assert "unknown action risk" in result["error"]
+    assert not calls
+
+
+def test_agent_tool_uses_explicit_policy_context_before_allow(tmp_path, monkeypatch) -> None:
+    agent = _tool_agent(tmp_path)
+    calls: list[dict[str, str]] = []
+    agent.tools["local_read"] = lambda **arguments: calls.append(arguments) or "content"
+    monkeypatch.setattr(
+        agent.tool_policy,
+        "authorize",
+        lambda name, arguments: ToolDecision(
+            True,
+            "explicit test policy",
+            risk=0.1,
+            reversible=True,
+            authority_required=False,
+            evidence_required=False,
+            side_effect="none",
+            human_review_required=False,
+        ),
+    )
     result = agent._execute_tool("local_read", {"path": "sample.txt"})
 
     assert result == {"ok": True, "result": "content"}
@@ -143,9 +169,20 @@ def test_agent_tool_proposal_has_explicit_safe_context(tmp_path) -> None:
 
     agent.agency_gate.authorize = capture  # type: ignore[method-assign]
     agent.tools["local_read"] = lambda **arguments: "content"
-    assert agent._execute_tool("local_read", {"path": "sample.txt"})["ok"]
-    assert captured[0].risk == 0.10
-    assert captured[0].reversible is True
+    result = agent._execute_tool("local_read", {"path": "sample.txt"})
+    assert not result["ok"]
+    assert captured[0].risk is None
+    assert captured[0].reversible is None
+    assert captured[0].evidence_required is None
+
+
+def test_only_anne_runtime_is_top_level_public_entry() -> None:
+    import anne
+
+    assert "AnneRuntime" in anne.__all__
+    assert "AnneRequest" in anne.__all__
+    assert "DecisionLoop" not in anne.__all__
+    assert "AnnePipeline" not in anne.__all__
 
 
 def test_unknown_risk_and_reversibility_fail_closed() -> None:
