@@ -7,9 +7,9 @@ on paraphrases, partial support and unrecognized claims.
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
 from enum import StrEnum
-import re
 from typing import Any, Protocol, runtime_checkable
 from urllib.parse import urlparse
 
@@ -48,7 +48,11 @@ class SemanticSupportEvaluator:
         return " ".join(value.split())
 
     def classify(self, claim: str, passage: str, provenance: str) -> SupportStatus:
-        if not isinstance(claim, str) or not isinstance(passage, str) or not isinstance(provenance, str):
+        if (
+            not isinstance(claim, str)
+            or not isinstance(passage, str)
+            or not isinstance(provenance, str)
+        ):
             return SupportStatus.UNCLEAR
         normalized_claim = self._normalize(claim)
         normalized_passage = self._normalize(passage)
@@ -266,7 +270,12 @@ class BoundedMultiSourceVerifier:
             support = str(getattr(item, "support", SupportStatus.UNCLEAR)).lower()
             if not isinstance(item_claim, str) or self._normalize(item_claim) != normalized:
                 continue
-            if not isinstance(provenance, str) or not provenance.strip() or not isinstance(passage, str) or not passage.strip():
+            if (
+                not isinstance(provenance, str)
+                or not provenance.strip()
+                or not isinstance(passage, str)
+                or not passage.strip()
+            ):
                 continue
             try:
                 support = SupportStatus(support).value
