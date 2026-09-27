@@ -105,5 +105,18 @@ class HypothesisCritic:
                 )
             )
 
-        unresolved = tuple(a.hypothesis_id for a in assessments if a.status == HypothesisStatus.UNRESOLVED)
-        return CriticResult(tuple(assessments), bool(unresolved), unresolved)
+        unresolved = tuple(
+            a.hypothesis_id for a in assessments
+            if a.status == HypothesisStatus.UNRESOLVED
+        )
+        has_support = any(a.status == HypothesisStatus.SUPPORTED for a in assessments)
+        has_conflict = any(
+            a.supporting_evidence and a.contradicting_evidence
+            for a in assessments
+        )
+        needs_more_research = not has_support or has_conflict
+        return CriticResult(
+            tuple(assessments),
+            needs_more_research,
+            unresolved if needs_more_research else (),
+        )
