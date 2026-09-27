@@ -6,7 +6,7 @@ Scores are not intelligence claims and are not external-world correctness
 scores.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from dataclasses import dataclass
 from statistics import mean
