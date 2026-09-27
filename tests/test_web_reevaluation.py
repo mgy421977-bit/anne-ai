@@ -1,4 +1,8 @@
-from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
+from anne.learning.evidence import (
+    EvidenceItem,
+    EvidenceLedger,
+    EvidenceLedgerEntry,
+)
 from anne.learning.web_reevaluation import BoundedWebReEvaluator
 
 
@@ -94,7 +98,7 @@ def test_re_evaluation_does_not_research_when_no_downstream_result():
     assert researcher.calls == []
 
 
-def test_re_evaluation_research_is_bounded_to_configured_query_count():
+def test_re_evaluation_research_is_bounded_to_one_query():
     ledger, evidence_id = _ledger_with_downstream_dependency()
     researcher = FakeResearcher(
         (
@@ -108,7 +112,7 @@ def test_re_evaluation_research_is_bounded_to_configured_query_count():
         )
     )
 
-    result = BoundedWebReEvaluator(researcher, max_queries=1).reevaluate(
+    result = BoundedWebReEvaluator(researcher).reevaluate(
         question="Original claim",
         ledger=ledger,
         evidence_id=evidence_id,
