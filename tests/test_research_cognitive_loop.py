@@ -41,7 +41,9 @@ def test_loop_preserves_uncertainty_and_requests_research() -> None:
     state = loop.initialize("Question", evidence=evidence)
     assert state.decision.action == "RESEARCH"
     assert "H1" in state.critic.unresolved_hypotheses
-    assert loop.next_research_questions(state) == ("Question",)
+    questions = loop.next_research_questions(state)
+    assert questions[0] == "Question"
+    assert len(questions) == 3
 
 
 def test_loop_stops_at_research_budget() -> None:
