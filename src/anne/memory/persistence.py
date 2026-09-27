@@ -18,26 +18,26 @@ Parameters = Sequence[Any] | Mapping[str, Any]
 
 
 class RedactingCursor(sqlite3.Cursor):
-    def execute(self, sql: str, parameters: Parameters = ()) -> Self:
+    def execute(self, sql: str, parameters: Any = ()) -> Self:
         super().execute(sql, redact_data(parameters))
         return self
 
-    def executemany(self, sql: str, seq_of_parameters: Iterable[Parameters]) -> Self:
+    def executemany(self, sql: str, seq_of_parameters: Iterable[Any]) -> Self:
         super().executemany(sql, (redact_data(params) for params in seq_of_parameters))
         return self
 
 
 class RedactingConnection(sqlite3.Connection):
-    def cursor(self, factory: Any = None) -> RedactingCursor:
+    def cursor(self, factory: Any = None) -> Any:
         if factory not in (None, RedactingCursor):
             raise ValueError("Memory cursors must preserve the redaction boundary")
         return super().cursor(factory=RedactingCursor)
 
-    def execute(self, sql: str, parameters: Parameters = ()) -> RedactingCursor:
+    def execute(self, sql: str, parameters: Any = ()) -> RedactingCursor:
         return self.cursor().execute(sql, parameters)
 
     def executemany(
-        self, sql: str, seq_of_parameters: Iterable[Parameters]
+        self, sql: str, seq_of_parameters: Iterable[Any]
     ) -> RedactingCursor:
         return self.cursor().executemany(sql, seq_of_parameters)
 
