@@ -55,7 +55,10 @@ class ResponseComposer:
         if normalized in {"merhaba", "selam", "merhaba anne", "selam anne"}:
             return "Merhaba. Seni dinliyorum. Nasıl yardımcı olabilirim?"
         if "nasılsın" in normalized or "naber" in normalized:
-            return "İyiyim. Sistemlerim çalışıyor ve seni dinlemeye hazırım. Sana nasıl yardımcı olabilirim?"
+            return (
+                "İyiyim. Sistemlerim çalışıyor ve seni dinlemeye hazırım. "
+                "Sana nasıl yardımcı olabilirim?"
+            )
         if normalized in {"teşekkürler", "teşekkür ederim", "sağ ol", "sağol"}:
             return "Rica ederim."
         if normalized in {"görüşürüz", "hoşça kal", "bay bay"}:
@@ -68,8 +71,14 @@ class ResponseComposer:
             if authority_required and not authority_passed:
                 return "Bu işlemi gerçekleştiremiyorum; gerekli yetki kontrolü geçilmedi."
             if "ambiguous" in reason.lower() or "belirsiz" in reason.lower():
-                return "İstek yeterince açık değil. Ne yapmak istediğini biraz daha netleştirmen gerekiyor."
-            return "Bu konuda yeterli güvenilir dayanak oluşmadı. Daha fazla kanıt veya daha net bir çerçeve gerekiyor."
+                return (
+                    "İstek yeterince açık değil. Ne yapmak istediğini biraz "
+                    "daha netleştirmen gerekiyor."
+                )
+            return (
+                "Bu konuda yeterli güvenilir dayanak oluşmadı. Daha fazla kanıt "
+                "veya daha net bir çerçeve gerekiyor."
+            )
 
         # Do not expose internal ethics/confidence fields such as
         # ``Goodness=...``. A successful cognitive result gets a neutral

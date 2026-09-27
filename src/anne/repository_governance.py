@@ -2,17 +2,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class BranchAction(str, Enum):
+class BranchAction(StrEnum):
     KEEP = "KEEP"
     REVIEW = "REVIEW"
     ARCHIVE = "ARCHIVE"
     DELETE = "DELETE"
 
 
-class BranchRisk(str, Enum):
+class BranchRisk(StrEnum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
@@ -79,17 +79,37 @@ class RepositoryGovernor:
             protected_reasons.append("active work references this branch")
 
         if protected_reasons:
-            return BranchFinding(BranchAction.KEEP, BranchRisk.CRITICAL, 1.0, tuple(protected_reasons))
+            return BranchFinding(
+                BranchAction.KEEP,
+                BranchRisk.CRITICAL,
+                1.0,
+                tuple(protected_reasons),
+            )
 
         if not evidence.duplicate_of:
-            return BranchFinding(BranchAction.REVIEW, BranchRisk.MEDIUM, 0.0, ("no duplicate relationship established",))
+            return BranchFinding(
+                BranchAction.REVIEW,
+                BranchRisk.MEDIUM,
+                0.0,
+                ("no duplicate relationship established",),
+            )
 
         if self.policy.require_preserved_copy and not evidence.preserved_elsewhere:
-            return BranchFinding(BranchAction.ARCHIVE, BranchRisk.HIGH, 0.95, ("duplicate candidate lacks a preserved copy",))
+            return BranchFinding(
+                BranchAction.ARCHIVE,
+                BranchRisk.HIGH,
+                0.95,
+                ("duplicate candidate lacks a preserved copy",),
+            )
 
         confidence = 1.0
         if confidence < self.policy.min_delete_confidence:
-            return BranchFinding(BranchAction.REVIEW, BranchRisk.MEDIUM, confidence, ("delete confidence below policy threshold",))
+            return BranchFinding(
+                BranchAction.REVIEW,
+                BranchRisk.MEDIUM,
+                confidence,
+                ("delete confidence below policy threshold",),
+            )
 
         reasons = [f"duplicate of {evidence.duplicate_of}", "preserved elsewhere"]
         if evidence.last_activity_days is not None:
