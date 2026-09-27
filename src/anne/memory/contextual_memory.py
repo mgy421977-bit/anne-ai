@@ -938,7 +938,7 @@ class ContextualMemoryService:
         return result
 
     @classmethod
-    def _decode_state(cls, row: sqlite3.Row | None) -> dict[str, Any] | None:
+    def _decode_state(cls, row: sqlite3.Row | dict[str, Any] | None) -> dict[str, Any] | None:
         if row is None:
             return None
         return cls._decode_payload(row, "state_payload")
