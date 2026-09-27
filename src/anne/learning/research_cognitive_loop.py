@@ -9,8 +9,8 @@ from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerE
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
-from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 from anne.learning.reevaluation import ReEvaluationPlan
+from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 
 
 @dataclass(frozen=True)
