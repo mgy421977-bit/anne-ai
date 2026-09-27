@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
-from typing import Sequence
+from collections.abc import Sequence
+from enum import StrEnum
 
 from anne.learning.hypothesis import CriticResult, HypothesisAssessment, HypothesisStatus
 
 
-class SynthesisStatus(str, Enum):
+class SynthesisStatus(StrEnum):
     SUPPORTED = "SUPPORTED"
     MULTIPLE_SUPPORTED = "MULTIPLE_SUPPORTED"
     CONFLICTING = "CONFLICTING"
