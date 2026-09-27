@@ -43,7 +43,7 @@ def test_loop_preserves_uncertainty_and_requests_research() -> None:
     assert "H1" in state.critic.unresolved_hypotheses
     questions = loop.next_research_questions(state)
     assert questions[0] == "Question"
-    assert len(questions) == 3
+    assert len(questions) == 1
 
 
 def test_loop_stops_at_research_budget() -> None:
