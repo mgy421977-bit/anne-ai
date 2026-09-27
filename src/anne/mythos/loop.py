@@ -45,7 +45,9 @@ class MitosAnneLoop:
                     risk=candidate.harm_risk,
                 )
             )
-        gate = evaluator or (lambda c: c.harm_risk <= 0.0 and c.testability >= 0.25)
+        gate = evaluator or (
+            lambda c: c.harm_risk <= 0.0 and c.testability >= 0.25
+        )
         shortlisted = [c for c in self.workspace.winners(batch_size) if gate(c.content)]
         return DiscoveryBatch(goal, candidates, [c.content for c in shortlisted])
 
