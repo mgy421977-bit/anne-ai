@@ -47,3 +47,28 @@ def test_missing_dependency_fails_closed() -> None:
         assert "endpoints" in str(exc)
     else:
         raise AssertionError("missing dependency endpoint must fail closed")
+
+
+
+def test_register_evidence_claim_dependency() -> None:
+    graph = ProvenanceGraph()
+    graph.register_evidence_claim(
+        evidence_id="E1", evidence_content="source passage",
+        claim_id="C1", claim_content="derived claim",
+    )
+    assert graph.get("E1").kind == "evidence"
+    assert graph.get("C1").kind == "claim"
+    assert graph.as_dict()["edges"] == [
+        {"source": "E1", "target": "C1", "relation": "supports"}
+    ]
+
+
+def test_explicit_dependency_invalidation_marks_claim_stale() -> None:
+    graph = ProvenanceGraph()
+    graph.register_evidence_claim(
+        evidence_id="E1", evidence_content="source passage",
+        claim_id="C1", claim_content="derived claim",
+    )
+    assert graph.invalidate("E1") == ("E1", "C1")
+    assert graph.get("E1").status is NodeStatus.INVALIDATED
+    assert graph.get("C1").status is NodeStatus.STALE
