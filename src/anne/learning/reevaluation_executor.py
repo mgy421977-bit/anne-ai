@@ -32,9 +32,11 @@ class ReEvaluationExecutor:
         stale = graph.get(stale_node)
         if stale.status is not NodeStatus.STALE:
             raise ValueError("stale_node must have STALE status")
-        if replacement_node in {
-            node["id"] for node in graph.as_dict()["nodes"]
-        }:
+        try:
+            graph.get(replacement_node)
+        except KeyError:
+            pass
+        else:
             raise ValueError(f"replacement node already exists: {replacement_node}")
 
         evidence_ids = tuple(dict.fromkeys(fresh_evidence_ids))
