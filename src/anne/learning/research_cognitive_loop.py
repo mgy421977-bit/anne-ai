@@ -8,6 +8,7 @@ from anne.learning.evidence import EvidenceItem
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
+from anne.learning.reevaluation import ReEvaluationPlan
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,25 @@ class ResearchCognitiveLoop:
             max_sources=plan.stop_conditions.max_sources,
         )
         return ResearchCognitiveState(plan, hypotheses, critic, decision)
+
+    def continue_from_re_evaluation(
+        self,
+        plan: ReEvaluationPlan,
+        question: str,
+        *,
+        evidence: Iterable[EvidenceItem] = (),
+        queries_used: int = 0,
+        sources_used: int = 0,
+    ) -> ResearchCognitiveState | None:
+        """Resume bounded research only when provenance says re-evaluation is needed."""
+        if not plan.requires_research:
+            return None
+        return self.initialize(
+            question,
+            evidence=evidence,
+            queries_used=queries_used,
+            sources_used=sources_used,
+        )
 
     @staticmethod
     def next_research_questions(
