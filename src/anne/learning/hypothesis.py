@@ -114,9 +114,27 @@ class HypothesisCritic:
             a.supporting_evidence and a.contradicting_evidence
             for a in assessments
         )
-        needs_more_research = not has_support or has_conflict
+        # Unobserved alternative hypotheses remain dormant until evidence
+        # addresses them; they must not keep a bounded loop alive by themselves.
+        observed = tuple(
+            a for a in assessments
+            if a.supporting_evidence or a.contradicting_evidence or a.unresolved_evidence
+        )
+        needs_more_research = (
+            not observed
+            or not has_support
+            or has_conflict
+        )
+        if not observed:
+            unresolved = tuple(a.hypothesis_id for a in assessments[:1])
+        elif needs_more_research:
+            unresolved = tuple(
+                a.hypothesis_id for a in observed
+                if a.status == HypothesisStatus.UNRESOLVED
+                or a.status == HypothesisStatus.REJECTED
+            )
         return CriticResult(
             tuple(assessments),
             needs_more_research,
-            unresolved if needs_more_research else (),
+            unresolved,
         )
