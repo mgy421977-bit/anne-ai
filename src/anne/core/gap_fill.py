@@ -6,7 +6,8 @@ context paths and explicitly abstains when the gap cannot be closed safely.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 
 @dataclass(frozen=True)
