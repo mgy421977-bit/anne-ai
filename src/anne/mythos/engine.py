@@ -5,7 +5,7 @@ import os
 import random
 import time
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from anne.core.cognitive_state import Hypothesis
 
@@ -16,7 +16,7 @@ except ImportError:
     ANTHROPIC_AVAILABLE = False
 
 
-class ExplorationMode(str, Enum):
+class ExplorationMode(StrEnum):
     HYPOTHESIS = "hypothesis"
     CURIOSITY = "curiosity"
     ASSOCIATION = "association"
@@ -42,7 +42,16 @@ class HypothesisCandidate:
     def validate(self) -> None:
         if not self.goal.strip() or not self.claim.strip():
             raise ValueError("goal and claim are required")
-        for name in ("probability", "discovery_value", "novelty", "testability", "harm_risk", "reversibility", "expected_benefit", "test_cost"):
+        for name in (
+            "probability",
+            "discovery_value",
+            "novelty",
+            "testability",
+            "harm_risk",
+            "reversibility",
+            "expected_benefit",
+            "test_cost",
+        ):
             value = getattr(self, name)
             if not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be in [0, 1]")
@@ -58,7 +67,12 @@ class MythosEngine:
         self.use_api = ANTHROPIC_AVAILABLE and bool(self.api_key)
         self.client = anthropic.Anthropic(api_key=self.api_key) if self.use_api else None
 
-    def generate_hypothesis(self, topic: str, prior_confidence: float = 0.5, previous_claim: str = "") -> Hypothesis:
+    def generate_hypothesis(
+        self,
+        topic: str,
+        prior_confidence: float = 0.5,
+        previous_claim: str = "",
+    ) -> Hypothesis:
         self.iteration += 1
         hyp_id = f"hyp_{int(time.time() * 1000)}_{self.iteration}"
         noise = self.random.uniform(-0.05, 0.1)
@@ -70,10 +84,18 @@ class MythosEngine:
     def test_hypothesis(self, h: Hypothesis) -> Hypothesis:
         h.tested = True
         outcome = "supported" if h.probability > 0.5 else "weak"
-        h.result = f"[TEST·{h.iteration}] {outcome}. p={h.probability:.3f} Δ={h.confidence_delta:+.3f}"
+        h.result = (
+            f"[TEST·${h.iteration}] ${outcome}. "
+            f"p=${h.probability:.3f} Δ=${h.confidence_delta:+.3f}"
+        )
         return h
 
-    def curiosity_loop(self, topic: str, max_iterations: int = 4, prior: float = 0.5) -> list[Hypothesis]:
+    def curiosity_loop(
+        self,
+        topic: str,
+        max_iterations: int = 4,
+        prior: float = 0.5,
+    ) -> list[Hypothesis]:
         hypotheses: list[Hypothesis] = []
         current_prior = prior
         previous_claim = ""
@@ -107,7 +129,13 @@ class MitosEngine:
             testability = self.random.uniform(0.45, 1.0)
             expected_benefit = self.random.uniform(0.2, 1.0)
             test_cost = self.random.uniform(0.05, 0.8)
-            discovery_value = round(0.30 * novelty + 0.25 * testability + 0.25 * expected_benefit + 0.20 * (1.0 - test_cost), 4)
+            discovery_value = round(
+                0.30 * novelty
+                + 0.25 * testability
+                + 0.25 * expected_benefit
+                + 0.20 * (1.0 - test_cost),
+                4,
+            )
             candidate = HypothesisCandidate(
                 id=f"cand_{self._candidate_counter:08d}", goal=goal,
                 claim=self._claim(goal, mode, index), mode=mode,
@@ -124,9 +152,16 @@ class MitosEngine:
     @staticmethod
     def _claim(goal: str, mode: ExplorationMode, index: int) -> str:
         templates = {
-            ExplorationMode.HYPOTHESIS: "A testable pathway may satisfy the goal under bounded assumptions.",
-            ExplorationMode.CURIOSITY: "An overlooked constraint or opportunity may materially change the solution space.",
-            ExplorationMode.ASSOCIATION: "A cross-domain analogy may reveal a testable alternative pathway.",
+            ExplorationMode.HYPOTHESIS: (
+                "A testable pathway may satisfy the goal under bounded assumptions."
+            ),
+            ExplorationMode.CURIOSITY: (
+                "An overlooked constraint or opportunity may materially change "
+                "the solution space."
+            ),
+            ExplorationMode.ASSOCIATION: (
+                "A cross-domain analogy may reveal a testable alternative pathway."
+            ),
         }
         return f"[{mode.value}:{index}] {templates[mode]} Goal: {goal}"
 
