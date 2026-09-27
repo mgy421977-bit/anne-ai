@@ -6,8 +6,7 @@ import json
 import re
 import weakref
 from collections.abc import Callable
-from dataclasses import replace
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, cast
 
@@ -24,9 +23,12 @@ from anne.core.verification import (
     ClaimVerifier,
     FactualStatus,
     SemanticSupportEvaluator,
-    VerificationResult,
     verify_claim,
 )
+from anne.learning.evidence import EvidenceLedgerEntry, EvidenceStatus
+from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
+from anne.learning.research_planner import ResearchPlan, ResearchPlanner
+from anne.learning.web_research import WebResearcher
 from anne.memory.local_memory import LocalMemory
 from anne.multi_agent import (
     AgentRole,
@@ -44,10 +46,6 @@ from anne.semantics.core import frame_from_text
 from anne.semantics.structured import Ontology, parse_structured_frame
 from anne.tools.github_repo import GitHubRepoTool
 from anne.tools.local_files import LocalFilesTool
-from anne.learning.evidence import EvidenceLedgerEntry, EvidenceStatus
-from anne.learning.web_research import WebResearcher
-from anne.learning.research_planner import ResearchPlan, ResearchPlanner
-from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 
 
 @dataclass
@@ -414,15 +412,6 @@ omit only when no semantic extraction is useful.
             evidence=classified_evidence,
             queries_used=1 + len(follow_up_queries),
             sources_used=len(classified_evidence),
-        )
-        final_verification: VerificationResult | None = (
-            verification_records[0]
-            if verification_records
-            else (
-                initial_verification
-                if initial_verification is not None
-                else None
-            )
         )
         return {
             "ok": True,

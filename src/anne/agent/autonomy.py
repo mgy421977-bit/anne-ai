@@ -1,8 +1,6 @@
 """Bounded autonomous-system contracts for ANNE."""
-from __future__ import annotations
-
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from uuid import uuid4
 
 
@@ -11,7 +9,7 @@ _REQUIRED_FORBIDDEN_ACTIONS = frozenset({
 })
 
 
-class AgentState(str, Enum):
+class AgentState(StrEnum):
     PROPOSED = "PROPOSED"
     AUTHORIZED = "AUTHORIZED"
     INITIALIZED = "INITIALIZED"
@@ -61,9 +59,20 @@ class AutonomousSystem:
 
     _TRANSITIONS = {
         AgentState.PROPOSED: {AgentState.AUTHORIZED, AgentState.CANCELLED},
-        AgentState.AUTHORIZED: {AgentState.INITIALIZED, AgentState.RUNNING, AgentState.CANCELLED, AgentState.BLOCKED},
+        AgentState.AUTHORIZED: {
+            AgentState.INITIALIZED,
+            AgentState.RUNNING,
+            AgentState.CANCELLED,
+            AgentState.BLOCKED,
+        },
         AgentState.INITIALIZED: {AgentState.RUNNING, AgentState.CANCELLED, AgentState.BLOCKED},
-        AgentState.RUNNING: {AgentState.REPORTING, AgentState.BLOCKED, AgentState.FAILED, AgentState.TIMEOUT, AgentState.CANCELLED},
+        AgentState.RUNNING: {
+            AgentState.REPORTING,
+            AgentState.BLOCKED,
+            AgentState.FAILED,
+            AgentState.TIMEOUT,
+            AgentState.CANCELLED,
+        },
         AgentState.REPORTING: {AgentState.COMPLETED, AgentState.FAILED, AgentState.BLOCKED},
         AgentState.COMPLETED: {AgentState.ARCHIVED},
         AgentState.BLOCKED: set(), AgentState.FAILED: set(), AgentState.TIMEOUT: set(),
@@ -119,10 +128,13 @@ class OptimizationProposal:
     observed_metrics: dict[str, float] = field(default_factory=dict)
 
     def promotable(self) -> bool:
-        if not self.system_id.strip() or not self.base_version.strip() or not self.candidate_version.strip() or not self.change_summary.strip():
+        if (
+            not self.system_id.strip()
+            or not self.base_version.strip()
+            or not self.candidate_version.strip()
+            or not self.change_summary.strip()
+        ):
             return False
         if not self.reversible or not self.safety_checked or not self.verification_evidence:
             return False
-        if not self.baseline_metrics or not self.observed_metrics:
-            return False
-        return True
+        return bool(self.baseline_metrics and self.observed_metrics)
