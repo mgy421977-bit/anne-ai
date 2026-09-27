@@ -379,7 +379,7 @@ For the authoritative milestone sequence, see [`ROADMAP.md`](ROADMAP.md).
 ### Current next implementation layer
 
 - ✓ **Decision Synthesis v1** — formally synthesizes supported, multiple-supported, conflicting, insufficient-evidence, and rejected states while preserving alternative hypotheses; covered by deterministic unit and golden tests.
-- ☐ **METACOG / Self-Evaluation** — evaluate how a conclusion was reached, what evidence and alternatives were considered, and whether further research is required.
+- ✓ **METACOG / Self-Evaluation v1** — evaluates evidence sufficiency, alternative hypotheses, contradictions, failure traces, repeated failures, and declared confidence before the next guarded stage.
 - ☐ **Advanced MITOS orchestration** — expand bounded specialist coordination only after the preceding evidence and synthesis layers are stable.
 - ☐ **Long-term planning and broader evaluation** — later roadmap work; no AGI claim is implied.
 
