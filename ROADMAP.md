@@ -3,7 +3,7 @@
 **Policy:** Milestones are engineering deliverables, not product promises.  
 **Rule:** No public claim of “hallucination solved” or “AGI” until the matching benchmark row is green and published under `benchmarks/results/`.
 
-Last updated: 2026-09-05
+Last updated: 2026-09-27
 
 ---
 
@@ -16,6 +16,8 @@ Success is **evidence**, not slogans.
 ---
 
 ## Current baseline — v0.1.0 Research Preview
+
+> **Current engineering note (2026-09-27):** The repository has progressed beyond the original v0.1.0 baseline with bounded evidence/provenance, research planning and cognitive follow-up, hypothesis/critique, Decision Synthesis, and provenance-driven re-evaluation. These are implemented research capabilities; the roadmap remains the authority for future empirical milestones.
 
 | Deliverable | Status |
 |-------------|--------|
