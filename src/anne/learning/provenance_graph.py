@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Iterable
+from collections.abc import Iterable
 
 
 class NodeStatus(StrEnum):
@@ -139,7 +139,12 @@ class ProvenanceGraph:
     def as_dict(self) -> dict[str, object]:
         return {
             "nodes": [
-                {"id": node.node_id, "kind": node.kind, "content": node.content, "status": node.status.value}
+                {
+                    "id": node.node_id,
+                    "kind": node.kind,
+                    "content": node.content,
+                    "status": node.status.value,
+                }
                 for node in self._nodes.values()
             ],
             "edges": [
