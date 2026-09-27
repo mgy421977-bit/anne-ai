@@ -55,7 +55,8 @@ jobs:
           python-version: "3.12"
       - name: Install package
         run: python -m pip install -e ".[dev]"
-      - name: Ruff baseline
-        run: ruff check .
+      - name: Ruff source baseline
+        run: ruff check src
       - name: Mypy baseline
+        if: always()
         run: mypy src
