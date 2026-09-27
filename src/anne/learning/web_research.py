@@ -426,7 +426,16 @@ class WebResearcher:
                 except Exception:
                     passage = snippet
             score = self._relevance(query, claim, title)
-            items.append(EvidenceItem(source="Bing Web Search", claim=claim[:2200], kind="web", provenance=destination or href or url, confidence=min(0.84, 0.44 + score * 0.40), passage=passage[:1200]))
+            items.append(
+                EvidenceItem(
+                    source="Bing Web Search",
+                    claim=claim[:2200],
+                    kind="web",
+                    provenance=destination or href or url,
+                    confidence=min(0.84, 0.44 + score * 0.40),
+                    passage=passage[:1200],
+                )
+            )
         return items
 
     def research(self, query: str) -> list[EvidenceItem]:
