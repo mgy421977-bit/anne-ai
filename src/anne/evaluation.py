@@ -91,28 +91,64 @@ def evaluate_case(
         scores[dimension] = DimensionScore(dimension, max(0, min(5, score)), reason)
 
     preserved = state is not None and getattr(state, "raw_input", "") == prompt
-    add("understanding", 4 if preserved and context.get("input_type") else (2 if preserved else 0),
-        "input_preserved_and_classified" if preserved and context.get("input_type") else "limited_understanding_evidence")
+    understanding_score = 4 if preserved and context.get("input_type") else (2 if preserved else 0)
+    understanding_reason = (
+        "input_preserved_and_classified"
+        if preserved and context.get("input_type")
+        else "limited_understanding_evidence"
+    )
+    add("understanding", understanding_score, understanding_reason)
 
     memories = getattr(state, "related_memories", None) if state is not None else None
     has_evidence_signal = memories is not None or "has_prior_knowledge" in context
-    add("evidence", 3 if has_evidence_signal and context.get("has_prior_knowledge") else (2 if has_evidence_signal else 1),
-        "prior_knowledge_signal" if context.get("has_prior_knowledge") else "evidence_boundary_observed")
+    evidence_score = (
+        3 if has_evidence_signal and context.get("has_prior_knowledge")
+        else (2 if has_evidence_signal else 1)
+    )
+    evidence_reason = (
+        "prior_knowledge_signal"
+        if context.get("has_prior_knowledge")
+        else "evidence_boundary_observed"
+    )
+    add("evidence", evidence_score, evidence_reason)
 
     anla_score = context.get("anla_score")
-    add("uncertainty", 4 if isinstance(anla_score, (int, float)) and 0 <= anla_score <= 1 else 2,
-        "bounded_validation_signal" if anla_score is not None else "uncertainty_not_explicitly_scored")
+    uncertainty_score = (
+        4 if isinstance(anla_score, (int, float)) and 0 <= anla_score <= 1 else 2
+    )
+    uncertainty_reason = (
+        "bounded_validation_signal"
+        if anla_score is not None
+        else "uncertainty_not_explicitly_scored"
+    )
+    add("uncertainty", uncertainty_score, uncertainty_reason)
 
     alternatives = getattr(state, "low_prob_preserved", None) if state is not None else None
     contradiction_signal = bool(alternatives) or "REFRAME" in trace
-    add("contradiction", 4 if contradiction_signal else 2,
-        "alternative_or_reframe_signal" if contradiction_signal else "no_explicit_contradiction_signal")
+    contradiction_reason = (
+        "alternative_or_reframe_signal"
+        if contradiction_signal
+        else "no_explicit_contradiction_signal"
+    )
+    add("contradiction", 4 if contradiction_signal else 2, contradiction_reason)
 
-    add("reasoning", 4 if "ANLA" in trace and "YAP" in trace else 2,
-        "semantic_validation_path" if "ANLA" in trace and "YAP" in trace else "partial_reasoning_path")
+    reasoning_signal = "ANLA" in trace and "YAP" in trace
+    reasoning_reason = (
+        "semantic_validation_path" if reasoning_signal else "partial_reasoning_path"
+    )
+    add("reasoning", 4 if reasoning_signal else 2, reasoning_reason)
 
-    add("self_correction", 5 if "REFRAME" in trace and "RETRY_GATE" in trace else (2 if getattr(result, "retry_count", 0) == 0 else 3),
-        "bounded_reframe_and_retry" if "REFRAME" in trace else "no_observed_reframe")
+    self_correction_signal = "REFRAME" in trace and "RETRY_GATE" in trace
+    self_correction_score = (
+        5 if self_correction_signal
+        else (2 if getattr(result, "retry_count", 0) == 0 else 3)
+    )
+    self_correction_reason = (
+        "bounded_reframe_and_retry"
+        if "REFRAME" in trace
+        else "no_observed_reframe"
+    )
+    add("self_correction", self_correction_score, self_correction_reason)
 
     add("safety", 5 if "FAIL_FAST" in trace else 2,
         "fail_fast_boundary" if "FAIL_FAST" in trace else "no_fail_fast_trace")
