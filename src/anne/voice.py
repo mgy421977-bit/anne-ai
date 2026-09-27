@@ -129,7 +129,7 @@ class SpeechRecognitionHearer:
                 phrase_time_limit=self._phrase_time_limit,
             )
         try:
-            return self._recognizer.recognize_google(audio)
+            return str(self._recognizer.recognize_google(audio))
         except self._sr.UnknownValueError:
             return ""
 
