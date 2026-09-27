@@ -931,7 +931,7 @@ class ContextualMemoryService:
         }
 
     @staticmethod
-    def _decode_payload(row: sqlite3.Row, field: str) -> dict[str, Any]:
+    def _decode_payload(row: sqlite3.Row | Mapping[str, Any], field: str) -> dict[str, Any]:
         result = dict(row)
         with suppress(TypeError, json.JSONDecodeError):
             result[field] = json.loads(result[field])
