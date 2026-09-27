@@ -37,6 +37,23 @@ class EvidenceItem:
             raise ValueError("confidence must be between 0.0 and 1.0")
 
 
+@dataclass(frozen=True)
+class EvidenceDependency:
+    """Link a derived claim to the evidence identifiers it depends on."""
+
+    claim_id: str
+    claim: str
+    evidence_ids: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not self.claim_id.strip():
+            raise ValueError("claim_id must not be empty")
+        if not self.claim.strip():
+            raise ValueError("claim must not be empty")
+        if not self.evidence_ids or any(not item.strip() for item in self.evidence_ids):
+            raise ValueError("evidence_ids must contain non-empty identifiers")
+
+
 class EvidenceStatus(StrEnum):
     """Epistemic status for evidence retained by the cognitive workspace."""
 
@@ -73,4 +90,4 @@ class EvidenceLedgerEntry:
             object.__setattr__(self, "retrieved_at", datetime.now(UTC).isoformat())
 
 
-__all__ = ["EvidenceItem", "EvidenceLedgerEntry", "EvidenceStatus", "SupportStatus"]
+__all__ = ["EvidenceItem", "EvidenceLedgerEntry", "EvidenceDependency", "EvidenceStatus", "SupportStatus"]
