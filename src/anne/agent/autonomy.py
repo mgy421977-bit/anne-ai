@@ -4,9 +4,13 @@ from enum import StrEnum
 from uuid import uuid4
 
 
-_REQUIRED_FORBIDDEN_ACTIONS = frozenset({
-    "external_side_effects", "credential_access", "financial_transaction",
-})
+_REQUIRED_FORBIDDEN_ACTIONS = frozenset(
+    {
+        "external_side_effects",
+        "credential_access",
+        "financial_transaction",
+    }
+)
 
 
 class AgentState(StrEnum):

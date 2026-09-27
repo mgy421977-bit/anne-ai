@@ -79,7 +79,10 @@ class SelfCorrectionPlanner:
             FailureClass.EXECUTION_RISK: "do_not_execute; reassess_authority",
             FailureClass.UNKNOWN: "reassess_without_assuming_cause",
         }[failure_class]
-        lesson = f"Previous attempt failed as {failure_class.value}; do not treat it as validated knowledge."
+        lesson = (
+            f"Previous attempt failed as {failure_class.value}; "
+            "do not treat it as validated knowledge."
+        )
         signal = LearningSignal(failure_class, strategy, lesson, 0.5, False)
         prefix = {
             FailureClass.ETHICAL: "SAFE ALTERNATIVE: ",
