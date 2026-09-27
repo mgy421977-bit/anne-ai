@@ -22,6 +22,7 @@ from anne.core.verification import ClaimVerifier
 from anne.mythos.candidate import SelectionResult, TaskMode
 from anne.mythos.engine import ExplorationMode, HypothesisCandidate
 from anne.mythos.generate import generate_candidates
+from anne.mythos.orchestration import MitosOrchestrator
 from anne.mythos.selection import CandidateSelector
 
 
@@ -60,6 +61,10 @@ class CognitiveOrchestrator:
             self.resource_profile.max_mitos_candidates,
         )
         self.max_retries = max_retries
+        self.mitos_orchestrator = MitosOrchestrator(
+            self.selector,
+            max_candidates=self.candidate_batch_size,
+        )
 
     @staticmethod
     def _normalize(text: str) -> str:
@@ -314,11 +319,20 @@ class CognitiveOrchestrator:
                     batch_size=self.candidate_batch_size,
                     engine=engine,
                 )
-            selection = self.selector.select(candidates, task_mode=task_mode)
+            mitos_result = self.mitos_orchestrator.evaluate(
+                candidates,
+                task_mode=task_mode,
+                budget=self.candidate_batch_size,
+            )
+            selection = mitos_result.selection
             last_selection = selection
 
-            if not selection.accepted or selection.candidate is None:
-                reason = selection.reason or "mitos_selection_reject"
+            if not mitos_result.selected_candidate:
+                reason = (
+                    selection.reason
+                    if selection is not None and selection.reason
+                    else "mitos_selection_reject"
+                )
                 failure = FailureSignal(
                     FailureRecoveryController.classify(reason, "SELECT"),
                     reason,
@@ -351,7 +365,8 @@ class CognitiveOrchestrator:
                         stop_reason="selection_rejected",
                     )
             else:
-                selected = selection.candidate
+                selected = mitos_result.selected_candidate
+                assert selected is not None
                 hypothesis = Hypothesis(
                     id=f"{cycle_id}:{selected.id}",
                     topic=selected.goal[:48],
