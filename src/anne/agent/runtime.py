@@ -57,6 +57,7 @@ class AgentResult:
     tools_used: list[str] = field(default_factory=list)
     cognitive_review: dict[str, Any] = field(default_factory=dict)
     verification: dict[str, Any] = field(default_factory=dict)
+    research: dict[str, Any] = field(default_factory=dict)
 
 
 class _GuardedToolRegistry:
@@ -468,6 +469,30 @@ omit only when no semantic extraction is useful.
         """Run bounded specialist collaboration without erasing dissent."""
         return self.collaborator.collaborate(task, workers)
 
+    def _research_trace(self) -> dict[str, Any]:
+        """Expose the latest bounded web-research trace without changing its status."""
+        workspace = getattr(self, "workspace", None)
+        if workspace is None:
+            return {}
+        for record in reversed(getattr(workspace, "tool_results", [])):
+            if record.get("name") != "web_research" or not record.get("ok"):
+                continue
+            result = record.get("result")
+            if not isinstance(result, dict):
+                continue
+            return {
+                "query": result.get("query"),
+                "research_plan": result.get("research_plan", {}),
+                "follow_up_queries": list(result.get("follow_up_queries", [])),
+                "cognitive_loop": result.get("cognitive_loop", {}),
+                "decision_synthesis": result.get("decision_synthesis", {}),
+                "verification": result.get("verification", {}),
+                "independent_verification": result.get(
+                    "independent_verification", "not_performed"
+                ),
+            }
+        return {}
+
     @staticmethod
     def _section(text: str, name: str) -> str:
         start, end = f"<{name}>", f"</{name}>"
@@ -763,6 +788,7 @@ omit only when no semantic extraction is useful.
                 for entry in self.workspace.evidence_ledger
             ],
         }
+        research_data = self._research_trace()
         factual_data = {
             **factual.as_dict(),
             "heuristic_passed": verification.status != "ABORTED",
@@ -784,4 +810,5 @@ omit only when no semantic extraction is useful.
             tools_used,
             review_data,
             factual_data,
+            research_data,
         )
