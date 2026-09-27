@@ -1,7 +1,6 @@
 """Unit coverage for the closed Decision Synthesis → METACOG → SFT loop."""
 
 from anne.core.decision_synthesis import (
-    DecisionStatus,
     EvidenceLink,
     EvidenceRelation,
     SynthesisHypothesis,
@@ -10,21 +9,8 @@ from anne.core.feedback_loop import DecisionFeedbackLoop
 from anne.core.metacognition import MetaStatus
 
 
-def _supported_synthesis(*, failure_trace=None):
-    hypothesis = SynthesisHypothesis(id="h1", claim="bounded claim")
-    evidence = [
-        EvidenceLink(
-            evidence_id="e1",
-            hypothesis_id="h1",
-            relation=EvidenceRelation.SUPPORTS,
-        )
-    ]
-    return DecisionFeedbackLoop().evaluator, hypothesis, evidence
-
-
 def test_supported_synthesis_reaches_ready_without_failure():
     hypothesis = SynthesisHypothesis(id="h1", claim="bounded claim")
-    synthesis = DecisionFeedbackLoop().evaluator
     # Build the synthesis through the canonical DecisionSynthesizer.
     from anne.core.decision_synthesis import DecisionSynthesizer
 
