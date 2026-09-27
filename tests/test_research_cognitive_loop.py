@@ -71,3 +71,25 @@ def test_loop_exposes_synthesis_and_provenance_re_evaluation() -> None:
     assert plan.action == "RESEARCH"
     assert "H1" in plan.stale_nodes
     assert "SYNTHESIS" in plan.stale_nodes
+
+def test_evidence_invalidation_propagates_to_hypothesis_and_synthesis() -> None:
+    loop = ResearchCognitiveLoop()
+    state = loop.initialize("Question")
+    evidence = [_evidence(state.hypotheses[0].claim, SupportStatus.SUPPORTS.value)]
+    state = loop.initialize("Question", evidence=evidence)
+
+    evidence_id = next(
+        node["id"] for node in state.evidence_ledger.provenance()["nodes"]
+        if node["kind"] == "evidence"
+    )
+
+    affected = state.evidence_ledger.invalidate_evidence(evidence_id)
+    assert affected == (evidence_id, "H1", "SYNTHESIS")
+    assert state.evidence_ledger.status(evidence_id).value == "invalidated"
+    assert state.evidence_ledger.status("H1").value == "stale"
+    assert state.evidence_ledger.status("SYNTHESIS").value == "stale"
+
+    plan = state.evidence_ledger.re_evaluation_plan(evidence_id)
+    assert plan.requires_research is True
+    assert plan.action == "RESEARCH"
+    assert plan.stale_nodes == ("H1", "SYNTHESIS")
