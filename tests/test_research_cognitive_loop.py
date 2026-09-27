@@ -51,3 +51,23 @@ def test_loop_stops_at_research_budget() -> None:
     state = loop.initialize("Question", queries_used=8)
     assert state.decision.action == "STOP"
     assert state.decision.research_allowed is False
+
+def test_loop_exposes_synthesis_and_provenance_re_evaluation() -> None:
+    loop = ResearchCognitiveLoop()
+    state = loop.initialize("Question")
+    evidence = [_evidence(state.hypotheses[0].claim, SupportStatus.SUPPORTS.value)]
+    state = loop.initialize("Question", evidence=evidence)
+
+    assert state.synthesis.status.value == "SUPPORTED"
+    provenance = state.evidence_ledger.provenance()
+    node_ids = {node["id"] for node in provenance["nodes"]}
+    assert "H1" in node_ids
+    assert "SYNTHESIS" in node_ids
+
+    evidence_id = next(
+        node["id"] for node in provenance["nodes"] if node["kind"] == "evidence"
+    )
+    plan = state.evidence_ledger.re_evaluation_plan(evidence_id)
+    assert plan.action == "RESEARCH"
+    assert "H1" in plan.stale_nodes
+    assert "SYNTHESIS" in plan.stale_nodes
