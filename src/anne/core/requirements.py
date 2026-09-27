@@ -31,7 +31,7 @@ class CognitiveRequirements:
     ambiguity: float
 
     @classmethod
-    def from_intent(cls, frame: IntentFrame) -> "CognitiveRequirements":
+    def from_intent(cls, frame: IntentFrame) -> CognitiveRequirements:
         return cls(
             requires_evidence=frame.requires_evidence,
             requires_authority_check=frame.requires_authority_check,
