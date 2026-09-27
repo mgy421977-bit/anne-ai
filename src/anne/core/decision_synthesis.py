@@ -207,10 +207,12 @@ class DecisionSynthesizer:
                 ]
             if partial:
                 reason.append("Partially supported alternatives remain visible.")
-        elif partial:
+        elif partial or any(
+            item.status is HypothesisStatus.CONTRADICTED for item in items
+        ):
             status = DecisionStatus.CONFLICTING
             selected = None
-            reason = ["Evidence supports alternatives but contradictions remain unresolved."]
+            reason = ["Supporting and contradictory evidence remain unresolved."]
         elif all(item.status is HypothesisStatus.REJECTED for item in items):
             status = DecisionStatus.REJECTED
             selected = None
