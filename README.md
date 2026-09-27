@@ -339,7 +339,7 @@ See:
 | Local/offline runtime | Implemented |
 | Model-provider abstraction | Implemented |
 | Multi-agent coordinator | Experimental / bounded |
-| Benchmark and ablation infrastructure | Implemented |
+| Benchmark and ablation infrastructure | Implemented |\n| Bounded research loop + hypothesis/critique | Implemented / bounded |\n| Decision Synthesis + research-runtime exposure | Implemented / bounded |\n| Evidence Ledger + provenance invalidation/re-evaluation | Implemented / bounded |
 | General intelligence / AGI | **Not claimed** |
 | Human-level understanding | **Not claimed** |
 | Unsupervised high-stakes deployment | **Not supported** |
@@ -378,8 +378,8 @@ For the authoritative milestone sequence, see [`ROADMAP.md`](ROADMAP.md).
 
 ### Current next implementation layer
 
-- ☐ **Decision Synthesis** — formally synthesize supported, multiple-supported, conflicting, insufficient-evidence, and rejected-with-alternatives states without suppressing alternative hypotheses.
-- ☐ **METACOG / Self-Evaluation** — evaluate how a conclusion was reached, what evidence and alternatives were considered, and whether further research is required.
+- ✓ **Decision Synthesis** — deterministic synthesis of supported, multiple-supported, conflicting, insufficient-evidence, and rejected-with-alternatives states is implemented and exposed through the bounded research runtime. Alternative hypotheses are preserved rather than silently suppressed.
+- ☐ **METACOG / Self-Evaluation** — further formalize evaluation of how a conclusion was reached, what evidence and alternatives were considered, and whether further research is required.
 - ☐ **Advanced MITOS orchestration** — expand bounded specialist coordination only after the preceding evidence and synthesis layers are stable.
 - ☐ **Long-term planning and broader evaluation** — later roadmap work; no AGI claim is implied.
 
