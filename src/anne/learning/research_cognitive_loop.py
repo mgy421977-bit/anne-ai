@@ -4,10 +4,12 @@ from dataclasses import dataclass
 from typing import Iterable, Sequence
 
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
-from anne.learning.evidence import EvidenceItem
+from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
+from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
+from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation import ReEvaluationPlan
 
 
@@ -16,7 +18,9 @@ class ResearchCognitiveState:
     plan: ResearchPlan
     hypotheses: tuple[Hypothesis, ...]
     critic: CriticResult
+    synthesis: DecisionSynthesis
     decision: LoopDecision
+    evidence_ledger: EvidenceLedger
 
 
 class ResearchCognitiveLoop:
@@ -37,6 +41,7 @@ class ResearchCognitiveLoop:
         self.planner = planner or ResearchPlanner()
         self.hypothesis_engine = hypothesis_engine or HypothesisEngine()
         self.critic_loop = critic_loop or CriticLoopController()
+        self.decision_synthesizer = DecisionSynthesizer()
 
     def initialize(
         self,
@@ -51,7 +56,47 @@ class ResearchCognitiveLoop:
         hypotheses = self.hypothesis_engine.generate(
             plan.main_question, max_hypotheses=max_hypotheses
         )
-        critic = EvidenceHypothesisBridge().assess(hypotheses, evidence)
+        evidence_items = tuple(evidence)
+        critic = EvidenceHypothesisBridge().assess(hypotheses, evidence_items)
+        synthesis = self.decision_synthesizer.synthesize(critic)
+        evidence_ledger = EvidenceLedger()
+
+        for hypothesis in hypotheses:
+            evidence_ledger.graph.add_node(
+                ProvenanceNode(hypothesis.id, "hypothesis", hypothesis.claim)
+            )
+
+        for item in evidence_items:
+            entry = EvidenceLedgerEntry(
+                claim=item.claim,
+                source=item.source,
+                provenance=item.provenance,
+                confidence=item.confidence,
+                passage=item.passage,
+                support=item.support,
+            )
+            evidence_id = evidence_ledger.record(entry)
+            for hypothesis in hypotheses:
+                if item.claim.strip() != hypothesis.claim.strip():
+                    continue
+                relation = item.support.strip().lower() or "unclear"
+                evidence_ledger.graph.add_edge(
+                    ProvenanceEdge(evidence_id, hypothesis.id, relation)
+                )
+
+        synthesis_id = "SYNTHESIS"
+        evidence_ledger.graph.add_node(
+            ProvenanceNode(
+                synthesis_id,
+                "decision_synthesis",
+                synthesis.reason,
+            )
+        )
+        for hypothesis in hypotheses:
+            evidence_ledger.graph.add_edge(
+                ProvenanceEdge(hypothesis.id, synthesis_id, "informs")
+            )
+
         decision = self.critic_loop.decide(
             critic,
             queries_used=queries_used,
@@ -59,7 +104,14 @@ class ResearchCognitiveLoop:
             sources_used=sources_used,
             max_sources=plan.stop_conditions.max_sources,
         )
-        return ResearchCognitiveState(plan, hypotheses, critic, decision)
+        return ResearchCognitiveState(
+            plan,
+            hypotheses,
+            critic,
+            synthesis,
+            decision,
+            evidence_ledger,
+        )
 
     def continue_from_re_evaluation(
         self,
