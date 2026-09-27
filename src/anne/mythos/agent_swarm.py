@@ -6,13 +6,15 @@ from enum import Enum
 from uuid import uuid4
 
 
-_REQUIRED_FORBIDDEN_ACTIONS = frozenset({
-    "external_side_effects",
-    "system_modification",
-    "credential_access",
-    "financial_transaction",
-    "agent_creation",
-})
+_REQUIRED_FORBIDDEN_ACTIONS = frozenset(
+    {
+        "external_side_effects",
+        "system_modification",
+        "credential_access",
+        "financial_transaction",
+        "agent_creation",
+    }
+)
 
 
 class AgentRole(str, Enum):
@@ -102,7 +104,11 @@ class ResearchAgent:
         if self.status != "RUNNING":
             raise RuntimeError("agent must be running before reporting")
         package.validate()
-        if package.agent_id != self.agent_id or package.mission_id != self.mission.mission_id or package.role != self.mission.role:
+        if (
+            package.agent_id != self.agent_id
+            or package.mission_id != self.mission.mission_id
+            or package.role != self.mission.role
+        ):
             raise ValueError("evidence package does not belong to this agent or mission")
         self.status = "COMPLETED"
         return package
@@ -145,7 +151,13 @@ class ResourceGovernor:
         self.searches_reserved += mission.search_budget
         self.compute_reserved += mission.compute_budget
         self.runtime_reserved += mission.runtime_seconds
-        self.reservations[rid] = Reservation(rid, mission.mission_id, mission.search_budget, mission.compute_budget, mission.runtime_seconds)
+        self.reservations[rid] = Reservation(
+            rid,
+            mission.mission_id,
+            mission.search_budget,
+            mission.compute_budget,
+            mission.runtime_seconds,
+        )
         return rid
 
     def release(self, reservation_id: str) -> None:
