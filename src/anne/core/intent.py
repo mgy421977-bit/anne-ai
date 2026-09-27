@@ -60,9 +60,10 @@ class IntentClassifier:
         # "Bir şey" expresses an action goal but leaves the object/goal open;
         # keep this in the clarification band rather than treating it as a
         # concrete action request.
-        if any(marker in normalized for marker in (
-            "bir şey yap", "bir şey gerçekleştir",
-        )):
+        if any(
+            marker in normalized
+            for marker in ("bir şey yap", "bir şey gerçekleştir")
+        ):
             return IntentFrame(IntentKind.ACTION_REQUEST, 0.9, False, True, 0.6)
 
         if any(
@@ -92,10 +93,16 @@ class IntentClassifier:
         ):
             return IntentFrame(IntentKind.UNCERTAINTY, 0.9, True, False, 0.2)
 
-        if any(marker in normalized for marker in ("yanlış", "hata", "kendini düzelt", "önceki karar")):
+        if any(
+            marker in normalized
+            for marker in ("yanlış", "hata", "kendini düzelt", "önceki karar")
+        ):
             return IntentFrame(IntentKind.SELF_CORRECTION, 0.85, True, False, 0.25)
 
-        if any(marker in normalized for marker in ("risk", "tehlike", "zarar", "güvenli", "harm", "danger")):
+        if any(
+            marker in normalized
+            for marker in ("risk", "tehlike", "zarar", "güvenli", "harm", "danger")
+        ):
             return IntentFrame(IntentKind.RISK, 0.9, True, True, 0.2)
 
         if any(
@@ -104,10 +111,16 @@ class IntentClassifier:
         ):
             return IntentFrame(IntentKind.COMPARISON, 0.8, True, False, 0.3)
 
-        if any(marker in normalized for marker in ("önce", "adımlar", "plan", "nasıl iler", "hangi bilgileri")):
+        if any(
+            marker in normalized
+            for marker in ("önce", "adımlar", "plan", "nasıl iler", "hangi bilgileri")
+        ):
             return IntentFrame(IntentKind.PLANNING, 0.8, True, False, 0.3)
 
-        if "?" in normalized or any(marker in normalized for marker in ("neden", "nasıl", "ne ", "why", "how")):
+        if "?" in normalized or any(
+            marker in normalized
+            for marker in ("neden", "nasıl", "ne ", "why", "how")
+        ):
             return IntentFrame(IntentKind.QUESTION, 0.75, False, False, 0.35)
 
         return IntentFrame(IntentKind.GENERAL, 0.55, False, False, 0.45)
