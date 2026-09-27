@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Iterable
 
 
 class NodeStatus(StrEnum):
@@ -40,15 +41,13 @@ class ProvenanceEdge:
 
 
 class ProvenanceGraph:
-    """Small deterministic dependency graph for evidence-derived knowledge.
+    """Small deterministic dependency graph for evidence-derived knowledge."""
 
-    Invalidation propagates downstream without deleting historical nodes.
-    This is a provenance mechanism, not a truth oracle.
-    """
-
-    def __init__(self) -> None:
+    def __init__(self, nodes: Iterable[ProvenanceNode] = ()) -> None:
         self._nodes: dict[str, ProvenanceNode] = {}
         self._edges: list[ProvenanceEdge] = []
+        for node in nodes:
+            self.add_node(node)
 
     def add_node(self, node: ProvenanceNode) -> None:
         if node.node_id in self._nodes:
@@ -61,6 +60,30 @@ class ProvenanceGraph:
         if edge in self._edges:
             return
         self._edges.append(edge)
+
+    def add_dependency(
+        self,
+        *,
+        source_id: str,
+        target_id: str,
+        relation: str = "depends_on",
+    ) -> None:
+        """Register an explicit dependency without inferring its meaning."""
+        self.add_edge(ProvenanceEdge(source_id, target_id, relation))
+
+    def register_evidence_claim(
+        self,
+        *,
+        evidence_id: str,
+        evidence_content: str,
+        claim_id: str,
+        claim_content: str,
+        relation: str = "supports",
+    ) -> None:
+        """Register an explicit Evidence -> Claim provenance relationship."""
+        self.add_node(ProvenanceNode(evidence_id, "evidence", evidence_content))
+        self.add_node(ProvenanceNode(claim_id, "claim", claim_content))
+        self.add_edge(ProvenanceEdge(evidence_id, claim_id, relation))
 
     def invalidate(self, node_id: str) -> tuple[str, ...]:
         if node_id not in self._nodes:
@@ -89,10 +112,7 @@ class ProvenanceGraph:
                     target = self._nodes[edge.target_id]
                     if target.status is NodeStatus.ACTIVE:
                         self._nodes[edge.target_id] = ProvenanceNode(
-                            target.node_id,
-                            target.kind,
-                            target.content,
-                            NodeStatus.STALE,
+                            target.node_id, target.kind, target.content, NodeStatus.STALE
                         )
                     queue.append(edge.target_id)
 
@@ -119,20 +139,11 @@ class ProvenanceGraph:
     def as_dict(self) -> dict[str, object]:
         return {
             "nodes": [
-                {
-                    "id": node.node_id,
-                    "kind": node.kind,
-                    "content": node.content,
-                    "status": node.status.value,
-                }
+                {"id": node.node_id, "kind": node.kind, "content": node.content, "status": node.status.value}
                 for node in self._nodes.values()
             ],
             "edges": [
-                {
-                    "source": edge.source_id,
-                    "target": edge.target_id,
-                    "relation": edge.relation,
-                }
+                {"source": edge.source_id, "target": edge.target_id, "relation": edge.relation}
                 for edge in self._edges
             ],
         }
