@@ -5,6 +5,7 @@ separate from cognition: evaluation observes a result and must not alter it.
 Scores are not intelligence claims and are not external-world correctness
 scores.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
