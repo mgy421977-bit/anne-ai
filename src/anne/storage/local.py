@@ -24,13 +24,24 @@ class LocalArtifactStore:
             raise ValueError("artifact key escapes storage root")
         return path
 
-    def put(self, key: str, data: bytes, *, content_type: str = "application/octet-stream", data_class: str = "PRIVATE_CLOUD") -> ArtifactMetadata:
+    def put(
+        self,
+        key: str,
+        data: bytes,
+        *,
+        content_type: str = "application/octet-stream",
+        data_class: str = "PRIVATE_CLOUD",
+    ) -> ArtifactMetadata:
         path = self._path(key)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
         return ArtifactMetadata(
-            key=key.strip("/"), content_type=content_type, size_bytes=len(data),
-            created_at=datetime.now(timezone.utc), sha256=hashlib.sha256(data).hexdigest(), data_class=data_class,
+            key=key.strip("/"),
+            content_type=content_type,
+            size_bytes=len(data),
+            created_at=datetime.now(timezone.utc),
+            sha256=hashlib.sha256(data).hexdigest(),
+            data_class=data_class,
         )
 
     def get(self, key: str) -> bytes:
