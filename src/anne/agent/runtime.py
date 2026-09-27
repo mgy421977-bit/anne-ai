@@ -6,8 +6,7 @@ import json
 import re
 import weakref
 from collections.abc import Callable
-from dataclasses import replace
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, cast
 
