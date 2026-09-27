@@ -10,7 +10,8 @@ gate is not vacuous on the micro-fixture. Not a formal proof.
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 DEFAULT_ALPHA = 0.5
 DEFAULT_BETA = 0.3
