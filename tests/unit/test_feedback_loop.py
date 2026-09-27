@@ -57,6 +57,7 @@ def test_first_failure_creates_bounded_recovery_signal():
     assert cycle.review.status is MetaStatus.REVIEW
     assert len(cycle.failure_learning) == 1
     assert cycle.retry_allowed is True
+    assert cycle.strategy_selection[0].status.value == "selected"
     assert cycle.failure_learning[0].lesson.validated is False
 
 
@@ -197,3 +198,31 @@ def test_cycle_serialization_preserves_non_authoritative_learning():
     assert payload["failure_learning"][0]["lesson"]["validated"] is False
     assert payload["failure_learning"][0]["lesson"]["safe_to_reuse"] is False
     assert payload["retry_allowed"] is False
+
+
+def test_multiple_strategy_options_do_not_create_silent_retry():
+    from anne.core.decision_synthesis import DecisionSynthesizer
+    from anne.core.self_correction import FailureClass
+    from anne.core.strategy_selection import StrategyCandidate
+
+    decision = DecisionSynthesizer().synthesize(
+        [SynthesisHypothesis(id="h1", claim="claim")],
+        failure_trace=[
+            {
+                "id": "f6",
+                "meta_tag": "logical",
+                "reason": "constraint conflict",
+            }
+        ],
+    )
+    cycle = DecisionFeedbackLoop().evaluate(
+        decision,
+        strategy_candidates=[
+            StrategyCandidate("option_a", FailureClass.LOGICAL, "alternative A"),
+            StrategyCandidate("option_b", FailureClass.LOGICAL, "alternative B"),
+        ],
+    )
+
+    assert cycle.retry_allowed is False
+    assert cycle.strategy_selection[0].status.value == "multiple_valid"
+    assert cycle.strategy_selection[0].selected is None
