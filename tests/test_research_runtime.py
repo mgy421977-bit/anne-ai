@@ -64,3 +64,52 @@ def test_agent_research_trace_is_empty_without_web_research() -> None:
     agent = object.__new__(AnneAgent)
     agent.workspace = type("Workspace", (), {"tool_results": []})()
     assert agent._research_trace() == {}
+
+
+def test_web_research_produces_live_provenance_and_evidence_ledger() -> None:
+    from anne.learning.evidence import EvidenceItem
+
+    class FakeResearcher:
+        def research(self, query: str) -> list[EvidenceItem]:
+            return [
+                EvidenceItem(
+                    source="https://example.com/source-a",
+                    claim=query,
+                    kind="web",
+                    provenance="example.com",
+                    confidence=0.9,
+                    passage=query,
+                    support="supports",
+                ),
+                EvidenceItem(
+                    source="https://example.org/source-b",
+                    claim=query,
+                    kind="web",
+                    provenance="example.org",
+                    confidence=0.8,
+                    passage=query,
+                    support="supports",
+                ),
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.research_planner = ResearchPlanner(max_subquestions=3, max_queries=1)
+    agent.web_researcher = FakeResearcher()
+    agent.response_verifier = None
+
+    result = agent._web_research("A bounded research question")
+
+    assert result["ok"] is True
+    assert len(result["evidence_ledger"]["entries"]) == 2
+    assert len(result["provenance"]["nodes"]) >= 4
+    assert any(
+        node["kind"] == "evidence" for node in result["provenance"]["nodes"]
+    )
+    assert any(
+        node["kind"] == "hypothesis" for node in result["provenance"]["nodes"]
+    )
+    assert any(
+        node["kind"] == "decision_synthesis"
+        for node in result["provenance"]["nodes"]
+    )
+    assert result["reevaluation"]["action"] == "NOT_TRIGGERED"
