@@ -439,6 +439,20 @@ omit only when no semantic extraction is useful.
                     final_state.critic.unresolved_hypotheses
                 ),
             },
+            "decision_synthesis": {
+                "status": final_state.synthesis.status.value,
+                "supported_hypotheses": list(
+                    final_state.synthesis.supported_hypotheses
+                ),
+                "unresolved_hypotheses": list(
+                    final_state.synthesis.unresolved_hypotheses
+                ),
+                "rejected_hypotheses": list(
+                    final_state.synthesis.rejected_hypotheses
+                ),
+                "reason": final_state.synthesis.reason,
+                "is_ambiguous": final_state.synthesis.is_ambiguous,
+            },
             "independent_verification": (
                 "performed"
                 if isinstance(response_verifier, BoundedMultiSourceVerifier)
