@@ -22,7 +22,7 @@ class MitosSynthesis:
     next_missions: list[str] = field(default_factory=list)
 
     @classmethod
-    def from_packages(cls, packages: list[EvidencePackage]) -> "MitosSynthesis":
+    def from_packages(cls, packages: list[EvidencePackage]) -> MitosSynthesis:
         result = cls()
         source_claims: dict[str, list[str]] = {}
         for package in packages:
