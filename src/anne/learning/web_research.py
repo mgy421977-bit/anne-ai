@@ -96,9 +96,9 @@ class _BingParser(HTMLParser):
             self._snippet += data
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "h2" and self._mode == "title":
-            self._mode = None
-        elif tag == "p" and self._mode == "snippet":
+        if (tag == "h2" and self._mode == "title") or (
+            tag == "p" and self._mode == "snippet"
+        ):
             self._mode = None
         elif tag == "li" and self._in_result:
             title = self._title.strip()
@@ -124,7 +124,10 @@ class WebResearcher:
 
     @staticmethod
     def _get_text(url: str) -> str:
-        request = urllib.request.Request(url, headers={"User-Agent": "ANNE-AI/0.3 (+generic-public-web-research)"})
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": "ANNE-AI/0.3 (+generic-public-web-research)"},
+        )
         with urllib.request.urlopen(request, timeout=WebResearcher.timeout) as response:
             raw = response.read()
             if not isinstance(raw, bytes):
@@ -167,12 +170,23 @@ class WebResearcher:
     @staticmethod
     def _normalize(text: str) -> str:
         text = text.lower()
-        text = text.replace("ı", "i").replace("ş", "s").replace("ğ", "g").replace("ü", "u").replace("ö", "o").replace("ç", "c")
+        text = (
+            text.replace("ı", "i")
+            .replace("ş", "s")
+            .replace("ğ", "g")
+            .replace("ü", "u")
+            .replace("ö", "o")
+            .replace("ç", "c")
+        )
         return re.sub(r"[^a-z0-9]+", " ", text).strip()
 
     @classmethod
     def _tokens(cls, text: str) -> set[str]:
-        return {token for token in cls._normalize(text).split() if len(token) > 1 and token not in cls._STOPWORDS}
+        return {
+            token
+            for token in cls._normalize(text).split()
+            if len(token) > 1 and token not in cls._STOPWORDS
+        }
 
     @classmethod
     def _query_variants(cls, query: str) -> list[str]:
@@ -184,14 +198,23 @@ class WebResearcher:
             variants.append(normalized)
         lowered = clean.lower()
         temporal_stripped = re.sub(
-            r"\s+(?:in|as of|on|during)\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}\b",
+            (
+                r"\s+(?:in|as of|on|during)\s+"
+                r"(?:january|february|march|april|may|june|july|august|"
+                r"september|october|november|december)\s+\d{4}\b"
+            ),
             "",
             clean,
             flags=re.I,
         ).strip()
         if temporal_stripped and temporal_stripped.lower() != clean.lower():
             variants.append(temporal_stripped)
-        year_stripped = re.sub(r"\s+(?:in|as of|on|during)\s+\d{4}\b", "", clean, flags=re.I).strip()
+        year_stripped = re.sub(
+            r"\s+(?:in|as of|on|during)\s+\d{4}\b",
+            "",
+            clean,
+            flags=re.I,
+        ).strip()
         if year_stripped and year_stripped.lower() != clean.lower():
             variants.append(year_stripped)
         if lowered.endswith("nedir") or " nedir" in lowered:
@@ -217,7 +240,11 @@ class WebResearcher:
 
     @classmethod
     def _is_acronym_query(cls, query: str) -> bool:
-        tokens = [t for t in re.findall(r"\b[A-Za-zÇĞİÖŞÜçğıöşü]{2,10}\b", query) if t.lower() not in cls._STOPWORDS]
+        tokens = [
+            t
+            for t in re.findall(r"\b[A-Za-zÇĞİÖŞÜçğıöşü]{2,10}\b", query)
+            if t.lower() not in cls._STOPWORDS
+        ]
         return len(tokens) == 1 and tokens[0].isupper()
 
     @classmethod
@@ -225,7 +252,11 @@ class WebResearcher:
         """Reject title-case word collisions for acronym-only questions."""
         if not cls._is_acronym_query(query):
             return True
-        acronym = next(token for token in re.findall(r"\b[A-Za-zÇĞİÖŞÜçğıöşü]{2,10}\b", query) if token.lower() not in cls._STOPWORDS)
+        acronym = next(
+            token
+            for token in re.findall(r"\b[A-Za-zÇĞİÖŞÜçğıöşü]{2,10}\b", query)
+            if token.lower() not in cls._STOPWORDS
+        )
         return bool(
             re.search(rf"\b{re.escape(acronym)}\b", text)
             or re.search(rf"\(\s*{re.escape(acronym)}\s*\)", text)
@@ -283,7 +314,15 @@ class WebResearcher:
             if not self._is_relevant(query, claim, title):
                 continue
             score = self._relevance(query, claim, title)
-            items.append(EvidenceItem(source=f"Wikipedia ({language})", claim=claim, kind="web", provenance=url, confidence=min(0.90, 0.50 + score * 0.40)))
+            items.append(
+                EvidenceItem(
+                    source=f"Wikipedia ({language})",
+                    claim=claim,
+                    kind="web",
+                    provenance=url,
+                    confidence=min(0.90, 0.50 + score * 0.40),
+                )
+            )
         return items
 
     def _wikipedia_summary(self, title: str, language: str, query: str) -> EvidenceItem | None:
@@ -294,7 +333,14 @@ class WebResearcher:
         if not extract or not self._is_relevant(query, extract, title):
             return None
         score = self._relevance(query, extract, title)
-        return EvidenceItem(source=f"Wikipedia ({language})", claim=f"{title}: {extract[:2200]}", kind="web", provenance=url, confidence=min(0.95, 0.62 + score * 0.33), passage=extract[:1200])
+        return EvidenceItem(
+            source=f"Wikipedia ({language})",
+            claim=f"{title}: {extract[:2200]}",
+            kind="web",
+            provenance=url,
+            confidence=min(0.95, 0.62 + score * 0.33),
+            passage=extract[:1200],
+        )
 
     def _duckduckgo_instant(self, query: str) -> EvidenceItem | None:
         encoded = urllib.parse.quote(query)
@@ -304,7 +350,13 @@ class WebResearcher:
         if not abstract or not self._is_relevant(query, abstract):
             return None
         score = self._relevance(query, abstract)
-        return EvidenceItem(source="DuckDuckGo Instant Answer", claim=abstract[:2200], kind="web", provenance=url, confidence=min(0.86, 0.46 + score * 0.40))
+        return EvidenceItem(
+            source="DuckDuckGo Instant Answer",
+            claim=abstract[:2200],
+            kind="web",
+            provenance=url,
+            confidence=min(0.86, 0.46 + score * 0.40),
+        )
 
     def _duckduckgo_search(self, query: str) -> list[EvidenceItem]:
         encoded = urllib.parse.quote_plus(query)
@@ -323,7 +375,16 @@ class WebResearcher:
                 except Exception:
                     passage = snippet
             score = self._relevance(query, claim, title)
-            items.append(EvidenceItem(source="DuckDuckGo Web Search", claim=claim[:2200], kind="web", provenance=href or url, confidence=min(0.84, 0.44 + score * 0.40), passage=passage[:1200]))
+            items.append(
+                EvidenceItem(
+                    source="DuckDuckGo Web Search",
+                    claim=claim[:2200],
+                    kind="web",
+                    provenance=href or url,
+                    confidence=min(0.84, 0.44 + score * 0.40),
+                    passage=passage[:1200],
+                )
+            )
         return items
 
     @staticmethod
