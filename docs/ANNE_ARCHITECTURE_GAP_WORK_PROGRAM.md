@@ -2,8 +2,8 @@
 
 **Status:** Active roadmap  
 **Baseline:** Phase 1a Cognitive Architecture  
-**Repository:** `mgy421977-bit/anne`  
-**Date:** 2026-09-07
+**Repository:** `mgy421977-bit/anne-ai`  
+**Date:** 2026-09-27
 
 ## 1. Purpose
 
@@ -57,7 +57,7 @@ Phase 1a is therefore treated as the **foundation layer**, not the finished cogn
 
 ---
 
-## 4. Work Sequence
+## 4. Current implementation status\n\nThe repository has advanced beyond the original Phase 1a baseline described above. The following capabilities are now implemented in the canonical `anne-ai` research platform and should not be described as roadmap-only: bounded evidence provenance and multi-source verification, ResearchPlanner and ResearchCognitiveLoop, hypothesis generation/critique, Decision Synthesis, provenance invalidation, and bounded stale-result re-evaluation. These remain bounded research capabilities; implementation does not establish general reliability or AGI.\n\n## 5. Work Sequence
 
 ### Phase 1b — Cognitive Feedback Loop
 
@@ -201,7 +201,7 @@ The exact runtime ordering must be validated against the implementation rather t
 
 ---
 
-## 5. Cross-Cutting Engineering Rules
+## 6. Cross-Cutting Engineering Rules
 
 1. **Safety invariance:** new learning, memory, MITOS, or recursion mechanisms must never weaken FailFast or ethical gates.
 2. **Boundary invariance:** MITOS generates; ANNE selects and validates; Agency authorizes action.
@@ -216,7 +216,7 @@ The exact runtime ordering must be validated against the implementation rather t
 
 ---
 
-## 6. Development Order for PRs
+## 7. Development Order for PRs
 
 Recommended PR sequence:
 
@@ -235,7 +235,7 @@ Each PR should remain small enough to review independently and should state exac
 
 ---
 
-## 7. Measurement Program
+## 8. Measurement Program
 
 The architecture should be evaluated against the Phase 1a baseline using measurable criteria rather than subjective impressions.
 
@@ -267,7 +267,7 @@ The architecture should be evaluated against the Phase 1a baseline using measura
 
 ---
 
-## 8. Definition of Done for the Architecture
+## 9. Definition of Done for the Architecture
 
 ANNE should not be considered architecturally complete merely because all modules exist.
 
