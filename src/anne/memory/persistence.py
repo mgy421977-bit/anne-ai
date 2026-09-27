@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Self, cast
+from typing import Any, Self
 
 from anne.safety.policy import redact_data
 
@@ -28,10 +28,10 @@ class RedactingCursor(sqlite3.Cursor):
 
 
 class RedactingConnection(sqlite3.Connection):
-    def cursor(self, factory: Any = None) -> RedactingCursor:
+    def cursor(self, factory: Any = None) -> RedactingCursor:  # type: ignore[override]
         if factory not in (None, RedactingCursor):
             raise ValueError("Memory cursors must preserve the redaction boundary")
-        return cast(RedactingCursor, super().cursor(factory=RedactingCursor))
+        return super().cursor(factory=RedactingCursor)
 
     def execute(self, sql: str, parameters: Any = ()) -> RedactingCursor:
         return self.cursor().execute(sql, parameters)
