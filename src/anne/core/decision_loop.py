@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from anne.core.cognitive_orchestrator import CognitiveOrchestrator, OrchestrationResult
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
+from anne.core.decision_synthesis import DecisionSynthesis, DecisionSynthesizer, EvidenceLink, SynthesisHypothesis
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
@@ -141,6 +142,20 @@ class DecisionLoop:
             ethic_total,
             state,
             str(out.get("reason") or out.get("note") or ""),
+        )
+
+    def synthesize_decision(
+        self,
+        hypotheses: list[SynthesisHypothesis],
+        *,
+        evidence: list[EvidenceLink] | None = None,
+        failure_trace: list[dict[str, Any]] | None = None,
+    ) -> DecisionSynthesis:
+        """Synthesize a bounded decision without suppressing alternatives."""
+        return DecisionSynthesizer().synthesize(
+            hypotheses,
+            evidence=evidence,
+            failure_trace=failure_trace,
         )
 
     def run_cognitive(
