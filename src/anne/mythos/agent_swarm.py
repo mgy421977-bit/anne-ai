@@ -1,6 +1,6 @@
 """Bounded specialist-agent orchestration for MITOS."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from dataclasses import dataclass, field
 from enum import Enum
@@ -18,7 +18,7 @@ _REQUIRED_FORBIDDEN_ACTIONS = frozenset(
 )
 
 
-class AgentRole(str, Enum):
+class AgentRole(str, Enum):  # noqa: UP042 — preserve legacy string formatting
     CHEMISTRY = "chemistry"
     PHYSICS = "physics"
     PATENT_LITERATURE = "patent_literature"
