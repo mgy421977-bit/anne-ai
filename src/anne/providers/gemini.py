@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+
 class GeminiProvider:
     """Thin provider wrapper so ANNE stays model-provider agnostic."""
 
