@@ -28,7 +28,7 @@ def test_rebuild_creates_explicit_replacement_and_preserves_stale_history() -> N
     assert result.action == "REACTIVATED"
     assert graph.get("C1").status is NodeStatus.STALE
     assert graph.get("C2").status is NodeStatus.ACTIVE
-    assert graph.downstream("E2") == ("C2",)
+    assert graph.downstream("E2") == ("C2", "C1")
     assert graph.downstream("C2") == ("C1",)
 
 
