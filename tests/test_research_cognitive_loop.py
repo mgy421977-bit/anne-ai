@@ -42,7 +42,7 @@ def test_loop_preserves_uncertainty_and_requests_research() -> None:
     assert state.decision.action == "RESEARCH"
     assert "H1" in state.critic.unresolved_hypotheses
     questions = loop.next_research_questions(state)
-    assert questions[0] == "Question"
+    assert questions[0] == "Look for credible evidence that contradicts or qualifies: Question"
     assert len(questions) == 1
 
 
