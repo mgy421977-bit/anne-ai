@@ -12,6 +12,7 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.metacognition import MetacognitiveEvaluator, MetacognitiveReview
 from anne.core.decision_synthesis import DecisionSynthesis, DecisionSynthesizer, EvidenceLink, SynthesisHypothesis
 from anne.core.failure_learning import FailureLearningEngine, FailureLearningResult
+from anne.core.feedback_loop import DecisionFeedbackLoop, FeedbackCycle
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
@@ -198,6 +199,26 @@ class DecisionLoop:
             attempted_strategy=attempted_strategy,
             retry_index=retry_index,
             max_retries=budget,
+        )
+
+    def feedback_cycle(
+        self,
+        synthesis: DecisionSynthesis,
+        *,
+        declared_confidence: float | None = None,
+        prior_failures: Sequence[Mapping[str, Any]] = (),
+        attempted_strategy: str = "",
+        retry_index: int = 0,
+        max_retries: int | None = None,
+    ) -> FeedbackCycle:
+        """Run synthesis review and bounded failure learning as one gate."""
+        return DecisionFeedbackLoop().evaluate(
+            synthesis,
+            declared_confidence=declared_confidence,
+            prior_failures=prior_failures,
+            attempted_strategy=attempted_strategy,
+            retry_index=retry_index,
+            max_retries=max_retries,
         )
 
     def run_cognitive(
