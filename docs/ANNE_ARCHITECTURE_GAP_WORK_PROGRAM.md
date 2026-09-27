@@ -2,7 +2,7 @@
 
 **Status:** Active roadmap  
 **Baseline:** Phase 1a Cognitive Architecture  
-**Repository:** `mgy421977-bit/anne-ai`  
+**Repository:** `mgy421977-bit/anne-ai`
 **Date:** 2026-09-27
 
 ## 1. Purpose
