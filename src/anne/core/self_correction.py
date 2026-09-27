@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class FailureClass(str, Enum):
+class FailureClass(StrEnum):
     FACTUAL = "factual"
     SEMANTIC = "semantic"
     LOGICAL = "logical"

@@ -44,10 +44,17 @@ class IntentClassifier:
 
         # Explicit deictic references with no recoverable object are high
         # ambiguity: MITOS must not invent what "this/that" refers to.
-        if any(marker in normalized for marker in (
-            "bunu yap", "bunu gerçekleştir", "şunu yap", "şunu gerçekleştir",
-            "onu yap", "onu gerçekleştir",
-        )):
+        if any(
+            marker in normalized
+            for marker in (
+                "bunu yap",
+                "bunu gerçekleştir",
+                "şunu yap",
+                "şunu gerçekleştir",
+                "onu yap",
+                "onu gerçekleştir",
+            )
+        ):
             return IntentFrame(IntentKind.ACTION_REQUEST, 0.95, False, True, 0.9)
 
         # "Bir şey" expresses an action goal but leaves the object/goal open;
@@ -58,16 +65,31 @@ class IntentClassifier:
         )):
             return IntentFrame(IntentKind.ACTION_REQUEST, 0.9, False, True, 0.6)
 
-        if any(marker in normalized for marker in ("benim adıma", "hemen gerçekleştir", "yapabilir misin")):
+        if any(
+            marker in normalized
+            for marker in ("benim adıma", "hemen gerçekleştir", "yapabilir misin")
+        ):
             return IntentFrame(IntentKind.ACTION_REQUEST, 0.9, False, True, 0.1)
 
-        if any(marker in normalized for marker in (
-            "dayanağı", "dayanak", "kanıt", "kaynak", "kaynağı", "kaynağın",
-            "evidence", "source",
-        )):
+        if any(
+            marker in normalized
+            for marker in (
+                "dayanağı",
+                "dayanak",
+                "kanıt",
+                "kaynak",
+                "kaynağı",
+                "kaynağın",
+                "evidence",
+                "source",
+            )
+        ):
             return IntentFrame(IntentKind.EVIDENCE_REQUEST, 0.9, True, False, 0.2)
 
-        if any(marker in normalized for marker in ("kesin doğru", "emin misin", "ne kadar eminsin", "belirsiz")):
+        if any(
+            marker in normalized
+            for marker in ("kesin doğru", "emin misin", "ne kadar eminsin", "belirsiz")
+        ):
             return IntentFrame(IntentKind.UNCERTAINTY, 0.9, True, False, 0.2)
 
         if any(marker in normalized for marker in ("yanlış", "hata", "kendini düzelt", "önceki karar")):
@@ -76,7 +98,10 @@ class IntentClassifier:
         if any(marker in normalized for marker in ("risk", "tehlike", "zarar", "güvenli", "harm", "danger")):
             return IntentFrame(IntentKind.RISK, 0.9, True, True, 0.2)
 
-        if any(marker in normalized for marker in ("karşılaştır", "hangisi", "mi daha", "vs", "seçenek")):
+        if any(
+            marker in normalized
+            for marker in ("karşılaştır", "hangisi", "mi daha", "vs", "seçenek")
+        ):
             return IntentFrame(IntentKind.COMPARISON, 0.8, True, False, 0.3)
 
         if any(marker in normalized for marker in ("önce", "adımlar", "plan", "nasıl iler", "hangi bilgileri")):
