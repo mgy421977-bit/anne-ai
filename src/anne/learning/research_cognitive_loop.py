@@ -68,6 +68,8 @@ class ResearchCognitiveLoop:
         if state.decision.action != "RESEARCH":
             return ()
         unresolved = set(state.critic.unresolved_hypotheses)
+        if "H1" in unresolved and len(state.plan.subquestions) >= 3:
+            return (state.plan.subquestions[2].question,)
         return tuple(
             hypothesis.claim
             for hypothesis in state.hypotheses
