@@ -1,11 +1,17 @@
 """Structured evidence records used by ANNE's learning/research layer."""
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-import hashlib
-from anne.learning.provenance_graph import NodeStatus, ProvenanceGraph, ProvenanceNode, ProvenanceEdge
+
+from anne.learning.provenance_graph import (
+    NodeStatus,
+    ProvenanceEdge,
+    ProvenanceGraph,
+    ProvenanceNode,
+)
 from anne.learning.reevaluation import ReEvaluationPlan, ReEvaluationPlanner
 
 
@@ -174,4 +180,11 @@ class EvidenceLedger:
         return self.graph.as_dict()
 
 
-__all__ = ["EvidenceItem", "EvidenceLedgerEntry", "EvidenceDependency", "EvidenceLedger", "EvidenceStatus", "SupportStatus"]
+__all__ = [
+    "EvidenceItem",
+    "EvidenceLedgerEntry",
+    "EvidenceDependency",
+    "EvidenceLedger",
+    "EvidenceStatus",
+    "SupportStatus",
+]
