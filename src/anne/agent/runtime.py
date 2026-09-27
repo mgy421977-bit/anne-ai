@@ -273,7 +273,8 @@ omit only when no semantic extraction is useful.
 
     def _create_research_plan(self, query: str) -> ResearchPlan:
         """Create a bounded, inspectable plan before web research executes."""
-        return self.research_planner.create_plan(query)
+        planner = getattr(self, "research_planner", ResearchPlanner())
+        return planner.create_plan(query)
 
     def _web_research(self, query: str) -> dict[str, Any]:
         """Run bounded retrieval plus a bounded evidence/critic follow-up cycle."""
