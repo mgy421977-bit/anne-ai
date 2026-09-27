@@ -151,8 +151,10 @@ class AnneDesktop(tk.Tk):
             f"ACTION      : {action or '—'}",
             f"SOURCE      : {source or '—'}",
             f"CONFIDENCE  : {confidence if confidence is not None else '—'}",
-            f"SELECTED    : {getattr(selection, 'accepted', '—') if selection is not None else '—'}",
-            f"SCORE       : {getattr(selection, 'score', '—') if selection is not None else '—'}",
+            "SELECTED    : "
+            f"{getattr(selection, 'accepted', '—') if selection is not None else '—'}",
+            "SCORE       : "
+            f"{getattr(selection, 'score', '—') if selection is not None else '—'}",
             f"ANLA SCORE  : {context_map.get('anla_score', '—')}",
             f"ETHIC SCORE : {getattr(ethic_score, 'total', '—')}",
             f"HYPOTHESIS  : {hypothesis or '—'}",
