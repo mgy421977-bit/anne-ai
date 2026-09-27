@@ -4,7 +4,7 @@ The desktop layer is intentionally thin: it presents the existing guarded
 DecisionLoop and does not add new cognitive, safety, or agency authority.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import threading
 import tkinter as tk
