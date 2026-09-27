@@ -1,4 +1,5 @@
 """Bounded specialist-agent orchestration for MITOS."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
