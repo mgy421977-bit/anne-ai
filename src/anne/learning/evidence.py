@@ -148,8 +148,10 @@ class EvidenceLedger:
         target_content: str,
         relation: str = "derived_from",
     ) -> None:
-        if source_id not in self.graph.as_dict()["nodes"]:
-            raise ValueError(f"unknown source id: {source_id}")
+        try:
+            self.graph.get(source_id)
+        except KeyError as exc:
+            raise ValueError(f"unknown source id: {source_id}") from exc
         self.graph.add_node(ProvenanceNode(target_id, target_kind, target_content))
         self.graph.add_edge(ProvenanceEdge(source_id, target_id, relation))
 
