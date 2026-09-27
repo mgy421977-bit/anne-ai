@@ -6,7 +6,7 @@ import json
 import re
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from anne.core.cognitive_state import Consciousness, EthicScore, Hypothesis
 from anne.memory.persistence import connect_memory
