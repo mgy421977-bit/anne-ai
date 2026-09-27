@@ -1,8 +1,8 @@
 """ANNE storage abstractions and implementations."""
 
 from .artifact import ArtifactMetadata, ArtifactStore
-from .memory import MemoryStore
 from .local import LocalArtifactStore
+from .memory import MemoryStore
 from .s3 import S3ArtifactStore
 
 __all__ = [
