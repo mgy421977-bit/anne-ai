@@ -23,7 +23,11 @@ class DiscoveryBatch:
 class MitosAnneLoop:
     """Bounded discovery loop: generate -> broadcast -> ANNE gate."""
 
-    def __init__(self, engine: MitosEngine | None = None, workspace: GlobalWorkspace | None = None) -> None:
+    def __init__(
+        self,
+        engine: MitosEngine | None = None,
+        workspace: GlobalWorkspace | None = None,
+    ) -> None:
         self.engine = engine or MitosEngine()
         self.workspace = workspace or GlobalWorkspace()
 
