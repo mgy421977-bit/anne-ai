@@ -122,7 +122,7 @@ No component should be interpreted as proof of consciousness, general intelligen
 │   │      │      │      │        │        └─ action       │
 │   │      │      │      │        └──────── contextual     │
 │   │      │      └──────────────────── semantic gate  │
-│   │      │      └──────────────────── pattern/attention │
+   │      │      └──────────────────── pattern/attention │
 │   │      └────────────────────────── observation/memory │
 │   └────────────────────────────────── perception         │
 │                                                          │
@@ -163,7 +163,7 @@ anne/
 │   ├── dream/              Dream-cycle research components
 │   ├── memory/             Persistent/fractal memory
 │   ├── multi_agent/        Bounded specialist coordination
-│   ├── mythos/              Proposal/generative research layer
+│   ├── mythos/             Proposal/generative research layer
 │   ├── neuro_symbolic/     Neuro-symbolic reasoning components
 │   ├── providers/          Model-provider adapters
 │   ├── safety/             Tool/action safety controls
@@ -345,6 +345,54 @@ See:
 | Unsupervised high-stakes deployment | **Not supported** |
 
 For the authoritative milestone sequence, see [`ROADMAP.md`](ROADMAP.md).
+
+---
+
+## Roadmap execution status — 2026-09-27
+
+> **The milestone sequence and roadmap criteria in [`ROADMAP.md`](ROADMAP.md) are intentionally preserved.**
+> This section is a progress marker only: completed engineering work is marked with **✓** so that human and machine readers can distinguish current implementation from future work without rewriting the roadmap.
+
+### Evidence / research infrastructure
+
+- ✓ Bounded public web research is implemented behind the guarded runtime path.
+- ✓ Evidence Ledger and provenance-bearing research evidence are implemented.
+- ✓ Evidence passages are retained and exposed in research traces.
+- ✓ Independent publisher-family handling is implemented for bounded verification.
+- ✓ Bounded multi-source verification supports `VERIFIED`, `REFUTED`, `UNVERIFIED`, and `CONFLICTING` outcomes.
+- ✓ Deterministic web-verification benchmark v0.1 exists.
+- ✓ Live web-verification benchmark v0.2 and its runner/workflow exist.
+- ✓ Research Planner MVP exists with bounded subquestions, source directions, query/source budgets, and stop conditions.
+- ✓ Research Cognitive Loop can perform bounded follow-up research when the supported verifier reports unresolved or conflicting evidence.
+- ✓ Provenance Graph supports explicit dependency tracking and downstream invalidation.
+- ✓ Re-evaluation planning/execution can create fresh replacement nodes while preserving stale historical provenance.
+- ✓ Hypothesis generation and critique preserve alternative hypotheses rather than treating the first supported hypothesis as the only possible explanation.
+- ✓ Fresh evidence can trigger bounded re-evaluation of existing hypotheses.
+
+### Safety / agency
+
+- ✓ ToolPolicy and AgencyGate remain fail-closed for unauthorized action.
+- ✓ Evidence-required decisions remain blocked until provenance-bearing independent verification is available.
+- ✓ Action requests without explicit authority remain `REVIEW`.
+- ✓ Credential redaction, bounded retries, and safety metadata remain part of the guarded runtime path.
+
+### Current next implementation layer
+
+- ☐ **Decision Synthesis** — formally synthesize supported, multiple-supported, conflicting, insufficient-evidence, and rejected-with-alternatives states without suppressing alternative hypotheses.
+- ☐ **METACOG / Self-Evaluation** — evaluate how a conclusion was reached, what evidence and alternatives were considered, and whether further research is required.
+- ☐ **Advanced MITOS orchestration** — expand bounded specialist coordination only after the preceding evidence and synthesis layers are stable.
+- ☐ **Long-term planning and broader evaluation** — later roadmap work; no AGI claim is implied.
+
+### Status semantics for research bots
+
+```text
+✓ IMPLEMENTED / VERIFIED IN REPOSITORY
+◐ EXPERIMENTAL / BOUNDED
+△ RESEARCH HYPOTHESIS
+☐ ROADMAP / NOT YET IMPLEMENTED
+```
+
+**Important:** A ✓ in this progress section means that the corresponding engineering capability exists in the repository and is covered by code, tests, benchmark artifacts, or documented implementation evidence. It does **not** mean that the capability is universally reliable, scientifically proven, or equivalent to AGI.
 
 ---
 
