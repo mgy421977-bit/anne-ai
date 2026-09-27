@@ -13,6 +13,7 @@ import re
 import urllib.parse
 import urllib.request
 from html.parser import HTMLParser
+from typing import Any, cast
 
 from .evidence import EvidenceItem
 
@@ -125,11 +126,14 @@ class WebResearcher:
     def _get_text(url: str) -> str:
         request = urllib.request.Request(url, headers={"User-Agent": "ANNE-AI/0.3 (+generic-public-web-research)"})
         with urllib.request.urlopen(request, timeout=WebResearcher.timeout) as response:
-            return response.read().decode("utf-8", errors="replace")
+            raw = response.read()
+            if not isinstance(raw, bytes):
+                raise TypeError("web response body must be bytes")
+            return raw.decode("utf-8", errors="replace")
 
     @classmethod
-    def _get_json(cls, url: str) -> dict:
-        return json.loads(cls._get_text(url))
+    def _get_json(cls, url: str) -> dict[str, Any]:
+        return cast(dict[str, Any], json.loads(cls._get_text(url)))
 
     @classmethod
     def _extract_passage(cls, html: str, query: str, max_chars: int = 1200) -> str:
@@ -396,9 +400,9 @@ class WebResearcher:
                     continue
         for search_query in variants[:2]:
             try:
-                item = self._duckduckgo_instant(search_query)
-                if item:
-                    self._add_unique(evidence, item)
+                instant_item = self._duckduckgo_instant(search_query)
+                if instant_item:
+                    self._add_unique(evidence, instant_item)
             except Exception:
                 continue
             try:

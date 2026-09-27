@@ -74,7 +74,9 @@ class HypothesisCritic:
         assessments: list[HypothesisAssessment] = []
 
         for hypothesis in hypotheses:
-            support = contradiction = unresolved = 0
+            support = 0
+            contradiction = 0
+            unresolved_evidence = 0
             for hypothesis_id, signal in evidence_rows:
                 if hypothesis_id != hypothesis.id:
                     continue
@@ -84,7 +86,7 @@ class HypothesisCritic:
                 elif normalized == "CONTRADICTS":
                     contradiction += 1
                 else:
-                    unresolved += 1
+                    unresolved_evidence += 1
 
             if support and contradiction:
                 status = HypothesisStatus.UNRESOLVED
@@ -101,7 +103,7 @@ class HypothesisCritic:
 
             assessments.append(
                 HypothesisAssessment(
-                    hypothesis.id, support, contradiction, unresolved, status, reason
+                    hypothesis.id, support, contradiction, unresolved_evidence, status, reason
                 )
             )
 
