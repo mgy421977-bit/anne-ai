@@ -13,6 +13,7 @@ from anne.core.metacognition import MetacognitiveEvaluator, MetacognitiveReview
 from anne.core.decision_synthesis import DecisionSynthesis, DecisionSynthesizer, EvidenceLink, SynthesisHypothesis
 from anne.core.failure_learning import FailureLearningEngine, FailureLearningResult
 from anne.core.feedback_loop import DecisionFeedbackLoop, FeedbackCycle
+from anne.core.strategy_selection import StrategyCandidate
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
@@ -210,8 +211,9 @@ class DecisionLoop:
         attempted_strategy: str = "",
         retry_index: int = 0,
         max_retries: int | None = None,
+        strategy_candidates: Sequence[StrategyCandidate] = (),
     ) -> FeedbackCycle:
-        """Run synthesis review and bounded failure learning as one gate."""
+        """Run synthesis review, failure learning, and strategy selection as one gate."""
         return DecisionFeedbackLoop().evaluate(
             synthesis,
             declared_confidence=declared_confidence,
@@ -219,6 +221,7 @@ class DecisionLoop:
             attempted_strategy=attempted_strategy,
             retry_index=retry_index,
             max_retries=max_retries,
+            strategy_candidates=strategy_candidates,
         )
 
     def run_cognitive(
