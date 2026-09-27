@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
@@ -11,6 +11,7 @@ from anne.core.cognitive_orchestrator import CognitiveOrchestrator, Orchestratio
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.metacognition import MetacognitiveEvaluator, MetacognitiveReview
 from anne.core.decision_synthesis import DecisionSynthesis, DecisionSynthesizer, EvidenceLink, SynthesisHypothesis
+from anne.core.failure_learning import FailureLearningEngine, FailureLearningResult
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
@@ -171,6 +172,33 @@ class DecisionLoop:
             declared_confidence=declared_confidence,
         )
 
+    def learn_from_failure(
+        self,
+        failure: Mapping[str, Any],
+        *,
+        prior_failures: Sequence[Mapping[str, Any]] = (),
+        attempted_strategy: str = "",
+        retry_index: int = 0,
+        max_retries: int | None = None,
+    ) -> FailureLearningResult:
+        """Turn an SFT record into bounded strategy feedback.
+
+        The returned lesson is advisory and non-authoritative: it never becomes
+        evidence, permanent knowledge, or an execution permission by itself.
+        """
+        engine = FailureLearningEngine()
+        budget = (
+            engine.planner.MAX_RETRIES
+            if max_retries is None
+            else max_retries
+        )
+        return engine.learn(
+            failure,
+            prior_failures=prior_failures,
+            attempted_strategy=attempted_strategy,
+            retry_index=retry_index,
+            max_retries=budget,
+        )
     def run_cognitive(
         self,
         raw_input: str,
