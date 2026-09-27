@@ -3,6 +3,7 @@
 import pytest
 
 from anne.mythos.candidate import HypothesisCandidate, TaskMode
+from anne.mythos.engine import ExplorationMode
 from anne.mythos.orchestration import (
     MitosOrchestrationStatus,
     MitosOrchestrator,
@@ -19,7 +20,7 @@ def candidate(
         id=ident,
         goal="goal",
         claim=f"claim {ident}",
-        mode="hypothesis",
+        mode=ExplorationMode.HYPOTHESIS,
         probability=0.7,
         discovery_value=0.7,
         novelty=0.5,
