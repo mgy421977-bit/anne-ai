@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 import re
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 from urllib.parse import urlparse
 
 
@@ -124,8 +124,25 @@ class VerificationResult:
         return asdict(self)
 
 
+@runtime_checkable
 class ClaimVerifier(Protocol):
+    """Contract for verifying a single final/generated claim."""
+
     def verify(self, claim: str) -> VerificationResult: ...
+
+
+@runtime_checkable
+class EvidenceVerifier(Protocol):
+    """Contract for verifying a target claim against evidence records.
+
+    This is intentionally separate from ``ClaimVerifier``: evidence verification
+    consumes provenance-bearing evidence items, while claim verification consumes
+    one claim and returns a factual result for the caller.
+    """
+
+    def verify_evidence(
+        self, claim: str, evidence: tuple[Any, ...]
+    ) -> VerificationResult: ...
 
 
 @dataclass(frozen=True)

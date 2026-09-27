@@ -2,6 +2,8 @@ from anne.core.evidence import EvidenceGate
 from anne.agent.runtime import AnneAgent
 from anne.core.verification import (
     BoundedMultiSourceVerifier,
+    ClaimVerifier,
+    EvidenceVerifier,
     FactualStatus,
     SemanticSupportEvaluator,
     SupportStatus,
@@ -190,3 +192,28 @@ def test_different_source_claims_support_one_target_claim() -> None:
         "Paris is the capital city of France.",
         "France's capital city is Paris.",
     }
+
+
+def test_verification_contracts_are_explicit_and_separate() -> None:
+    verifier = BoundedMultiSourceVerifier()
+
+    assert isinstance(verifier, ClaimVerifier)
+    assert isinstance(verifier, EvidenceVerifier)
+    assert callable(getattr(verifier, "verify"))
+    assert callable(getattr(verifier, "verify_evidence"))
+
+
+def test_claim_and_evidence_verification_contracts_have_distinct_inputs() -> None:
+    verifier = BoundedMultiSourceVerifier(
+        (evidence("A", "Paris is the capital of France.", SupportStatus.SUPPORTS, "https://a.test/x"),)
+    )
+
+    claim_result = verifier.verify("Paris is the capital of France.")
+    evidence_result = verifier.verify_evidence(
+        "Paris is the capital of France.", ()
+    )
+
+    assert claim_result.status is FactualStatus.UNVERIFIED
+    assert evidence_result.status is FactualStatus.UNVERIFIED
+    assert claim_result.sources == ("https://a.test/x",)
+    assert evidence_result.sources == ()
