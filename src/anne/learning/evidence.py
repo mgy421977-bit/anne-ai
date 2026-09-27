@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 import hashlib
 from anne.learning.provenance_graph import NodeStatus, ProvenanceGraph, ProvenanceNode, ProvenanceEdge
+from anne.learning.reevaluation import ReEvaluationPlan, ReEvaluationPlanner
 
 
 class SupportStatus(StrEnum):
@@ -159,6 +160,12 @@ class EvidenceLedger:
         if evidence_id not in self._entries:
             raise KeyError(evidence_id)
         return self.graph.invalidate(evidence_id)
+
+    def re_evaluation_plan(self, evidence_id: str) -> ReEvaluationPlan:
+        """Return the bounded re-evaluation action after invalidating evidence."""
+        if evidence_id not in self._entries:
+            raise KeyError(evidence_id)
+        return ReEvaluationPlanner().create_plan(self.graph, evidence_id)
 
     def status(self, node_id: str) -> NodeStatus:
         return self.graph.get(node_id).status
