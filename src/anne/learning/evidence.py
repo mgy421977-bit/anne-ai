@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
+import hashlib
+from anne.learning.provenance_graph import NodeStatus, ProvenanceGraph, ProvenanceNode, ProvenanceEdge
 
 
 class SupportStatus(StrEnum):
@@ -90,4 +92,75 @@ class EvidenceLedgerEntry:
             object.__setattr__(self, "retrieved_at", datetime.now(UTC).isoformat())
 
 
-__all__ = ["EvidenceItem", "EvidenceLedgerEntry", "EvidenceDependency", "EvidenceStatus", "SupportStatus"]
+class EvidenceLedger:
+    """Evidence records plus explicit provenance dependencies.
+
+    The ledger records evidence automatically, but claim/hypothesis/answer
+    relationships must be registered explicitly; provenance is never inferred
+    from text similarity.
+    """
+
+    def __init__(self) -> None:
+        self._entries: dict[str, EvidenceLedgerEntry] = {}
+        self.graph = ProvenanceGraph()
+
+    @staticmethod
+    def evidence_id(entry: EvidenceLedgerEntry) -> str:
+        payload = "|".join((entry.provenance, entry.claim, entry.passage))
+        return "E-" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+    def record(self, entry: EvidenceLedgerEntry) -> str:
+        evidence_id = self.evidence_id(entry)
+        self._entries[evidence_id] = entry
+        if evidence_id not in self.graph.as_dict()["nodes"]:
+            self.graph.add_node(
+                ProvenanceNode(evidence_id, "evidence", entry.passage or entry.claim)
+            )
+        return evidence_id
+
+    def get(self, evidence_id: str) -> EvidenceLedgerEntry:
+        return self._entries[evidence_id]
+
+    def register_claim(
+        self,
+        *,
+        claim_id: str,
+        claim: str,
+        evidence_ids: tuple[str, ...],
+    ) -> None:
+        if not evidence_ids:
+            raise ValueError("evidence_ids must not be empty")
+        self.graph.add_node(ProvenanceNode(claim_id, "claim", claim))
+        for evidence_id in evidence_ids:
+            if evidence_id not in self._entries:
+                raise ValueError(f"unknown evidence id: {evidence_id}")
+            self.graph.add_edge(ProvenanceEdge(evidence_id, claim_id, "supports"))
+
+    def register_derivation(
+        self,
+        *,
+        source_id: str,
+        source_kind: str,
+        target_id: str,
+        target_kind: str,
+        target_content: str,
+        relation: str = "derived_from",
+    ) -> None:
+        if source_id not in self.graph.as_dict()["nodes"]:
+            raise ValueError(f"unknown source id: {source_id}")
+        self.graph.add_node(ProvenanceNode(target_id, target_kind, target_content))
+        self.graph.add_edge(ProvenanceEdge(source_id, target_id, relation))
+
+    def invalidate_evidence(self, evidence_id: str) -> tuple[str, ...]:
+        if evidence_id not in self._entries:
+            raise KeyError(evidence_id)
+        return self.graph.invalidate(evidence_id)
+
+    def status(self, node_id: str) -> NodeStatus:
+        return self.graph.get(node_id).status
+
+    def provenance(self) -> dict[str, object]:
+        return self.graph.as_dict()
+
+
+__all__ = ["EvidenceItem", "EvidenceLedgerEntry", "EvidenceDependency", "EvidenceLedger", "EvidenceStatus", "SupportStatus"]
