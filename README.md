@@ -381,6 +381,7 @@ For the authoritative milestone sequence, see [`ROADMAP.md`](ROADMAP.md).
 - ✓ **Decision Synthesis v1** — formally synthesizes supported, multiple-supported, conflicting, insufficient-evidence, and rejected states while preserving alternative hypotheses; covered by deterministic unit and golden tests.
 - ✓ **METACOG / Self-Evaluation v1** — evaluates evidence sufficiency, alternative hypotheses, contradictions, failure traces, repeated failures, and declared confidence before the next guarded stage.
 - ✓ **Failure Learning / SFT feedback v1** — converts failure traces into bounded strategy feedback, detects repeated failures, requires strategy change on unchanged retries, preserves abstention/exhaustion gates, and never promotes failure-derived lessons to validated knowledge.
+- ✓ **Closed Decision Feedback Loop v1** — composes Decision Synthesis → METACOG → Failure Learning into an explicit review/recovery cycle; retries are never automatic, remain bounded, and require re-verification after a strategy change.
 - ☐ **Advanced MITOS orchestration** — expand bounded specialist coordination only after the preceding evidence and synthesis layers are stable.
 - ☐ **Long-term planning and broader evaluation** — later roadmap work; no AGI claim is implied.
 
