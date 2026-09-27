@@ -19,6 +19,7 @@ from anne.core.failure_recovery import FailureRecoveryController, FailureSignal
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.core.verification import ClaimVerifier
+from anne.core.verification_gate import VerificationGate, VerificationGateStatus
 from anne.mythos.candidate import SelectionResult, TaskMode
 from anne.mythos.engine import ExplorationMode, HypothesisCandidate
 from anne.mythos.generate import generate_candidates
@@ -389,6 +390,38 @@ class CognitiveOrchestrator:
                     hypothesis,
                     claim_verifier=verifier,
                 )
+                if state.requires_evidence:
+                    gate = VerificationGate().evaluate(
+                        hypothesis.claim,
+                        verifier=verifier,
+                        selected=True,
+                    )
+                    state.context_map["verification_gate"] = gate.status.value
+                    state.context_map["verification_gate_execution_allowed"] = (
+                        gate.execution_allowed
+                    )
+                    state.context_map["verification_gate_reason"] = gate.verification.reason
+                    if gate.status is not VerificationGateStatus.VERIFIED:
+                        state.action = "REVIEW" if gate.status is VerificationGateStatus.REVIEW else "HALT"
+                        state.output = {
+                            **state.output,
+                            "verdict": gate.status.value.upper(),
+                            "action": state.action,
+                            "reason": gate.verification.reason,
+                            "verification_gate": gate.as_dict(),
+                        }
+                        last_state = state
+                        return OrchestrationResult(
+                            "BOUNDED",
+                            ff,
+                            state,
+                            selection,
+                            tuple(trace),
+                            gate.verification.reason,
+                            retry_count=retry_count,
+                            lineage=tuple(lineage),
+                            stop_reason=f"verification_gate_{gate.status.value}",
+                        )
                 if state.logic_valid or state.ethic_score is not None:
                     trace.append("HİSSET")
                     state = self.pipeline.hisset(state)
