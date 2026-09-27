@@ -70,6 +70,16 @@ strict = true
 warn_return_any = true
 warn_unused_configs = true
 
+[[tool.mypy.overrides]]
+module = [
+    "google.*",
+    "boto3",
+    "anthropic",
+    "pyttsx3",
+    "speech_recognition",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
