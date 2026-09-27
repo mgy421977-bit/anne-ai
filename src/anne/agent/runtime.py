@@ -415,7 +415,7 @@ omit only when no semantic extraction is useful.
             queries_used=1 + len(follow_up_queries),
             sources_used=len(classified_evidence),
         )
-        verification: VerificationResult | None = (
+        final_verification: VerificationResult | None = (
             verification_records[0]
             if verification_records
             else (

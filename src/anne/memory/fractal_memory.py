@@ -6,7 +6,7 @@ import json
 import re
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from anne.core.cognitive_state import Consciousness, EthicScore, Hypothesis
 from anne.memory.persistence import connect_memory
@@ -185,10 +185,18 @@ class FractalMemory:
         return deduped[:limit]
 
     def get_top_patterns(self, limit: int = 5) -> list[tuple[Any,...]]:
-        return self.conn.cursor().execute("SELECT pattern,frequency,avg_score,last_verdict FROM dream_patterns ORDER BY frequency DESC LIMIT ?", (limit,)).fetchall()
+        rows = self.conn.cursor().execute(
+            "SELECT pattern,frequency,avg_score,last_verdict FROM dream_patterns "
+            "ORDER BY frequency DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return cast(list[tuple[Any, ...]], rows)
 
     def get_strong_rules(self, limit: int = 5) -> list[tuple[Any,...]]:
-        return self.conn.cursor().execute("SELECT rule,confidence,support_count FROM learned_rules WHERE confidence > 0.6 ORDER BY confidence DESC LIMIT ?", (limit,)).fetchall()
+        rows = self.conn.cursor().execute(
+            "SELECT rule,confidence,support_count FROM learned_rules "
+            "WHERE confidence > 0.6 ORDER BY confidence DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return cast(list[tuple[Any, ...]], rows)
 
     def get_empathy_strength(self, id_a: str, id_b: str) -> float:
         key = f"{min(id_a,id_b)}_{max(id_a,id_b)}"
@@ -209,12 +217,14 @@ class FractalMemory:
         return trace_id
 
     def get_recent_failures(self, limit: int = 5) -> list[tuple[Any,...]]:
-        return self.conn.cursor().execute("""SELECT id,cycle_id,stage,reason,meta_tag,ethic_total,created_at
+        rows = self.conn.cursor().execute("""SELECT id,cycle_id,stage,reason,meta_tag,ethic_total,created_at
             FROM failure_traces ORDER BY created_at DESC,rowid DESC LIMIT ?""", (limit,)).fetchall()
+        return cast(list[tuple[Any, ...]], rows)
 
     def get_failures_at_depth(self, depth: int, limit: int = 20) -> list[tuple[Any,...]]:
-        return self.conn.cursor().execute("""SELECT id,cycle_id,parent_cycle_id,depth,task_mode,scale_role,stage,reason,created_at
+        rows = self.conn.cursor().execute("""SELECT id,cycle_id,parent_cycle_id,depth,task_mode,scale_role,stage,reason,created_at
             FROM failure_traces WHERE depth=? ORDER BY created_at DESC,rowid DESC LIMIT ?""", (depth,limit)).fetchall()
+        return cast(list[tuple[Any, ...]], rows)
 
     def save_scale_event(self, *, cycle_id: str, parent_cycle_id: str | None, depth: int,
                          scale_role: str, task_mode: str, question: str, selected_claim: str = "",
@@ -236,6 +246,7 @@ class FractalMemory:
             clauses.append("parent_cycle_id=?"); params.append(parent_cycle_id)
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         params.append(limit)
-        return self.conn.cursor().execute(f"""SELECT cycle_id,parent_cycle_id,depth,scale_role,task_mode,
+        rows = self.conn.cursor().execute(f"""SELECT cycle_id,parent_cycle_id,depth,scale_role,task_mode,
             question,selected_claim,status,stage_reached,created_at FROM scale_events {where}
             ORDER BY depth ASC,created_at ASC LIMIT ?""", params).fetchall()
+        return cast(list[tuple[Any, ...]], rows)
