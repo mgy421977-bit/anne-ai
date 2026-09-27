@@ -80,6 +80,28 @@ class ResearchCognitiveLoop:
             sources_used=sources_used,
         )
 
+    def reassess_with_fresh_evidence(
+        self,
+        question: str,
+        evidence: Iterable[EvidenceItem],
+        *,
+        queries_used: int = 0,
+        sources_used: int = 0,
+        max_hypotheses: int = 3,
+    ) -> ResearchCognitiveState:
+        """Rebuild the bounded cognitive state from fresh evidence.
+
+        Existing hypotheses are not treated as facts; the critic reclassifies
+        them from the newly supplied evidence signals.
+        """
+        return self.initialize(
+            question,
+            evidence=evidence,
+            queries_used=queries_used,
+            sources_used=sources_used,
+            max_hypotheses=max_hypotheses,
+        )
+
     @staticmethod
     def next_research_questions(
         state: ResearchCognitiveState,
