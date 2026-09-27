@@ -91,7 +91,9 @@ class ResearchPlan:
                     "id": item.id,
                     "question": item.question,
                     "purpose": item.purpose,
-                    "source_directions": [direction.value for direction in item.source_directions],
+                    "source_directions": [
+                        direction.value for direction in item.source_directions
+                    ],
                 }
                 for item in self.subquestions
             ],
@@ -101,8 +103,12 @@ class ResearchPlan:
                 "max_subquestions": self.stop_conditions.max_subquestions,
                 "max_queries": self.stop_conditions.max_queries,
                 "max_sources": self.stop_conditions.max_sources,
-                "stop_on_diminishing_returns": self.stop_conditions.stop_on_diminishing_returns,
-                "stop_on_unresolved_contradiction": self.stop_conditions.stop_on_unresolved_contradiction,
+                "stop_on_diminishing_returns": (
+                    self.stop_conditions.stop_on_diminishing_returns
+                ),
+                "stop_on_unresolved_contradiction": (
+                    self.stop_conditions.stop_on_unresolved_contradiction
+                ),
             },
             "query_budget": self.query_budget,
         }
@@ -187,7 +193,10 @@ class ResearchPlanner:
             ),
             ResearchSubquestion(
                 id="q3",
-                question=f"Look for credible evidence that contradicts or qualifies: {main_question.strip()}",
+                question=(
+                    "Look for credible evidence that contradicts or qualifies: "
+                    f"{main_question.strip()}"
+                ),
                 purpose="Expose contradictions, limitations, or unresolved uncertainty.",
                 source_directions=(
                     SourceDirection.PRIMARY,
@@ -215,9 +224,7 @@ class ResearchPlanner:
             return True
         if contradiction_unresolved and limits.stop_on_unresolved_contradiction:
             return True
-        if diminishing_returns and limits.stop_on_diminishing_returns:
-            return True
-        return False
+        return diminishing_returns and limits.stop_on_diminishing_returns
 
 
 __all__ = [

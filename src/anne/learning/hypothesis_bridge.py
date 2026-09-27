@@ -6,9 +6,7 @@ from anne.learning.evidence import EvidenceItem, SupportStatus
 from anne.learning.hypothesis import (
     CriticResult,
     Hypothesis,
-    HypothesisAssessment,
     HypothesisCritic,
-    HypothesisStatus,
 )
 
 

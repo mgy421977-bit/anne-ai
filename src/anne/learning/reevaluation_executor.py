@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
-from anne.learning.provenance_graph import NodeStatus, ProvenanceGraph, ProvenanceNode, ProvenanceEdge
+from anne.learning.provenance_graph import (
+    NodeStatus,
+    ProvenanceEdge,
+    ProvenanceGraph,
+    ProvenanceNode,
+)
 
 
 @dataclass(frozen=True)
@@ -71,7 +76,10 @@ class ReEvaluationExecutor:
             stale_node=stale_node,
             replacement_node=replacement_node,
             action="REACTIVATED",
-            reason="Fresh active evidence produced an explicit replacement; historical stale state was preserved.",
+            reason=(
+                "Fresh active evidence produced an explicit replacement; "
+                "historical stale state was preserved."
+            ),
         )
 
 
