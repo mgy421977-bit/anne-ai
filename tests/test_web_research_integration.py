@@ -236,7 +236,6 @@ def test_agent_exposes_end_to_end_evidence_trace(monkeypatch) -> None:
     ]
 
 
-
 def test_research_verification_reaches_evidence_gate_and_decision(tmp_path, monkeypatch) -> None:
     from anne.core.decision_loop import DecisionLoop
     from anne.memory.fractal_memory import FractalMemory
@@ -307,7 +306,6 @@ def test_conflicting_research_verification_blocks_evidence_gate(tmp_path) -> Non
     assert decision.verdict == "ABSTAIN"
 
 
-
 def test_evidence_ledger_retains_source_passage(monkeypatch) -> None:
     class FakeResearcher:
         def research(self, query):
@@ -346,3 +344,35 @@ def test_source_passage_extraction_is_query_near() -> None:
     passage = WebResearcher._extract_passage(html, "capital France", max_chars=120)
 
     assert "Paris is the capital of France" in passage
+
+
+def test_web_research_exposes_decision_synthesis(monkeypatch) -> None:
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim="Evidence for Question.",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    confidence=0.8,
+                    passage="Evidence for Question.",
+                    support="supports",
+                )
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    agent.workspace = CognitiveWorkspace(task="Question")
+    agent.response_verifier = None
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    result = agent._web_research("Question")
+
+    synthesis = result["decision_synthesis"]
+    assert synthesis["status"] == "SUPPORTED"
+    assert synthesis["supported_hypotheses"] == ["H1"]
+    assert synthesis["unresolved_hypotheses"] == []
+    assert synthesis["rejected_hypotheses"] == []
+    assert synthesis["is_ambiguous"] is False
+    assert synthesis["reason"]
