@@ -85,8 +85,8 @@ class MythosEngine:
         h.tested = True
         outcome = "supported" if h.probability > 0.5 else "weak"
         h.result = (
-            f"[TEST·${h.iteration}] ${outcome}. "
-            f"p=${h.probability:.3f} Δ=${h.confidence_delta:+.3f}"
+            f"[TEST·{h.iteration}] {outcome}. "
+            f"p={h.probability:.3f} Δ={h.confidence_delta:+.3f}"
         )
         return h
 
@@ -100,7 +100,9 @@ class MythosEngine:
         current_prior = prior
         previous_claim = ""
         for _ in range(max_iterations):
-            h = self.test_hypothesis(self.generate_hypothesis(topic, current_prior, previous_claim))
+            h = self.test_hypothesis(
+                self.generate_hypothesis(topic, current_prior, previous_claim)
+            )
             hypotheses.append(h)
             current_prior = h.probability
             previous_claim = h.claim
