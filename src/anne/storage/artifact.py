@@ -21,7 +21,14 @@ class ArtifactMetadata:
 class ArtifactStore(Protocol):
     """Provider-neutral interface used by memory, MITOS and experiments."""
 
-    def put(self, key: str, data: bytes, *, content_type: str = "application/octet-stream", data_class: str = "PRIVATE_CLOUD") -> ArtifactMetadata: ...
+    def put(
+        self,
+        key: str,
+        data: bytes,
+        *,
+        content_type: str = "application/octet-stream",
+        data_class: str = "PRIVATE_CLOUD",
+    ) -> ArtifactMetadata: ...
 
     def get(self, key: str) -> bytes: ...
 
