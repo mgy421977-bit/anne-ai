@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 from enum import StrEnum
 
 from anne.learning.hypothesis import CriticResult, HypothesisAssessment, HypothesisStatus
