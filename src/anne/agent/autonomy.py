@@ -1,4 +1,5 @@
 """Bounded autonomous-system contracts for ANNE."""
+
 from dataclasses import dataclass, field
 from enum import StrEnum
 from uuid import uuid4
