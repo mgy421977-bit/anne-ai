@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Any
 
 
-class ApprovalDecision(str, Enum):
+class ApprovalDecision(str, Enum):  # noqa: UP042 — preserve approval-boundary enum compatibility
     APPROVE = "approve"
     REJECT = "reject"
     MODIFY = "modify"
