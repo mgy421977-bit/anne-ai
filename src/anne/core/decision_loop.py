@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from anne.core.cognitive_orchestrator import CognitiveOrchestrator, OrchestrationResult
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
+from anne.core.metacognition import MetacognitiveEvaluator, MetacognitiveReview
 from anne.core.decision_synthesis import DecisionSynthesis, DecisionSynthesizer, EvidenceLink, SynthesisHypothesis
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
@@ -156,6 +157,18 @@ class DecisionLoop:
             hypotheses,
             evidence=evidence,
             failure_trace=failure_trace,
+        )
+
+    def review_decision(
+        self,
+        synthesis: DecisionSynthesis,
+        *,
+        declared_confidence: float | None = None,
+    ) -> MetacognitiveReview:
+        """Inspect a synthesis before the next guarded stage."""
+        return MetacognitiveEvaluator().evaluate(
+            synthesis,
+            declared_confidence=declared_confidence,
         )
 
     def run_cognitive(
