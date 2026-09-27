@@ -210,9 +210,10 @@ def test_claim_and_evidence_verification_contracts_have_distinct_inputs() -> Non
 
     claim_result = verifier.verify("Paris is the capital of France.")
     evidence_result = verifier.verify_evidence(
-        "Paris is the capital of France.", verifier.evidence
+        "Paris is the capital of France.", ()
     )
 
     assert claim_result.status is FactualStatus.UNVERIFIED
     assert evidence_result.status is FactualStatus.UNVERIFIED
-    assert claim_result.reason != evidence_result.reason
+    assert claim_result.sources == ("https://a.test/x",)
+    assert evidence_result.sources == ()
