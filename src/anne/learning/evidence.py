@@ -179,6 +179,25 @@ class EvidenceLedger:
     def provenance(self) -> dict[str, object]:
         return self.graph.as_dict()
 
+    def as_dict(self) -> dict[str, object]:
+        """Serialize the explicit evidence ledger without upgrading epistemic status."""
+        return {
+            "entries": [
+                {
+                    "id": evidence_id,
+                    "claim": entry.claim,
+                    "source": entry.source,
+                    "provenance": entry.provenance,
+                    "confidence": entry.confidence,
+                    "status": entry.status.value,
+                    "passage": entry.passage,
+                    "support": entry.support,
+                    "retrieved_at": entry.retrieved_at,
+                }
+                for evidence_id, entry in self._entries.items()
+            ]
+        }
+
 
 __all__ = [
     "EvidenceItem",
