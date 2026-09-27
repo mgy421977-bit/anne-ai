@@ -93,3 +93,39 @@ def test_evidence_invalidation_propagates_to_hypothesis_and_synthesis() -> None:
     assert plan.requires_research is True
     assert plan.action == "RESEARCH"
     assert plan.stale_nodes == ("H1", "SYNTHESIS")
+
+
+def test_re_evaluation_rebuilds_state_from_fresh_evidence() -> None:
+    loop = ResearchCognitiveLoop()
+    initial = loop.initialize("Question")
+    old_evidence = _evidence(
+        initial.hypotheses[0].claim,
+        SupportStatus.SUPPORTS.value,
+    )
+    initial = loop.initialize("Question", evidence=[old_evidence])
+
+    evidence_id = next(
+        node["id"]
+        for node in initial.evidence_ledger.provenance()["nodes"]
+        if node["kind"] == "evidence"
+    )
+    plan = initial.evidence_ledger.re_evaluation_plan(evidence_id)
+
+    fresh_evidence = _evidence(
+        initial.hypotheses[0].claim,
+        SupportStatus.CONTRADICTS.value,
+    )
+    refreshed = loop.continue_from_re_evaluation(
+        plan,
+        "Question",
+        evidence=[fresh_evidence],
+    )
+
+    assert refreshed is not None
+    assert refreshed is not initial
+    assert refreshed.synthesis.status.value != initial.synthesis.status.value
+    assert refreshed.decision.action == "RESEARCH"
+    assert all(
+        node["status"] == "active"
+        for node in refreshed.evidence_ledger.provenance()["nodes"]
+    )
