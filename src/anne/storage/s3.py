@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .artifact import ArtifactMetadata
@@ -60,7 +60,7 @@ class S3ArtifactStore:
             key=key,
             content_type=content_type,
             size_bytes=len(data),
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             sha256=hashlib.sha256(data).hexdigest(),
             data_class=data_class,
         )

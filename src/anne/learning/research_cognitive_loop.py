@@ -8,8 +8,8 @@ from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesi
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
-from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
+from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 from anne.learning.reevaluation import ReEvaluationPlan
 
 

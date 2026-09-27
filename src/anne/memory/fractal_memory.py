@@ -149,7 +149,8 @@ class FractalMemory:
         self.conn.execute(
             """INSERT OR REPLACE INTO decisions
             (id,hypothesis_id,goodness,equality,harm,total,verdict,reasoning,consciousnesses,
-             cognitive_stage,created_at,depth,parent_cycle_id,task_mode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+             cognitive_stage,created_at,depth,parent_cycle_id,task_mode)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 decision_id, hyp_id, score.goodness, score.equality, score.harm,
                 score.total, score.verdict, score.reasoning,
@@ -169,13 +170,21 @@ class FractalMemory:
             nf = existing[1] + 1
             na = (existing[2] * existing[1] + score) / nf
             cur.execute(
-                "UPDATE dream_patterns SET frequency=?,avg_score=?,last_verdict=?,last_seen=? WHERE id=?",
+                "UPDATE dream_patterns SET frequency=?,avg_score=?,last_verdict=?,last_seen=? "
+                "WHERE id=?",
                 (nf, round(na, 3), verdict, datetime.now().isoformat(), existing[0]),
             )
         else:
             cur.execute(
                 "INSERT INTO dream_patterns VALUES (?,?,?,?,?,?)",
-                (f"dp_{uuid.uuid4().hex[:12]}", pattern, 1, score, verdict, datetime.now().isoformat()),
+                (
+                    f"dp_{uuid.uuid4().hex[:12]}",
+                    pattern,
+                    1,
+                    score,
+                    verdict,
+                    datetime.now().isoformat(),
+                ),
             )
         self.conn.commit()
 
@@ -215,10 +224,13 @@ class FractalMemory:
         if existing:
             s = min(1.0, existing[1] + (0.05 if resolved else -0.02))
             cur.execute(
-                "UPDATE empathy_map SET relation_strength=?,conflict_count=?,resolution_count=?,updated_at=? WHERE id=?",
+                "UPDATE empathy_map SET relation_strength=?,conflict_count=?,resolution_count=?,updated_at=? "
+                "WHERE id=?",
                 (
                     round(s, 3), existing[2] + (1 if conflict else 0),
-                    existing[3] + (1 if resolved else 0), datetime.now().isoformat(), key,
+                    existing[3] + (1 if resolved else 0),
+                    datetime.now().isoformat(),
+                    key,
                 ),
             )
         else:

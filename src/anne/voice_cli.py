@@ -3,6 +3,7 @@
 This entry point is intentionally a thin adapter around the existing guarded
 voice and cognitive layers. It does not add authority to the system.
 """
+
 from __future__ import annotations
 
 from anne.core.decision_loop import DecisionLoop
