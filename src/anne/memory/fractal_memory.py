@@ -218,14 +218,15 @@ class FractalMemory:
         key = f"{min(id_a,id_b)}_{max(id_a,id_b)}"
         cur = self.conn.cursor()
         existing = cur.execute(
-            "SELECT id,relation_strength,conflict_count,resolution_count FROM empathy_map WHERE id=?",
+            "SELECT id,relation_strength,conflict_count,resolution_count "
+            "FROM empathy_map WHERE id=?",
             (key,),
         ).fetchone()
         if existing:
             s = min(1.0, existing[1] + (0.05 if resolved else -0.02))
             cur.execute(
-                "UPDATE empathy_map SET relation_strength=?,conflict_count=?,resolution_count=?,updated_at=? "
-                "WHERE id=?",
+                "UPDATE empathy_map SET relation_strength=?,conflict_count=?,resolution_count=?, "
+                "updated_at=? WHERE id=?",
                 (
                     round(s, 3), existing[2] + (1 if conflict else 0),
                     existing[3] + (1 if resolved else 0),
