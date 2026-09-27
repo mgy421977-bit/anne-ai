@@ -1,6 +1,6 @@
 """Bounded autonomous-system contracts for ANNE."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field  # noqa: I001
 from enum import StrEnum
 from uuid import uuid4
 
