@@ -414,6 +414,7 @@ omit only when no semantic extraction is useful.
             queries_used=1 + len(follow_up_queries),
             sources_used=len(classified_evidence),
         )
+        evidence_ledger = final_state.evidence_ledger
         return {
             "ok": True,
             "query": target_claim,
@@ -463,6 +464,15 @@ omit only when no semantic extraction is useful.
                     "trace": [],
                 }
             ),
+            "provenance": evidence_ledger.provenance(),
+            "evidence_ledger": evidence_ledger.as_dict(),
+            "reevaluation": {
+                "action": "NOT_TRIGGERED",
+                "reason": (
+                    "No evidence invalidation occurred during this research run; "
+                    "re-evaluation remains available through the provenance ledger."
+                ),
+            },
         }
 
     def collaborate(self, task: str, workers: dict[str, Worker]) -> CollaborationResult:
