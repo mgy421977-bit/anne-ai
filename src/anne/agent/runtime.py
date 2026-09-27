@@ -24,6 +24,7 @@ from anne.core.verification import (
     ClaimVerifier,
     FactualStatus,
     SemanticSupportEvaluator,
+    VerificationResult,
     verify_claim,
 )
 from anne.memory.local_memory import LocalMemory
@@ -414,7 +415,7 @@ omit only when no semantic extraction is useful.
             queries_used=1 + len(follow_up_queries),
             sources_used=len(classified_evidence),
         )
-        verification = (
+        verification: VerificationResult | None = (
             verification_records[0]
             if verification_records
             else (
