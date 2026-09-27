@@ -6,11 +6,11 @@ cognitive logic independent from CPU, GPU, NPU, quantum, or hybrid hardware.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Protocol
 
 
-class ComputeBackend(str, Enum):
+class ComputeBackend(StrEnum):
     CPU = "cpu"
     GPU = "gpu"
     NPU = "npu"
