@@ -48,7 +48,10 @@ class ComputeGovernor:
             raise RuntimeError("compute exceeded latency budget")
         if result.compute_units > request.max_compute_units:
             raise RuntimeError("compute exceeded compute-unit budget")
-        if self.energy_budget.max_joules is not None and result.energy_joules is not None:
-            if result.energy_joules > self.energy_budget.max_joules:
-                raise RuntimeError("compute exceeded energy budget")
+        if (
+            self.energy_budget.max_joules is not None
+            and result.energy_joules is not None
+            and result.energy_joules > self.energy_budget.max_joules
+        ):
+            raise RuntimeError("compute exceeded energy budget")
         return result
