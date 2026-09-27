@@ -112,7 +112,9 @@ class EvidenceLedger:
     def record(self, entry: EvidenceLedgerEntry) -> str:
         evidence_id = self.evidence_id(entry)
         self._entries[evidence_id] = entry
-        if evidence_id not in self.graph.as_dict()["nodes"]:
+        try:
+            self.graph.get(evidence_id)
+        except KeyError:
             self.graph.add_node(
                 ProvenanceNode(evidence_id, "evidence", entry.passage or entry.claim)
             )
