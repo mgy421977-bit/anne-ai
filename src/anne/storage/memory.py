@@ -14,14 +14,25 @@ class MemoryStore:
         self._data: dict[str, bytes] = {}
         self._metadata: dict[str, ArtifactMetadata] = {}
 
-    def put(self, key: str, data: bytes, *, content_type: str = "application/octet-stream", data_class: str = "EPHEMERAL") -> ArtifactMetadata:
+    def put(
+        self,
+        key: str,
+        data: bytes,
+        *,
+        content_type: str = "application/octet-stream",
+        data_class: str = "EPHEMERAL",
+    ) -> ArtifactMetadata:
         key = key.strip("/")
         if not key:
             raise ValueError("artifact key must be non-empty")
         self._data[key] = bytes(data)
         metadata = ArtifactMetadata(
-            key=key, content_type=content_type, size_bytes=len(data),
-            created_at=datetime.now(timezone.utc), sha256=hashlib.sha256(data).hexdigest(), data_class=data_class,
+            key=key,
+            content_type=content_type,
+            size_bytes=len(data),
+            created_at=datetime.now(timezone.utc),
+            sha256=hashlib.sha256(data).hexdigest(),
+            data_class=data_class,
         )
         self._metadata[key] = metadata
         return metadata
