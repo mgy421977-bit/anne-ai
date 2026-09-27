@@ -284,7 +284,8 @@ omit only when no semantic extraction is useful.
         target_claim = query.strip()
         plan = self._create_research_plan(target_claim)
         evidence = list(self.web_researcher.research(target_claim))
-        cognitive_loop = ResearchCognitiveLoop(planner=self.research_planner)
+        planner = getattr(self, "research_planner", ResearchPlanner())
+        cognitive_loop = ResearchCognitiveLoop(planner=planner)
         follow_up_queries: list[str] = []
         follow_up_limit = min(2, max(0, plan.query_budget - 1))
 
