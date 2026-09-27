@@ -277,88 +277,117 @@ omit only when no semantic extraction is useful.
         return planner.create_plan(query)
 
     def _web_research(self, query: str) -> dict[str, Any]:
-        """Run bounded retrieval plus a bounded evidence/critic follow-up cycle."""
+        """Run bounded retrieval, verification, and optional cognitive follow-up."""
         if not isinstance(query, str) or not query.strip():
             return {"ok": False, "error": "Research query must be a non-empty string."}
 
         target_claim = query.strip()
         plan = self._create_research_plan(target_claim)
         evidence = list(self.web_researcher.research(target_claim))
+        response_verifier = getattr(self, "response_verifier", None)
         planner = getattr(self, "research_planner", ResearchPlanner())
         cognitive_loop = ResearchCognitiveLoop(planner=planner)
         follow_up_queries: list[str] = []
-        follow_up_limit = min(2, max(0, plan.query_budget - 1))
 
-        for _ in range(follow_up_limit):
-            classified = tuple(
+        def classify(items: list[Any]) -> tuple[Any, ...]:
+            evaluator = SemanticSupportEvaluator()
+            return tuple(
                 replace(
                     item,
                     support=(
                         item.support
                         if item.support != "unclear"
-                        else SemanticSupportEvaluator().classify(
+                        else evaluator.classify(
                             target_claim, item.passage, item.provenance
                         ).value
                     ),
                 )
-                for item in evidence
+                for item in items
             )
-            state = cognitive_loop.initialize(
-                target_claim,
-                evidence=classified,
-                queries_used=1 + len(follow_up_queries),
-                sources_used=len(classified),
-            )
-            if state.decision.action != "RESEARCH":
-                break
-            questions = cognitive_loop.next_research_questions(state)
-            if not questions:
-                break
-            next_query = questions[0].strip()
-            if not next_query or next_query in follow_up_queries:
-                break
-            follow_up_queries.append(next_query)
-            evidence.extend(self.web_researcher.research(next_query))
 
-        support_evaluator = SemanticSupportEvaluator()
-        classified_evidence = tuple(
-            replace(
-                item,
-                support=(
-                    item.support
-                    if item.support != "unclear"
-                    else support_evaluator.classify(
-                        target_claim, item.passage, item.provenance
-                    ).value
-                ),
+        classified_evidence = classify(evidence)
+        initial_verification = None
+        if isinstance(response_verifier, BoundedMultiSourceVerifier):
+            initial_verification = response_verifier.verify_evidence(
+                target_claim, classified_evidence
             )
-            for item in evidence
-        )
 
-        workspace = getattr(self, "workspace", None)
-        response_verifier = getattr(self, "response_verifier", None)
-        verification = (
-            response_verifier.verify_evidence(target_claim, classified_evidence)
-            if isinstance(response_verifier, BoundedMultiSourceVerifier)
-            else None
-        )
+        # Only the bounded multi-source verifier may trigger autonomous
+        # follow-up retrieval. Legacy/reference verification and no-verifier
+        # paths retain their previous one-retrieval semantics.
+        if (
+            isinstance(response_verifier, BoundedMultiSourceVerifier)
+            and initial_verification is not None
+            and initial_verification.status
+            in {FactualStatus.UNVERIFIED, FactualStatus.CONFLICTING}
+        ):
+            follow_up_limit = min(2, max(0, plan.query_budget - 1))
+            for _ in range(follow_up_limit):
+                state = cognitive_loop.initialize(
+                    target_claim,
+                    evidence=classified_evidence,
+                    queries_used=1 + len(follow_up_queries),
+                    sources_used=len(classified_evidence),
+                )
+                if state.decision.action != "RESEARCH":
+                    break
+                questions = cognitive_loop.next_research_questions(state)
+                if not questions:
+                    break
+                next_query = questions[0].strip()
+                if not next_query or next_query in follow_up_queries:
+                    break
+                follow_up_queries.append(next_query)
+                new_items = self.web_researcher.research(next_query)
+                known = {
+                    (str(item.claim).strip(), str(item.provenance).strip())
+                    for item in evidence
+                }
+                for item in new_items:
+                    key = (str(item.claim).strip(), str(item.provenance).strip())
+                    if key not in known:
+                        evidence.append(item)
+                        known.add(key)
+                classified_evidence = classify(evidence)
+                initial_verification = response_verifier.verify_evidence(
+                    target_claim, classified_evidence
+                )
+                if initial_verification.status not in {
+                    FactualStatus.UNVERIFIED,
+                    FactualStatus.CONFLICTING,
+                }:
+                    break
+
+        classified_evidence = classify(evidence)
+        verification_records = []
         serialized = []
+        workspace = getattr(self, "workspace", None)
+
         for item in classified_evidence:
-            status = (
-                EvidenceStatus(verification.status.value)
-                if verification is not None
-                and verification.status.value in {status.value for status in EvidenceStatus}
-                else EvidenceStatus.UNVERIFIED
-            )
             entry = EvidenceLedgerEntry(
                 claim=item.claim,
                 source=item.source,
                 provenance=item.provenance,
                 confidence=item.confidence,
-                status=status,
+                status=EvidenceStatus.UNVERIFIED,
                 passage=item.passage,
                 support=item.support,
             )
+
+            if isinstance(response_verifier, BoundedMultiSourceVerifier):
+                verification = response_verifier.verify_evidence(
+                    target_claim, classified_evidence
+                )
+            else:
+                verification = verify_claim(entry.claim, response_verifier)
+
+            verification_records.append(verification)
+            if verification.status is not FactualStatus.UNVERIFIED:
+                entry = replace(
+                    entry,
+                    status=EvidenceStatus(verification.status.value),
+                )
+
             serialized.append(
                 {
                     "source": entry.source,
@@ -372,6 +401,8 @@ omit only when no semantic extraction is useful.
                     "passage": entry.passage,
                     "support": entry.support,
                     "retrieved_at": entry.retrieved_at,
+                    "verification_sources": list(verification.sources),
+                    "verification_reason": verification.reason,
                 }
             )
             if workspace is not None:
@@ -382,6 +413,15 @@ omit only when no semantic extraction is useful.
             evidence=classified_evidence,
             queries_used=1 + len(follow_up_queries),
             sources_used=len(classified_evidence),
+        )
+        verification = (
+            verification_records[0]
+            if verification_records
+            else (
+                initial_verification
+                if initial_verification is not None
+                else None
+            )
         )
         return {
             "ok": True,
@@ -401,7 +441,7 @@ omit only when no semantic extraction is useful.
             },
             "independent_verification": (
                 "performed"
-                if verification is not None
+                if isinstance(response_verifier, BoundedMultiSourceVerifier)
                 else "not_performed"
             ),
             "verification": (
@@ -410,7 +450,11 @@ omit only when no semantic extraction is useful.
                 else {
                     "status": FactualStatus.UNVERIFIED.value,
                     "sources": [],
-                    "reason": "No independent verifier configured.",
+                    "reason": (
+                        "No evidence was retrieved."
+                        if not serialized
+                        else "No independent verifier configured."
+                    ),
                     "trace": [],
                 }
             ),
