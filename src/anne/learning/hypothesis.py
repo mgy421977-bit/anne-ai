@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
+from enum import StrEnum
 
 
-class HypothesisStatus(str, Enum):
+class HypothesisStatus(StrEnum):
     PROPOSED = "PROPOSED"
     SUPPORTED = "SUPPORTED"
     WEAKENED = "WEAKENED"
