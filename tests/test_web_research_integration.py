@@ -376,7 +376,7 @@ def test_web_research_exposes_decision_synthesis(monkeypatch) -> None:
     synthesis = result["decision_synthesis"]
     assert synthesis["status"] == "SUPPORTED"
     assert synthesis["supported_hypotheses"] == ["H1"]
-    assert synthesis["unresolved_hypotheses"] == []
+    assert synthesis["unresolved_hypotheses"] == ["H2", "H3"]
     assert synthesis["rejected_hypotheses"] == []
     assert synthesis["is_ambiguous"] is False
     assert synthesis["reason"]
