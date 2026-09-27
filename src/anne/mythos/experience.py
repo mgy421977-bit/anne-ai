@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any
 
 
-class ExperienceStatus(str, Enum):
+class ExperienceStatus(str, Enum):  # noqa: UP042 — preserve legacy enum string semantics
     HYPOTHESIS = "HYPOTHESIS"
     PREDICTION = "PREDICTION"
     TESTED = "TESTED"
