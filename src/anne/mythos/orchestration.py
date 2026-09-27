@@ -146,6 +146,6 @@ class MitosOrchestrator:
 __all__ = [
     "MitosOrchestrationResult",
     "MitosOrchestrationStatus",
-    "MitosOrchestration",
+    "MitosOrchestrator",
     "MitosProposalSet",
 ]
