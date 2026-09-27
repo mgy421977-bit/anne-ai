@@ -44,7 +44,9 @@ class AnneDesktop(tk.Tk):
 
         header = ttk.Frame(root)
         header.pack(fill="x")
-        ttk.Label(header, text="ANNE AI", font=("Segoe UI", 24, "bold")).pack(anchor="w")
+        ttk.Label(
+            header, text="ANNE AI", font=("Segoe UI", 24, "bold")
+        ).pack(anchor="w")
         ttk.Label(
             header,
             text="Adaptive Neural Nexus Engine · Minimal Universal Runtime",
@@ -64,7 +66,9 @@ class AnneDesktop(tk.Tk):
             "Merhaba ANNE. Kendini güvenli ve sınırlı bir bilişsel çevrim içinde test et.",
         )
 
-        self.run_button = ttk.Button(root, text="RUN COGNITIVE CYCLE", command=self._start_cycle)
+        self.run_button = ttk.Button(
+            root, text="RUN COGNITIVE CYCLE", command=self._start_cycle
+        )
         self.run_button.pack(anchor="e", pady=(0, 14))
 
         ttk.Label(root, text="Cognitive Trace").pack(anchor="w")
@@ -133,7 +137,11 @@ class AnneDesktop(tk.Tk):
         # does not expose proposal metadata (e.g. a rejected/halting path).
         if candidate is not None:
             source = source or getattr(candidate, "source", None)
-            confidence = confidence if confidence is not None else getattr(candidate, "probability", None)
+            confidence = (
+                confidence
+                if confidence is not None
+                else getattr(candidate, "probability", None)
+            )
             hypothesis = hypothesis or getattr(candidate, "claim", None)
 
         lines = [

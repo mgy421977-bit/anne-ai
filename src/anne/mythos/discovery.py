@@ -33,7 +33,9 @@ class DiscoveryDrive:
         reason = "candidate is testable and low-risk" if accepted else "below discovery gate"
         return Evaluation(candidate.id, accepted, round(score, 4), reason)
 
-    def shortlist(self, candidates: list[HypothesisCandidate], limit: int = 3) -> list[HypothesisCandidate]:
+    def shortlist(
+        self, candidates: list[HypothesisCandidate], limit: int = 3
+    ) -> list[HypothesisCandidate]:
         evaluated = [(self.evaluate(c), c) for c in candidates]
         evaluated.sort(key=lambda pair: pair[0].score, reverse=True)
         return [candidate for evaluation, candidate in evaluated if evaluation.accepted][:limit]
