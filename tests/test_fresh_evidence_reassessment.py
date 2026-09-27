@@ -8,6 +8,7 @@ def _evidence(claim: str, support: str) -> EvidenceItem:
         source="source",
         provenance="https://example.test/source",
         confidence=0.9,
+        kind="web",
         passage=claim,
         support=support,
     )
