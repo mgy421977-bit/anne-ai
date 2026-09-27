@@ -42,6 +42,9 @@ def test_agent_exposes_bounded_research_trace_from_workspace() -> None:
                             "status": "UNVERIFIED",
                             "sources": [],
                         },
+                        "provenance": {"nodes": [], "edges": []},
+                        "evidence_ledger": {"entries": []},
+                        "reevaluation": {"action": "STOP"},
                     },
                 }
             ]
@@ -52,6 +55,9 @@ def test_agent_exposes_bounded_research_trace_from_workspace() -> None:
     assert trace["decision_synthesis"]["status"] == "INSUFFICIENT_EVIDENCE"
     assert trace["cognitive_loop"]["action"] == "RESEARCH"
     assert trace["verification"]["status"] == "UNVERIFIED"
+    assert trace["provenance"] == {"nodes": [], "edges": []}
+    assert trace["evidence_ledger"] == {"entries": []}
+    assert trace["reevaluation"] == {"action": "STOP"}
 
 
 def test_agent_research_trace_is_empty_without_web_research() -> None:

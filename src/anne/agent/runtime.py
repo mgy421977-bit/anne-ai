@@ -490,6 +490,9 @@ omit only when no semantic extraction is useful.
                 "independent_verification": result.get(
                     "independent_verification", "not_performed"
                 ),
+                "provenance": result.get("provenance", {}),
+                "evidence_ledger": result.get("evidence_ledger", {}),
+                "reevaluation": result.get("reevaluation", {}),
             }
         return {}
 
