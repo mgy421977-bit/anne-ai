@@ -33,10 +33,11 @@ class LocalProvider:
         backend_value = backend or os.getenv("ANNE_LOCAL_BACKEND") or "openai_compatible"
         self.backend = backend_value.lower()
         self.model = model or os.getenv("ANNE_LOCAL_MODEL", "local-model")
-        if self.backend == "ollama":
-            default = "http://127.0.0.1:11434"
-        else:
-            default = "http://127.0.0.1:8080"
+        default = (
+            "http://127.0.0.1:11434"
+            if self.backend == "ollama"
+            else "http://127.0.0.1:8080"
+        )
         endpoint_value = endpoint or os.getenv("ANNE_LOCAL_ENDPOINT") or default
         self.endpoint = endpoint_value.rstrip("/")
         self.timeout = timeout
