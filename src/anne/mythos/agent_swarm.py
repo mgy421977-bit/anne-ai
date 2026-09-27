@@ -18,7 +18,7 @@ _REQUIRED_FORBIDDEN_ACTIONS = frozenset(
 )
 
 
-class AgentRole(str, Enum):
+class AgentRole(str, Enum):  # noqa: UP042 — preserve legacy string formatting
     CHEMISTRY = "chemistry"
     PHYSICS = "physics"
     PATENT_LITERATURE = "patent_literature"
