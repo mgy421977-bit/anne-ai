@@ -79,7 +79,18 @@ class MythosEngine:
         prob = max(0.01, min(0.99, prior_confidence + noise + (0.03 * self.iteration)))
         delta = round(prob - prior_confidence, 3)
         level = "high" if prob > 0.7 else "medium" if prob > 0.4 else "low"
-        return Hypothesis(id=hyp_id, topic=topic, claim=f"[PH·{self.iteration}] '{topic}' — pattern detected with {level} confidence.", probability=round(prob, 3), iteration=self.iteration, confidence_delta=delta, source="placeholder")
+        return Hypothesis(
+            id=hyp_id,
+            topic=topic,
+            claim=(
+                f"[PH·{self.iteration}] '{topic}' — pattern detected "
+                f"with {level} confidence."
+            ),
+            probability=round(prob, 3),
+            iteration=self.iteration,
+            confidence_delta=delta,
+            source="placeholder",
+        )
 
     def test_hypothesis(self, h: Hypothesis) -> Hypothesis:
         h.tested = True
