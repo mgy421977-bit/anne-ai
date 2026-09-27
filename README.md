@@ -383,6 +383,7 @@ For the authoritative milestone sequence, see [`ROADMAP.md`](ROADMAP.md).
 - ✓ **Failure Learning / SFT feedback v1** — converts failure traces into bounded strategy feedback, detects repeated failures, requires strategy change on unchanged retries, preserves abstention/exhaustion gates, and never promotes failure-derived lessons to validated knowledge.
 - ✓ **Closed Decision Feedback Loop v1** — composes Decision Synthesis → METACOG → Failure Learning into an explicit review/recovery cycle; retries are never automatic, remain bounded, and require re-verification after a strategy change.
 - ✓ **Strategy Selection v1** — filters unsafe, mismatched, exhausted, and previously attempted strategies; preserves multiple valid alternatives without silent ranking and permits a retry only when one safe strategy is explicitly selected.
+- ✓ **Verification Gate v1** — makes the selection → verification → execution boundary explicit; verified claims may pass the factual gate, while conflicting, refuted, unverified, or missing-provenance claims remain blocked/reviewable.
 - ☐ **Advanced MITOS orchestration** — expand bounded specialist coordination only after the preceding evidence and synthesis layers are stable.
 - ☐ **Long-term planning and broader evaluation** — later roadmap work; no AGI claim is implied.
 
