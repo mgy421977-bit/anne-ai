@@ -347,16 +347,20 @@ def test_source_passage_extraction_is_query_near() -> None:
 
 
 def test_web_research_exposes_decision_synthesis(monkeypatch) -> None:
+    hypothesis = __import__("anne.learning.hypothesis", fromlist=["HypothesisEngine"]).HypothesisEngine().generate(
+        "Question", max_hypotheses=3
+    )[0]
+
     class FakeResearcher:
         def research(self, query):
             return [
                 EvidenceItem(
                     source="test-source",
-                    claim="Evidence for Question.",
+                    claim=hypothesis.claim,
                     kind="web",
                     provenance="https://example.test/source",
                     confidence=0.8,
-                    passage="Evidence for Question.",
+                    passage=hypothesis.claim,
                     support="supports",
                 )
             ]
