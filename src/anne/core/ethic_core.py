@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from anne.core.cognitive_state import Consciousness, EthicScore, Hypothesis
 

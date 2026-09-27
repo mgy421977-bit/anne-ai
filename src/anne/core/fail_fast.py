@@ -9,9 +9,9 @@ comprehensive content moderation.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
-from typing import Sequence
+from collections.abc import Sequence
+from dataclasses import dataclass
 
 # Transparent taboo / high-risk intent patterns (EN + TR). Expand carefully.
 _DEFAULT_PATTERNS: Sequence[tuple[str, str]] = (

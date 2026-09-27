@@ -7,12 +7,12 @@ to explicit adapters so that each stage can be tested and audited independently.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import uuid4
 
 
-class EvidenceKind(str, Enum):
+class EvidenceKind(StrEnum):
     OBSERVATION = "OBSERVATION"
     FACT = "FACT"
     HYPOTHESIS = "HYPOTHESIS"
@@ -23,7 +23,7 @@ class EvidenceKind(str, Enum):
     EXPERIENCE = "EXPERIENCE"
 
 
-class CycleStatus(str, Enum):
+class CycleStatus(StrEnum):
     CREATED = "CREATED"
     OBSERVED = "OBSERVED"
     EXPLORED = "EXPLORED"
