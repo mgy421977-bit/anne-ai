@@ -37,7 +37,10 @@ class ReEvaluationPlanner:
                 invalidated_node=invalidated_node,
                 stale_nodes=stale,
                 action="RESEARCH",
-                reason="A provenance dependency became invalid; stale downstream results require re-evaluation.",
+                reason=(
+                    "A provenance dependency became invalid; stale downstream "
+                    "results require re-evaluation."
+                ),
             )
         return ReEvaluationPlan(
             invalidated_node=invalidated_node,
