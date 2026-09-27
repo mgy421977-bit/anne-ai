@@ -41,13 +41,10 @@ class BoundedWebReEvaluator:
     pass per invocation and records only genuinely new evidence in the ledger.
     """
 
-    def __init__(self, researcher: ResearchProvider, *, max_queries: int = 1, max_sources: int = 12) -> None:
-        if max_queries < 1:
-            raise ValueError("max_queries must be positive")
+    def __init__(self, researcher: ResearchProvider, *, max_sources: int = 12) -> None:
         if max_sources < 1:
             raise ValueError("max_sources must be positive")
         self.researcher = researcher
-        self.max_queries = max_queries
         self.max_sources = max_sources
 
     def reevaluate(
@@ -74,14 +71,6 @@ class BoundedWebReEvaluator:
         # The bridge deliberately performs a single bounded retrieval pass.
         # A future multi-pass design must remain explicitly budgeted and
         # separately testable rather than becoming an implicit autonomous loop.
-        if self.max_queries < 1:
-            return WebReEvaluationResult(
-                plan=plan,
-                fresh_evidence=(),
-                fresh_evidence_ids=(),
-                queries_used=0,
-                sources_used=0,
-            )
 
         retrieved = tuple(self.researcher.research(question))[: self.max_sources]
         fresh_items: list[EvidenceItem] = []
