@@ -1,4 +1,4 @@
-from anne.core.trace import CycleTrace
+from anne.core.trace import CycleTrace\nfrom anne.learning.experience_learning import Experience
 from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 
 
