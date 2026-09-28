@@ -25,7 +25,7 @@ from anne.core.verification import (
     SemanticSupportEvaluator,
     verify_claim,
 )
-from anne.learning.evidence import EvidenceLedgerEntry, EvidenceStatus
+from anne.learning.evidence import EvidenceLedger, EvidenceLedgerEntry, EvidenceStatus
 from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 from anne.learning.web_research import WebResearcher
@@ -252,7 +252,7 @@ omit only when no semantic extraction is useful.
         self.runtime = AnneRuntime(decision_loop=self.decision_loop)
         self.workspace: CognitiveWorkspace | None = None
         self.web_researcher = WebResearcher()
-        self._last_research_ledger = None
+        self._last_research_ledger: EvidenceLedger | None = None
         self._last_research_question: str | None = None
         self.tools = _GuardedToolRegistry()
         self.tools.update(
