@@ -31,6 +31,7 @@ class EvidenceItem:
     provenance: str
     confidence: float
     passage: str = ""
+    retrieved_at: str = ""
     support: str = SupportStatus.UNCLEAR.value
 
     def __post_init__(self) -> None:
@@ -42,6 +43,11 @@ class EvidenceItem:
             raise ValueError("kind must not be empty")
         if not self.provenance.strip():
             raise ValueError("provenance must not be empty")
+        if self.retrieved_at:
+            try:
+                datetime.fromisoformat(self.retrieved_at)
+            except ValueError as exc:
+                raise ValueError("retrieved_at must be ISO-8601 when provided") from exc
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("confidence must be between 0.0 and 1.0")
 
@@ -191,6 +197,7 @@ class EvidenceLedger:
                     "confidence": entry.confidence,
                     "status": entry.status.value,
                     "passage": entry.passage,
+                    "retrieved_at": entry.retrieved_at,
                     "support": entry.support,
                     "retrieved_at": entry.retrieved_at,
                 }
