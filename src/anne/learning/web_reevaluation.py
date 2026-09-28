@@ -12,7 +12,7 @@ from anne.learning.evidence import (
     EvidenceLedgerEntry,
 )
 from anne.learning.reevaluation import ReEvaluationPlan
-from anne.learning.research_cognitive_loop import ResearchCognitiveState, ResearchCognitiveLoop
+from anne.learning.research_cognitive_loop import ResearchCognitiveLoop, ResearchCognitiveState
 
 
 class ResearchProvider(Protocol):
