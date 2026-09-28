@@ -11,12 +11,12 @@ from typing import Any
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
 from anne.core.anla_score import DEFAULT_TAU, MAX_ANLA_RETRIES, passes_anla
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
-from anne.core.values import ANNECore, CoreDecision
 from anne.core.ethic_core import EthicCore
 from anne.core.evidence import EvidenceGate, evidence_status_from_verification
 from anne.core.fail_fast import FailFastGate, FailFastResult
 from anne.core.intent import IntentClassifier
 from anne.core.requirements import CognitiveRequirements, EvidenceStatus
+from anne.core.values import ANNECore, CoreDecision
 from anne.core.verification import ClaimVerifier, verify_claim
 from anne.memory.fractal_memory import FractalMemory
 

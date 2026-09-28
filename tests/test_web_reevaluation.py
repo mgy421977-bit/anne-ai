@@ -146,5 +146,5 @@ def test_re_evaluation_rebuilds_cognitive_state_from_fresh_evidence():
     )
 
     assert result.refreshed_state is not None
-    assert result.refreshed_state.synthesis.status.value == "REJECTED"
+    assert result.refreshed_state.synthesis.status.value == "REJECTED_WITH_ALTERNATIVES"
     assert result.refreshed_state.decision.action == "RESEARCH"
