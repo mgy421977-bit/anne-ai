@@ -20,7 +20,7 @@ def test_multiple_publisher_families_are_explicitly_counted():
     assessment = SourceIndependence.assess(
         (
             "https://example.com/a",
-            "https://another.example/a",
+            "https://news.example.com/a",
             "https://news.example.org/story",
         )
     )
