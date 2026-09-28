@@ -12,6 +12,7 @@ from anne.learning.evidence import (
     EvidenceLedgerEntry,
 )
 from anne.learning.reevaluation import ReEvaluationPlan
+from anne.learning.research_cognitive_loop import ResearchCognitiveState, ResearchCognitiveLoop
 
 
 class ResearchProvider(Protocol):
@@ -30,6 +31,7 @@ class WebReEvaluationResult:
     fresh_evidence_ids: tuple[str, ...]
     queries_used: int
     sources_used: int
+    refreshed_state: ResearchCognitiveState | None = None
 
 
 class BoundedWebReEvaluator:
@@ -66,6 +68,7 @@ class BoundedWebReEvaluator:
                 fresh_evidence_ids=(),
                 queries_used=0,
                 sources_used=0,
+                refreshed_state=None,
             )
 
         # The bridge deliberately performs a single bounded retrieval pass.
@@ -95,12 +98,23 @@ class BoundedWebReEvaluator:
                 fresh_items.append(item)
                 fresh_ids.append(item_id)
 
+        refreshed_state = None
+        if fresh_items:
+            refreshed_state = ResearchCognitiveLoop().continue_from_re_evaluation(
+                plan,
+                question,
+                evidence=fresh_items,
+                queries_used=1,
+                sources_used=len(fresh_items),
+            )
+
         return WebReEvaluationResult(
             plan=plan,
             fresh_evidence=tuple(fresh_items),
             fresh_evidence_ids=tuple(fresh_ids),
             queries_used=1,
             sources_used=len(fresh_items),
+            refreshed_state=refreshed_state,
         )
 
 
