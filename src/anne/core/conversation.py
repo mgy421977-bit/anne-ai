@@ -94,7 +94,10 @@ class NativeConversation:
         return turn
 
     @staticmethod
-    def _compose_response(state: CognitiveState, evidence: tuple[object, ...] = ()) -> str:
+    def _compose_response(
+        state: CognitiveState,
+        evidence: tuple[EvidenceItem, ...] = (),
+    ) -> str:
         intent = state.intent
         core = state.context_map.get("core_decision")
         action = state.action
@@ -113,7 +116,7 @@ class NativeConversation:
             )
 
         if evidence:
-            claims: list[EvidenceItem] = [item for item in evidence if isinstance(item, EvidenceItem)]
+            claims: list[EvidenceItem] = list(evidence)
             synthesized = WebResearcher.answer(state.raw_input, claims)
             lines = [
                 "Web araştırması yaptım. Aşağıdaki yanıt yalnızca bulunan "
