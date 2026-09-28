@@ -72,8 +72,20 @@ class NativeConversation:
             state = self.pipeline.hisset(state)
             state = self.pipeline.yap(state, hypothesis)
             evidence = ()
-            if self.use_web_research and state.intent in {"question", "evidence_request", "comparison", "planning", "uncertainty", "risk"}:
-                evidence = tuple(self.web_researcher.research(text))
+            if self.use_web_research and state.intent in {
+                "question",
+                "evidence_request",
+                "comparison",
+                "planning",
+                "uncertainty",
+                "risk",
+            }:
+                try:
+                    evidence = tuple(self.web_researcher.research(text))
+                except Exception:
+                    # External retrieval is optional. ANNE must remain usable
+                    # when the network/search layer is unavailable.
+                    evidence = ()
             response = self._compose_response(state, evidence)
 
         turn = ConversationTurn(text, response, state)
@@ -100,11 +112,25 @@ class NativeConversation:
             )
 
         if evidence:
-            lines = ["Web araştırması yaptım; aşağıdakiler kaynaklı bulgular, otomatik olarak doğrulanmış gerçek değildir:"]
-            for item in evidence[:8]:
+            claims = [item for item in evidence if hasattr(item, "claim")]
+            synthesized = WebResearcher.answer(
+                state.raw_input,
+                list(claims),
+            )
+            lines = [
+                "Web araştırması yaptım. Aşağıdaki yanıt yalnızca bulunan "
+                "kaynaklı bulgulara dayanır; otomatik olarak doğrulanmış gerçek "
+                "olarak sunulmuyor."
+            ]
+            if synthesized:
+                lines.append("")
+                lines.append(synthesized)
+            lines.append("")
+            lines.append("Kaynak bulguları:")
+            for item in claims[:8]:
                 passage = item.passage.strip() or item.claim.strip()
                 lines.append(f"- {item.source}: {passage}")
-            return "\\n".join(lines)
+            return "\n".join(lines)
 
         if intent == "evidence_request":
             return (
