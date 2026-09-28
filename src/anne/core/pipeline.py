@@ -301,7 +301,20 @@ class AnnePipeline:
         verdict = score.verdict if score else "UNKNOWN"
         rationale = score.reasoning if score else "No validated decision rationale available."
 
-        if (
+        if state.context_map.get("core_decision") == CoreDecision.BLOCK.value:
+            output: dict[str, Any] = {
+                "verdict": "REDDET",
+                "action": "HALT",
+                "reason": state.context_map.get(
+                    "core_reason", "ANNE Core blocked the proposed path."
+                ),
+                "core": {
+                    "decision": CoreDecision.BLOCK.value,
+                    "goodness": state.context_map.get("core_goodness"),
+                    "equality": state.context_map.get("core_equality"),
+                },
+            }
+        elif (
             score is not None
             and group_a
             and group_b
