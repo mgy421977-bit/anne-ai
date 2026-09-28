@@ -27,7 +27,7 @@ def test_metacognition_records_explicit_verified_basis() -> None:
         decision={"reason": "independent evidence supports claim"},
     )
     result = Metacognition().assess(trace)
-    assert result.known == ("verification status is explicitly VERIFIED",)
+    assert result.known == ("verification status is explicitly VERIFIED with recorded sources",)
     assert result.evidence_basis == ("verification_sources",)
     assert "decision_reason" in result.decision_dependencies
 
