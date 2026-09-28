@@ -11,6 +11,7 @@ import re
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
+
 from anne.core.source_independence import SourceIndependence
 
 
