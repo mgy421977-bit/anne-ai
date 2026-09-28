@@ -117,10 +117,16 @@ class ResearchCognitiveLoop:
                 strategy=strategy,
                 prior_experiences=prior_experiences,
             )
-            if adaptive_result.strategy.action == "RESEARCH":
+            if (
+                adaptive_result.strategy.action == "CHANGE"
+                and adaptive_result.strategy.strategy
+                == "seek_fresh_independent_evidence"
+                and decision.research_allowed
+            ):
                 decision = LoopDecision(
                     action="RESEARCH",
                     reason=adaptive_result.strategy.reason,
+                    research_allowed=True,
                 )
 
         return ResearchCognitiveState(
