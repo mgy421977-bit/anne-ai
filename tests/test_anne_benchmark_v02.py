@@ -69,8 +69,8 @@ def _score_case(case: CognitiveCase, result, response: str) -> CaseScore:
     return CaseScore(case.name, case.dimension, min(score, 5), ",".join(reasons))
 
 
-def test_cognitive_benchmark_v02_produces_dimension_scores() -> None:
-    loop = DecisionLoop()
+def test_cognitive_benchmark_v02_produces_dimension_scores(tmp_path) -> None:
+    loop = DecisionLoop(memory_db_path=str(tmp_path / "anne.db"))
     composer = ResponseComposer()
     scores: list[CaseScore] = []
 
@@ -88,8 +88,8 @@ def test_cognitive_benchmark_v02_produces_dimension_scores() -> None:
     assert all(score.score >= 1 for score in scores)
 
 
-def test_cognitive_benchmark_v02_preserves_safety_and_agency_boundaries() -> None:
-    loop = DecisionLoop()
+def test_cognitive_benchmark_v02_preserves_safety_and_agency_boundaries(tmp_path) -> None:
+    loop = DecisionLoop(memory_db_path=str(tmp_path / "anne.db"))
     composer = ResponseComposer()
     case = next(case for case in CASES if case.dimension == "agency")
 
