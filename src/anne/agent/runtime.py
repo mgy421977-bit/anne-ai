@@ -373,6 +373,7 @@ omit only when no semantic extraction is useful.
                 provenance=item.provenance,
                 confidence=item.confidence,
                 status=EvidenceStatus.UNVERIFIED,
+                retrieval_provenance=item.retrieval_provenance,
                 passage=item.passage,
                 support=item.support,
             )
@@ -399,6 +400,7 @@ omit only when no semantic extraction is useful.
                     "source_claim": entry.claim,
                     "kind": item.kind,
                     "provenance": entry.provenance,
+                    "retrieval_provenance": entry.retrieval_provenance,
                     "confidence": entry.confidence,
                     "status": entry.status.value,
                     "passage": entry.passage,

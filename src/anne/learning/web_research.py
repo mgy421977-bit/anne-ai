@@ -300,9 +300,22 @@ class WebResearcher:
                 return
         evidence.append(item)
 
+    @staticmethod
+    def _wikipedia_page_url(title: str, language: str) -> str:
+        encoded_title = urllib.parse.quote(title.replace(" ", "_"), safe="_")
+        return f"https://{language}.wikipedia.org/wiki/{encoded_title}"
+
+    @staticmethod
+    def _valid_source_url(url: str) -> bool:
+        parsed = urllib.parse.urlparse(url)
+        return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
     def _wikipedia_search(self, query: str, language: str) -> list[EvidenceItem]:
         encoded = urllib.parse.quote(query)
-        url = f"https://{language}.wikipedia.org/w/api.php?action=query&list=search&srsearch={encoded}&format=json&srlimit=6"
+        url = (
+            f"https://{language}.wikipedia.org/w/api.php?action=query&list=search"
+            f"&srsearch={encoded}&format=json&srlimit=6"
+        )
         data = self._get_json(url)
         items: list[EvidenceItem] = []
         for item in data.get("query", {}).get("search", []):
@@ -319,8 +332,10 @@ class WebResearcher:
                     source=f"Wikipedia ({language})",
                     claim=claim,
                     kind="web",
-                    provenance=url,
+                    provenance=self._wikipedia_page_url(title, language),
                     confidence=min(0.90, 0.50 + score * 0.40),
+                    passage=snippet,
+                    retrieval_provenance=url,
                 )
             )
         return items
@@ -337,9 +352,10 @@ class WebResearcher:
             source=f"Wikipedia ({language})",
             claim=f"{title}: {extract[:2200]}",
             kind="web",
-            provenance=url,
+            provenance=self._wikipedia_page_url(title, language),
             confidence=min(0.95, 0.62 + score * 0.33),
             passage=extract[:1200],
+            retrieval_provenance=url,
         )
 
     def _duckduckgo_instant(self, query: str) -> EvidenceItem | None:
@@ -347,15 +363,22 @@ class WebResearcher:
         url = f"https://api.duckduckgo.com/?q={encoded}&format=json&no_html=1"
         data = self._get_json(url)
         abstract = self._clean_html(str(data.get("AbstractText", "")))
-        if not abstract or not self._is_relevant(query, abstract):
+        source_url = str(data.get("AbstractURL", "")).strip()
+        if (
+            not abstract
+            or not self._is_relevant(query, abstract)
+            or not self._valid_source_url(source_url)
+        ):
             return None
         score = self._relevance(query, abstract)
         return EvidenceItem(
             source="DuckDuckGo Instant Answer",
             claim=abstract[:2200],
             kind="web",
-            provenance=url,
+            provenance=source_url,
             confidence=min(0.86, 0.46 + score * 0.40),
+            passage=abstract[:1200],
+            retrieval_provenance=url,
         )
 
     def _duckduckgo_search(self, query: str) -> list[EvidenceItem]:
@@ -383,6 +406,7 @@ class WebResearcher:
                     provenance=href or url,
                     confidence=min(0.84, 0.44 + score * 0.40),
                     passage=passage[:1200],
+                    retrieval_provenance=url,
                 )
             )
         return items
@@ -434,6 +458,7 @@ class WebResearcher:
                     provenance=destination or href or url,
                     confidence=min(0.84, 0.44 + score * 0.40),
                     passage=passage[:1200],
+                    retrieval_provenance=url,
                 )
             )
         return items

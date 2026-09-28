@@ -380,3 +380,77 @@ def test_web_research_exposes_decision_synthesis(monkeypatch) -> None:
     assert synthesis["rejected_hypotheses"] == []
     assert synthesis["is_ambiguous"] is False
     assert synthesis["reason"]
+
+
+
+def test_web_research_distinguishes_source_from_retrieval_provenance(monkeypatch) -> None:
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim="Paris is the capital of France.",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    retrieval_provenance="https://search.test/?q=capital",
+                    confidence=0.8,
+                    passage="Paris is the capital of France.",
+                )
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    agent.workspace = CognitiveWorkspace(task="capital")
+    agent.response_verifier = None
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    result = agent._web_research("capital")
+    item = result["evidence"][0]
+
+    assert item["provenance"] == "https://example.test/source"
+    assert item["retrieval_provenance"] == "https://search.test/?q=capital"
+    assert (
+        agent.workspace.evidence_ledger[0].retrieval_provenance
+        == "https://search.test/?q=capital"
+    )
+
+
+def test_wikipedia_search_uses_page_as_source_and_api_as_retrieval(monkeypatch) -> None:
+    researcher = WebResearcher()
+
+    monkeypatch.setattr(
+        researcher,
+        "_get_json",
+        lambda url: {
+            "query": {
+                "search": [
+                    {"title": "Paris", "snippet": "Paris is the capital of France."}
+                ]
+            }
+        },
+    )
+
+    items = researcher._wikipedia_search("Paris capital France", "en")
+
+    assert len(items) == 1
+    assert items[0].provenance == "https://en.wikipedia.org/wiki/Paris"
+    assert items[0].retrieval_provenance.startswith("https://en.wikipedia.org/w/api.php")
+    assert items[0].passage == "Paris is the capital of France."
+
+
+def test_duckduckgo_instant_does_not_use_api_endpoint_as_source(monkeypatch) -> None:
+    researcher = WebResearcher()
+    monkeypatch.setattr(
+        researcher,
+        "_get_json",
+        lambda url: {
+            "AbstractText": "Paris is the capital of France.",
+            "AbstractURL": "https://example.test/paris",
+        },
+    )
+
+    item = researcher._duckduckgo_instant("Paris capital France")
+
+    assert item is not None
+    assert item.provenance == "https://example.test/paris"
+    assert item.retrieval_provenance.startswith("https://api.duckduckgo.com/")
