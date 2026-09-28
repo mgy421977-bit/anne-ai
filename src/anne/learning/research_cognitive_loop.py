@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 from anne.core.trace import CycleTrace
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
-from anne.learning.experience_learning import Experience
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
+from anne.learning.experience_learning import Experience
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
