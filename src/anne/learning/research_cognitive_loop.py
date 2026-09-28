@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from anne.core.trace import CycleTrace
+from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
@@ -21,14 +23,15 @@ class ResearchCognitiveState:
     synthesis: DecisionSynthesis
     decision: LoopDecision
     evidence_ledger: EvidenceLedger
+    adaptive_learning: AdaptiveLearningResult | None = None
 
 
 class ResearchCognitiveLoop:
-    """Bounded orchestration of planning, hypotheses, evidence and stopping.
+    """Bounded orchestration of research plus observed-cycle learning.
 
-    This component does not perform web access itself. Tool execution remains
-    behind the existing research/tool-policy path. The loop only coordinates
-    inspectable state and an explicit next-step decision.
+    Research remains evidence gathering, never authority. Adaptive learning
+    observes completed traces and can recommend the next bounded step, but it
+    does not execute tools, grant authority, or weaken safety gates.
     """
 
     def __init__(
@@ -37,11 +40,13 @@ class ResearchCognitiveLoop:
         planner: ResearchPlanner | None = None,
         hypothesis_engine: HypothesisEngine | None = None,
         critic_loop: CriticLoopController | None = None,
+        adaptive_learning: AdaptiveLearningCoordinator | None = None,
     ) -> None:
         self.planner = planner or ResearchPlanner()
         self.hypothesis_engine = hypothesis_engine or HypothesisEngine()
         self.critic_loop = critic_loop or CriticLoopController()
         self.decision_synthesizer = DecisionSynthesizer()
+        self.adaptive_learning = adaptive_learning or AdaptiveLearningCoordinator()
 
     def initialize(
         self,
@@ -51,6 +56,9 @@ class ResearchCognitiveLoop:
         queries_used: int = 0,
         sources_used: int = 0,
         max_hypotheses: int = 3,
+        completed_trace: CycleTrace | None = None,
+        strategy: str = "research",
+        prior_experiences: tuple = (),
     ) -> ResearchCognitiveState:
         plan = self.planner.create_plan(question)
         hypotheses = self.hypothesis_engine.generate(
@@ -86,11 +94,7 @@ class ResearchCognitiveLoop:
 
         synthesis_id = "SYNTHESIS"
         evidence_ledger.graph.add_node(
-            ProvenanceNode(
-                synthesis_id,
-                "decision_synthesis",
-                synthesis.reason,
-            )
+            ProvenanceNode(synthesis_id, "decision_synthesis", synthesis.reason)
         )
         for hypothesis in hypotheses:
             evidence_ledger.graph.add_edge(
@@ -104,6 +108,20 @@ class ResearchCognitiveLoop:
             sources_used=sources_used,
             max_sources=plan.stop_conditions.max_sources,
         )
+
+        adaptive_result = None
+        if completed_trace is not None:
+            adaptive_result = self.adaptive_learning.observe(
+                completed_trace,
+                strategy=strategy,
+                prior_experiences=prior_experiences,
+            )
+            if adaptive_result.strategy.action == "RESEARCH":
+                decision = LoopDecision(
+                    action="RESEARCH",
+                    reason=adaptive_result.strategy.reason,
+                )
+
         return ResearchCognitiveState(
             plan,
             hypotheses,
@@ -111,6 +129,7 @@ class ResearchCognitiveLoop:
             synthesis,
             decision,
             evidence_ledger,
+            adaptive_result,
         )
 
     def continue_from_re_evaluation(
@@ -122,7 +141,6 @@ class ResearchCognitiveLoop:
         queries_used: int = 0,
         sources_used: int = 0,
     ) -> ResearchCognitiveState | None:
-        """Resume bounded research only when provenance says re-evaluation is needed."""
         if not plan.requires_research:
             return None
         return self.initialize(
@@ -141,11 +159,6 @@ class ResearchCognitiveLoop:
         sources_used: int = 0,
         max_hypotheses: int = 3,
     ) -> ResearchCognitiveState:
-        """Rebuild the bounded cognitive state from fresh evidence.
-
-        Existing hypotheses are not treated as facts; the critic reclassifies
-        them from the newly supplied evidence signals.
-        """
         return self.initialize(
             question,
             evidence=evidence,
@@ -155,10 +168,7 @@ class ResearchCognitiveLoop:
         )
 
     @staticmethod
-    def next_research_questions(
-        state: ResearchCognitiveState,
-    ) -> tuple[str, ...]:
-        """Return bounded research prompts for unresolved hypotheses."""
+    def next_research_questions(state: ResearchCognitiveState) -> tuple[str, ...]:
         if state.decision.action != "RESEARCH":
             return ()
         unresolved = set(state.critic.unresolved_hypotheses)
