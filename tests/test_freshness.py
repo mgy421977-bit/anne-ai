@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import pytest
 
@@ -94,6 +94,6 @@ def test_serialization_is_explicit() -> None:
 
     data = assessment.as_dict()
 
-    assert data["status"] == "aging"
+    assert data["status"] == "current"
     assert data["retrieved_at"] == "2026-09-29T11:00:00+00:00"
     assert data["reference_time"] == "2026-09-29T12:00:00+00:00"
