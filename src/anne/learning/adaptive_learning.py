@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from anne.core.trace import CycleTrace
 from anne.learning.experience_learning import Experience, ExperienceLearner
@@ -56,7 +56,7 @@ class AdaptiveLearningCoordinator:
         else:
             decision = self.strategy_adapter.adapt(strategy, experiences)
 
-        return AdaptiveLearningResult(gap, experience, decision)
+        learning = {\n            "information_gap": {\n                "present": gap.present,\n                "categories": gap.categories,\n                "reason": gap.reason,\n            },\n            "experience": {\n                "source_cycle_id": experience.source_cycle_id,\n                "outcome": experience.outcome,\n                "failure_class": experience.failure_class,\n                "strategy": experience.strategy,\n                "lesson": experience.lesson,\n                "safe_to_reuse": experience.safe_to_reuse,\n                "factual_status": experience.factual_status,\n            },\n            "strategy_adaptation": {\n                "action": decision.action,\n                "strategy": decision.strategy,\n                "reason": decision.reason,\n                "source_cycle_ids": decision.source_cycle_ids,\n            },\n        }\n        enriched_trace = replace(trace, learning=learning)\n        return AdaptiveLearningResult(gap, experience, decision, enriched_trace)
 
 
 __all__ = ["AdaptiveLearningCoordinator", "AdaptiveLearningResult"]
