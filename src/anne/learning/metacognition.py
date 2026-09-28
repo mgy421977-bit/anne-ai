@@ -7,8 +7,8 @@ EvidenceGate/AgencyGate decisions.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from anne.core.cognitive_state import CognitiveState, Hypothesis
 from anne.learning.evidence import EvidenceItem, SupportStatus
@@ -41,7 +41,12 @@ class MetacognitiveAssessment:
                 raise ValueError("evidence counts must be non-negative")
         if not 0.0 <= self.uncertainty <= 1.0:
             raise ValueError("uncertainty must be between 0.0 and 1.0")
-        if self.supporting_evidence + self.contradicting_evidence + self.unclear_evidence != self.evidence_count:
+        counts = (
+            self.supporting_evidence
+            + self.contradicting_evidence
+            + self.unclear_evidence
+        )
+        if counts != self.evidence_count:
             raise ValueError("evidence counts must sum to evidence_count")
 
 
@@ -61,7 +66,9 @@ class MetacognitiveEvaluator:
         evidence: Sequence[EvidenceItem] = (),
     ) -> MetacognitiveAssessment:
         items = tuple(evidence)
-        supporting = sum(item.support == SupportStatus.SUPPORTS.value for item in items)
+        supporting = sum(
+            item.support == SupportStatus.SUPPORTS.value for item in items
+        )
         contradicting = sum(
             item.support == SupportStatus.CONTRADICTS.value for item in items
         )
@@ -79,7 +86,8 @@ class MetacognitiveEvaluator:
         if state.requires_evidence:
             if state.evidence_status != "verified":
                 reasons.append(
-                    f"evidence status is {state.evidence_status}; verification is incomplete"
+                    f"evidence status is {state.evidence_status}; "
+                    "verification is incomplete"
                 )
                 uncertainty = max(uncertainty, 0.7)
 
@@ -92,7 +100,9 @@ class MetacognitiveEvaluator:
             uncertainty = max(uncertainty, 0.6)
 
         if alternatives:
-            reasons.append(f"{len(alternatives)} alternative hypothesis(es) remain explicit")
+            reasons.append(
+                f"{len(alternatives)} alternative hypothesis(es) remain explicit"
+            )
 
         if state.intent_confidence < 0.7:
             reasons.append("intent classification confidence is below 0.7")
