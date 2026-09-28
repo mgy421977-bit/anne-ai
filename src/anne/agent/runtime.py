@@ -28,8 +28,8 @@ from anne.core.verification import (
 from anne.learning.evidence import EvidenceLedger, EvidenceLedgerEntry, EvidenceStatus
 from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
-from anne.learning.web_research import WebResearcher
 from anne.learning.web_reevaluation import BoundedWebReEvaluator
+from anne.learning.web_research import WebResearcher
 from anne.memory.local_memory import LocalMemory
 from anne.multi_agent import (
     AgentRole,
