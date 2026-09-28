@@ -15,6 +15,7 @@ from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation import ReEvaluationPlan
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 
+
 @dataclass(frozen=True)
 class ResearchCognitiveState:
     plan: ResearchPlan
