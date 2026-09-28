@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from anne.core.cognitive_state import Consciousness, CognitiveState, Hypothesis
+from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.pipeline import AnnePipeline
+from anne.learning.evidence import EvidenceItem
 from anne.learning.web_research import WebResearcher
 from anne.memory.fractal_memory import FractalMemory
 
@@ -71,7 +72,7 @@ class NativeConversation:
         else:
             state = self.pipeline.hisset(state)
             state = self.pipeline.yap(state, hypothesis)
-            evidence = ()
+            evidence: tuple[EvidenceItem, ...] = ()
             if self.use_web_research and state.intent in {
                 "question",
                 "evidence_request",
@@ -112,11 +113,8 @@ class NativeConversation:
             )
 
         if evidence:
-            claims = [item for item in evidence if hasattr(item, "claim")]
-            synthesized = WebResearcher.answer(
-                state.raw_input,
-                list(claims),
-            )
+            claims: list[EvidenceItem] = list(evidence)
+            synthesized = WebResearcher.answer(state.raw_input, claims)
             lines = [
                 "Web araştırması yaptım. Aşağıdaki yanıt yalnızca bulunan "
                 "kaynaklı bulgulara dayanır; otomatik olarak doğrulanmış gerçek "
