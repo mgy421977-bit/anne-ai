@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
-from typing import Any, Mapping
+from typing import Any
 
 TRACE_SCHEMA_VERSION = "1.0"
 
@@ -52,7 +53,7 @@ class CycleTrace:
         )
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "CycleTrace":
+    def from_dict(cls, payload: Mapping[str, Any]) -> CycleTrace:
         data = dict(payload)
         for key in ("stage_trace", "lineage", "hypotheses", "evidence", "errors"):
             data[key] = tuple(data.get(key, ()))
@@ -73,7 +74,7 @@ def trace_from_runtime(
     """Copy explicit runtime observations without inferring truth or authority."""
     output = dict(output or {})
     context = dict(context or {})
-    verification = {
+    verification: dict[str, Any] = {
         key: context[key]
         for key in (
             "verification_status",
@@ -84,17 +85,17 @@ def trace_from_runtime(
         )
         if key in context
     }
-    decision = {
+    decision: dict[str, Any] = {
         key: output[key]
         for key in ("verdict", "action", "reason", "factual_status")
         if key in output
     }
-    agency = {
+    agency: dict[str, Any] = {
         key: output[key]
         for key in ("agency_decision", "agency_reason", "human_review_required")
         if key in output
     }
-    intent = {
+    intent: dict[str, Any] = {
         key: context[key]
         for key in ("intent", "intent_confidence", "ambiguity", "requires_evidence")
         if key in context
