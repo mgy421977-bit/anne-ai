@@ -380,3 +380,74 @@ def test_web_research_exposes_decision_synthesis(monkeypatch) -> None:
     assert synthesis["rejected_hypotheses"] == []
     assert synthesis["is_ambiguous"] is False
     assert synthesis["reason"]
+
+
+def test_evidence_item_records_retrieval_timestamp() -> None:
+    item = EvidenceItem(
+        source="test-source",
+        claim="A claim.",
+        kind="web",
+        provenance="https://example.test/source",
+        confidence=0.8,
+    )
+
+    assert item.retrieved_at
+    assert item.retrieved_at.endswith("+00:00")
+
+
+def test_evidence_item_preserves_explicit_retrieval_timestamp() -> None:
+    retrieved_at = "2026-09-28T12:00:00+00:00"
+    item = EvidenceItem(
+        source="test-source",
+        claim="A claim.",
+        kind="web",
+        provenance="https://example.test/source",
+        confidence=0.8,
+        retrieved_at=retrieved_at,
+    )
+
+    assert item.retrieved_at == retrieved_at
+
+
+def test_evidence_item_rejects_invalid_retrieval_timestamp() -> None:
+    try:
+        EvidenceItem(
+            source="test-source",
+            claim="A claim.",
+            kind="web",
+            provenance="https://example.test/source",
+            confidence=0.8,
+            retrieved_at="not-a-timestamp",
+        )
+    except ValueError as exc:
+        assert "retrieved_at" in str(exc)
+    else:
+        raise AssertionError("invalid retrieval timestamp must fail closed")
+
+
+def test_web_research_preserves_retrieval_timestamp_in_ledger(monkeypatch) -> None:
+    retrieved_at = "2026-09-28T12:00:00+00:00"
+
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim=f"Evidence for {query}",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    confidence=0.8,
+                    retrieved_at=retrieved_at,
+                )
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher()
+    agent.workspace = CognitiveWorkspace(task="test query")
+    agent.response_verifier = None
+    monkeypatch.setattr(agent.web_researcher, "research", FakeResearcher().research)
+
+    result = agent._web_research("test query")
+
+    assert result["evidence"][0]["retrieved_at"] == retrieved_at
+    assert agent.workspace.evidence_ledger[0].retrieved_at == retrieved_at
