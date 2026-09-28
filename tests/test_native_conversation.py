@@ -19,7 +19,10 @@ def test_native_conversation_greeting_does_not_need_model():
 
 
 def test_native_conversation_question_is_bounded_and_does_not_invent_answer():
-    conversation = NativeConversation(memory=FractalMemory(":memory:"))
+    conversation = NativeConversation(
+        memory=FractalMemory(":memory:"),
+        use_web_research=False,
+    )
 
     turn = conversation.respond("Neden böyle çalışıyorsun?")
 
