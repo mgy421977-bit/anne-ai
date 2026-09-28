@@ -22,8 +22,12 @@ class InformationGapDetector:
         decision = trace.decision
         categories: list[str] = []
 
-        verification_status = str(verification.get("status", "")).upper()
-        decision_status = str(decision.get("status", "")).upper()
+        verification_status = str(
+            verification.get("status", verification.get("verification_status", ""))
+        ).upper()
+        decision_status = str(
+            decision.get("status", decision.get("verdict", ""))
+        ).upper()
 
         if verification_status in {"UNVERIFIED", "CONFLICTING", "REFUTED"}:
             categories.append("evidence")
