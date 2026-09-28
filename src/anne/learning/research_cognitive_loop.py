@@ -3,8 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-
-
 from anne.core.trace import CycleTrace
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
