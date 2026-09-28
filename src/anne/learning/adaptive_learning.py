@@ -46,15 +46,7 @@ class AdaptiveLearningCoordinator:
         experience = self.experience_learner.from_trace(trace, strategy=strategy)
         experiences = (*prior_experiences, experience)
 
-        if gap.present and "evidence" in gap.categories:
-            decision = StrategyDecision(
-                "RESEARCH",
-                "seek_fresh_independent_evidence",
-                "information_gap_requires_fresh_evidence_before_progress",
-                tuple(item.source_cycle_id for item in experiences),
-            )
-        else:
-            decision = self.strategy_adapter.adapt(strategy, experiences)
+        decision = self.strategy_adapter.adapt(strategy, experiences)
 
         learning = {
             "metacognition": {
