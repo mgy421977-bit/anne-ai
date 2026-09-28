@@ -19,7 +19,7 @@ from anne.core.intent import IntentClassifier
 from anne.core.requirements import CognitiveRequirements, EvidenceStatus
 from anne.core.values import ANNECore, CoreDecision
 from anne.core.verification import ClaimVerifier, verify_claim
-from anne.learning.metacognition import MetacognitiveAssessment, MetacognitiveReviewer
+from anne.learning.metacognition import MetacognitiveReviewer
 from anne.memory.fractal_memory import FractalMemory
 
 
