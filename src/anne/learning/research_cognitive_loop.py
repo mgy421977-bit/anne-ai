@@ -3,19 +3,19 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+
+
 from anne.core.trace import CycleTrace
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
-from anne.learning.experience_learning import Experience
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
+from anne.learning.experience_learning import Experience
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation import ReEvaluationPlan
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
-
-
 @dataclass(frozen=True)
 class ResearchCognitiveState:
     plan: ResearchPlan
