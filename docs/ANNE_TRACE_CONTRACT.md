@@ -1,6 +1,6 @@
 # ANNE Canonical Trace Contract
 
-**Status:** Phase 1 foundation  
+**Status:** Phase 1 foundation
 **Schema:** `1.0`
 
 The canonical trace is an observability contract for one bounded cognitive cycle. It is provider-independent and does not grant authority.
