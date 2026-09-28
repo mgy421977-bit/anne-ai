@@ -308,68 +308,67 @@ class AnnePipeline:
                 "reason": state.context_map.get(
                     "core_reason", "ANNE Core blocked the proposed path."
                 ),
-                "core": {
-                    "decision": CoreDecision.BLOCK.value,
-                    "goodness": state.context_map.get("core_goodness"),
-                    "equality": state.context_map.get("core_equality"),
-                },
-            }
-        elif (
-            score is not None
-            and group_a
-            and group_b
-            and common_solution is False
-        ):
-            separation = self.core.resolve(
-                goodness=score.goodness,
-                equality=score.equality,
-                parties_conflict=True,
-                common_solution=False,
-            )
-            state.context_map["core_decision"] = separation.decision.value
-            state.context_map["core_reason"] = separation.reason
-            verdict = "AYRI_ÇÖZÜM"
-
-        if verdict == "AYRI_ÇÖZÜM" and group_a and group_b:
-            output: dict[str, Any] = {
-                "verdict": verdict,
-                "action": "SEPARATE_SOLUTIONS",
-                "reason": rationale,
-                "group_a": {
-                    "for": [c.id for c in group_a],
-                    "recommendation": "Independent process for Group A",
-                },
-                "group_b": {
-                    "for": [c.id for c in group_b],
-                    "recommendation": "Independent process for Group B",
-                },
-                "note": "No side taken. 1 == 1.",
-            }
-            for ca in group_a:
-                for cb in group_b:
-                    self.memory.update_empathy(ca.id, cb.id, conflict=True, resolved=True)
-        elif verdict == "ONAYLA":
-            output = {
-                "verdict": verdict,
-                "action": "PROCEED",
-                "hypothesis": hypothesis.claim,
-                "source": hypothesis.source,
-                "confidence": hypothesis.probability,
-                "reason": rationale,
-                "reasoning": rationale,
-                "empathy_summary": {
-                    cid: v["estimated_impact"] for cid, v in state.empathy_map.items()
-                },
             }
         else:
-            output = {
-                "verdict": verdict,
-                "action": "HALT",
-                "reason": rationale,
-                "reasoning": rationale,
-                "low_prob_preserved": state.low_prob_preserved,
-                "note": "Low-probability alternatives preserved.",
-            }
+            if (
+                score is not None
+                and group_a
+                and group_b
+                and common_solution is False
+            ):
+                separation = self.core.resolve(
+                    goodness=score.goodness,
+                    equality=score.equality,
+                    parties_conflict=True,
+                    common_solution=False,
+                )
+                state.context_map["core_decision"] = separation.decision.value
+                state.context_map["core_reason"] = separation.reason
+                verdict = "AYRI_ÇÖZÜM"
+
+            if verdict == "AYRI_ÇÖZÜM" and group_a and group_b:
+                output = {
+                    "verdict": verdict,
+                    "action": "SEPARATE_SOLUTIONS",
+                    "reason": rationale,
+                    "group_a": {
+                        "for": [c.id for c in group_a],
+                        "recommendation": "Independent process for Group A",
+                    },
+                    "group_b": {
+                        "for": [c.id for c in group_b],
+                        "recommendation": "Independent process for Group B",
+                    },
+                    "note": "No side taken. 1 == 1.",
+                }
+                for ca in group_a:
+                    for cb in group_b:
+                        self.memory.update_empathy(
+                            ca.id, cb.id, conflict=True, resolved=True
+                        )
+            elif verdict == "ONAYLA":
+                output = {
+                    "verdict": verdict,
+                    "action": "PROCEED",
+                    "hypothesis": hypothesis.claim,
+                    "source": hypothesis.source,
+                    "confidence": hypothesis.probability,
+                    "reason": rationale,
+                    "reasoning": rationale,
+                    "empathy_summary": {
+                        cid: v["estimated_impact"]
+                        for cid, v in state.empathy_map.items()
+                    },
+                }
+            else:
+                output = {
+                    "verdict": verdict,
+                    "action": "HALT",
+                    "reason": rationale,
+                    "reasoning": rationale,
+                    "low_prob_preserved": state.low_prob_preserved,
+                    "note": "Low-probability alternatives preserved.",
+                }
 
         output["core"] = {
             "decision": state.context_map.get("core_decision"),
