@@ -1,6 +1,7 @@
 """Six-stage cognitive pipeline orchestrator.
 
 Order: optional FailFast → DUY → BAK → GÖR → ANLA → HİSSET → YAP.
+A bounded METACOG review runs after YAP as an inspectable audit layer.
 """
 
 from __future__ import annotations
@@ -18,11 +19,12 @@ from anne.core.intent import IntentClassifier
 from anne.core.requirements import CognitiveRequirements, EvidenceStatus
 from anne.core.values import ANNECore, CoreDecision
 from anne.core.verification import ClaimVerifier, verify_claim
+from anne.learning.metacognition import MetacognitiveReviewer
 from anne.memory.fractal_memory import FractalMemory
 
 
 class AnnePipeline:
-    """Executes FailFast? → DUY → BAK → GÖR → ANLA → HİSSET → YAP."""
+    """Executes FailFast? → DUY → BAK → GÖR → ANLA → HİSSET → YAP → METACOG."""
 
     def __init__(
         self,
@@ -35,6 +37,7 @@ class AnnePipeline:
         intent_classifier: IntentClassifier | None = None,
         claim_verifier: ClaimVerifier | None = None,
         agency_gate: AgencyGate | None = None,
+        metacognitive_reviewer: MetacognitiveReviewer | None = None,
     ) -> None:
         self.memory = memory
         self.ethic = EthicCore()
@@ -47,6 +50,7 @@ class AnnePipeline:
         self.intent_classifier = intent_classifier or IntentClassifier()
         self.claim_verifier = claim_verifier
         self.agency_gate = agency_gate or AgencyGate()
+        self.metacognitive_reviewer = metacognitive_reviewer or MetacognitiveReviewer()
 
     def fail_fast(self, raw_input: str) -> FailFastResult:
         """Deterministic pre-gate before cognitive stages."""
@@ -423,6 +427,24 @@ class AnnePipeline:
         state.output = output
         return state
 
+    def metacog(self, state: CognitiveState) -> CognitiveState:
+        """Attach a bounded post-decision cognitive audit without changing authority."""
+        assessment = self.metacognitive_reviewer.review(state)
+        state.context_map["metacognitive"] = {
+            "evidence_status": assessment.evidence_status,
+            "evidence_sufficient": assessment.evidence_sufficient,
+            "has_conflict": assessment.has_conflict,
+            "alternatives_preserved": list(assessment.alternatives_preserved),
+            "needs_research": assessment.needs_research,
+            "uncertainty": assessment.uncertainty,
+            "ambiguity": assessment.ambiguity,
+            "agency_decision": assessment.agency_decision,
+            "core_decision": assessment.core_decision,
+            "reason": assessment.reason,
+        }
+        state.output["metacognitive"] = state.context_map["metacognitive"]
+        return state
+
     def run_with_fail_fast(
         self,
         raw_input: str,
@@ -453,4 +475,5 @@ class AnnePipeline:
         if state.logic_valid or state.ethic_score is not None:
             state = self.hisset(state)
         state = self.yap(state, hypothesis)
+        state = self.metacog(state)
         return ff, state
