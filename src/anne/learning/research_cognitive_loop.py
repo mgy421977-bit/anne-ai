@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from anne.core.trace import CycleTrace
-from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
+from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult\nfrom anne.learning.experience_learning import Experience
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
@@ -58,7 +58,7 @@ class ResearchCognitiveLoop:
         max_hypotheses: int = 3,
         completed_trace: CycleTrace | None = None,
         strategy: str = "research",
-        prior_experiences: tuple = (),
+        prior_experiences: tuple[Experience, ...] = (),
     ) -> ResearchCognitiveState:
         plan = self.planner.create_plan(question)
         hypotheses = self.hypothesis_engine.generate(
