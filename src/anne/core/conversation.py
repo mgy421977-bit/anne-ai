@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 from anne.core.cognitive_state import Consciousness, CognitiveState, Hypothesis
 from anne.core.pipeline import AnnePipeline
+from anne.learning.web_research import WebResearcher
 from anne.memory.fractal_memory import FractalMemory
 
 
@@ -35,11 +36,15 @@ class NativeConversation:
         self,
         memory: FractalMemory | None = None,
         pipeline: AnnePipeline | None = None,
+        web_researcher: WebResearcher | None = None,
+        use_web_research: bool = True,
     ) -> None:
         self.memory = memory or FractalMemory(":memory:")
         self.pipeline = pipeline or AnnePipeline(self.memory)
         self.turns: list[ConversationTurn] = []
         self.user = Consciousness(id="user", weight=1.0, exists=True)
+        self.web_researcher = web_researcher or WebResearcher()
+        self.use_web_research = use_web_research
 
     def respond(self, user_input: str) -> ConversationTurn:
         text = user_input.strip()
@@ -66,14 +71,17 @@ class NativeConversation:
         else:
             state = self.pipeline.hisset(state)
             state = self.pipeline.yap(state, hypothesis)
-            response = self._compose_response(state)
+            evidence = ()
+            if self.use_web_research and state.intent in {"question", "evidence_request", "comparison", "planning", "uncertainty", "risk"}:
+                evidence = tuple(self.web_researcher.research(text))
+            response = self._compose_response(state, evidence)
 
         turn = ConversationTurn(text, response, state)
         self.turns.append(turn)
         return turn
 
     @staticmethod
-    def _compose_response(state: CognitiveState) -> str:
+    def _compose_response(state: CognitiveState, evidence: tuple = ()) -> str:
         intent = state.intent
         core = state.context_map.get("core_decision")
         action = state.action
@@ -91,10 +99,17 @@ class NativeConversation:
                 "Seni dinliyorum."
             )
 
+        if evidence:
+            lines = ["Web araştırması yaptım; aşağıdakiler kaynaklı bulgular, otomatik olarak doğrulanmış gerçek değildir:"]
+            for item in evidence[:8]:
+                passage = item.passage.strip() or item.claim.strip()
+                lines.append(f"- {item.source}: {passage}")
+            return "\\n".join(lines)
+
         if intent == "evidence_request":
             return (
-                "Kanıt istediğini anladım. Dış kaynak doğrulaması olmadan "
-                "bir bilgiyi doğrulanmış gerçek olarak sunmayacağım."
+                "Kanıt istediğini anladım. Web araştırması sonucunda yeterli kaynak bulunmadı; "
+                "bu nedenle bir bilgiyi doğrulanmış gerçek olarak sunmayacağım."
             )
 
         if intent == "action_request":
