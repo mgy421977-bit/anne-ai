@@ -43,7 +43,9 @@ class EvidenceItem:
             raise ValueError("kind must not be empty")
         if not self.provenance.strip():
             raise ValueError("provenance must not be empty")
-        if self.retrieved_at:
+        if not self.retrieved_at:
+            object.__setattr__(self, "retrieved_at", datetime.now(UTC).isoformat())
+        else:
             try:
                 datetime.fromisoformat(self.retrieved_at)
             except ValueError as exc:
