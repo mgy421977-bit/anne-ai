@@ -32,8 +32,8 @@ CASES = (
 INTERNAL_MARKERS = ("Goodness=", "Equality=", "Harm=", "anla_score")
 
 
-def test_cognitive_benchmark_v01() -> None:
-    loop = DecisionLoop()
+def test_cognitive_benchmark_v01(tmp_path) -> None:
+    loop = DecisionLoop(memory_db_path=str(tmp_path / "anne.db"))
     composer = ResponseComposer()
     results = []
 
@@ -50,8 +50,8 @@ def test_cognitive_benchmark_v01() -> None:
     assert len(results) == len(CASES)
 
 
-def test_benchmark_resource_budget_remains_bounded() -> None:
-    loop = DecisionLoop()
+def test_benchmark_resource_budget_remains_bounded(tmp_path) -> None:
+    loop = DecisionLoop(memory_db_path=str(tmp_path / "anne.db"))
     for index, case in enumerate(CASES[:5]):
         result = loop.run_cognitive(case.prompt, seed=200 + index)
         assert result.retry_count <= loop.orchestrator.max_retries
