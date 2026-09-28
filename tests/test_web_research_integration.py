@@ -409,7 +409,10 @@ def test_web_research_distinguishes_source_from_retrieval_provenance(monkeypatch
 
     assert item["provenance"] == "https://example.test/source"
     assert item["retrieval_provenance"] == "https://search.test/?q=capital"
-    assert agent.workspace.evidence_ledger[0].retrieval_provenance == "https://search.test/?q=capital"
+    assert (
+        agent.workspace.evidence_ledger[0].retrieval_provenance
+        == "https://search.test/?q=capital"
+    )
 
 
 def test_wikipedia_search_uses_page_as_source_and_api_as_retrieval(monkeypatch) -> None:
@@ -418,7 +421,13 @@ def test_wikipedia_search_uses_page_as_source_and_api_as_retrieval(monkeypatch) 
     monkeypatch.setattr(
         researcher,
         "_get_json",
-        lambda url: {"query": {"search": [{"title": "Paris", "snippet": "Paris is the capital of France."}]}},
+        lambda url: {
+            "query": {
+                "search": [
+                    {"title": "Paris", "snippet": "Paris is the capital of France."}
+                ]
+            }
+        },
     )
 
     items = researcher._wikipedia_search("Paris capital France", "en")
