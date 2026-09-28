@@ -1,8 +1,8 @@
-"""Native, provider-free ANNE conversation loop.
+"""Native ANNE conversation loop with optional bounded web research.
 
-This module deliberately does not call an LLM, network service, or external tool.
-It turns a user message into a bounded cognitive turn and produces a small,
-inspectable response from ANNE's own deterministic state.
+The conversation surface does not require an LLM. Web research can be enabled
+for questions and research-oriented intents, while retrieved material remains
+provenance-bearing evidence rather than automatically verified truth.
 """
 
 from __future__ import annotations
@@ -25,11 +25,11 @@ class ConversationTurn:
 
 
 class NativeConversation:
-    """Provider-free conversation surface for the ANNE core.
+    """Conversation surface for the ANNE core with optional web research.
 
-    The goal is not natural-language generation. The goal is to prove that
-    ANNE can receive, frame, process, and respond to a turn without depending
-    on another model. Model providers can be attached later as generators.
+    The native path can receive, frame, process, research, and respond to a
+    turn without depending on another model. Model providers can be attached
+    later as generators when richer language synthesis is desired.
     """
 
     def __init__(
@@ -81,7 +81,7 @@ class NativeConversation:
         return turn
 
     @staticmethod
-    def _compose_response(state: CognitiveState, evidence: tuple = ()) -> str:
+    def _compose_response(state: CognitiveState, evidence: tuple[object, ...] = ()) -> str:
         intent = state.intent
         core = state.context_map.get("core_decision")
         action = state.action
