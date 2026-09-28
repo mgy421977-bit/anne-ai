@@ -312,7 +312,10 @@ class WebResearcher:
 
     def _wikipedia_search(self, query: str, language: str) -> list[EvidenceItem]:
         encoded = urllib.parse.quote(query)
-        url = f"https://{language}.wikipedia.org/w/api.php?action=query&list=search&srsearch={encoded}&format=json&srlimit=6"
+        url = (
+            f"https://{language}.wikipedia.org/w/api.php?action=query&list=search"
+            f"&srsearch={encoded}&format=json&srlimit=6"
+        )
         data = self._get_json(url)
         items: list[EvidenceItem] = []
         for item in data.get("query", {}).get("search", []):
@@ -361,7 +364,11 @@ class WebResearcher:
         data = self._get_json(url)
         abstract = self._clean_html(str(data.get("AbstractText", "")))
         source_url = str(data.get("AbstractURL", "")).strip()
-        if not abstract or not self._is_relevant(query, abstract) or not self._valid_source_url(source_url):
+        if (
+            not abstract
+            or not self._is_relevant(query, abstract)
+            or not self._valid_source_url(source_url)
+        ):
             return None
         score = self._relevance(query, abstract)
         return EvidenceItem(
