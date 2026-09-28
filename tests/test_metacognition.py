@@ -37,3 +37,41 @@ def test_metacognition_exposes_missing_intent_as_assumption() -> None:
     result = Metacognition().assess(trace)
     assert "intent is not explicitly recorded" in result.assumptions
     assert "intent_clarification" in result.recalibration_triggers
+
+
+def test_metacognition_does_not_call_verified_without_provenance() -> None:
+    trace = CycleTrace(
+        cycle_id="m4",
+        status="SUCCESS",
+        verification={"verification_status": "VERIFIED"},
+    )
+    result = Metacognition().assess(trace)
+    assert not result.known
+    assert "provenance_completion" in result.recalibration_triggers
+
+
+def test_metacognition_distinguishes_conflicting_and_refuted_evidence() -> None:
+    conflicting = CycleTrace(
+        cycle_id="m5",
+        verification={"verification_status": "CONFLICTING", "verification_sources": ("a", "b")},
+    )
+    refuted = CycleTrace(
+        cycle_id="m6",
+        verification={"verification_status": "REFUTED", "verification_sources": ("a",)},
+    )
+
+    conflicting_result = Metacognition().assess(conflicting)
+    refuted_result = Metacognition().assess(refuted)
+
+    assert "resolve_conflicting_evidence" in conflicting_result.recalibration_triggers
+    assert "reassess_refuted_claim" in refuted_result.recalibration_triggers
+
+
+def test_metacognition_marks_review_decisions_for_reassessment() -> None:
+    trace = CycleTrace(
+        cycle_id="m7",
+        decision={"verdict": "REVIEW", "reason": "human review required"},
+    )
+    result = Metacognition().assess(trace)
+    assert "decision_status" in result.decision_dependencies
+    assert "decision_reassessment" in result.recalibration_triggers
