@@ -32,6 +32,7 @@ class EvidenceItem:
     confidence: float
     passage: str = ""
     support: str = SupportStatus.UNCLEAR.value
+    retrieval_provenance: str = ""
 
     def __post_init__(self) -> None:
         if not self.source.strip():
@@ -84,6 +85,7 @@ class EvidenceLedgerEntry:
     passage: str = ""
     retrieved_at: str = ""
     support: str = SupportStatus.UNCLEAR.value
+    retrieval_provenance: str = ""
 
     def __post_init__(self) -> None:
         if not self.claim.strip():
@@ -192,6 +194,7 @@ class EvidenceLedger:
                     "status": entry.status.value,
                     "passage": entry.passage,
                     "support": entry.support,
+                    "retrieval_provenance": entry.retrieval_provenance,
                     "retrieved_at": entry.retrieved_at,
                 }
                 for evidence_id, entry in self._entries.items()
