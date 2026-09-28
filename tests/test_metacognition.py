@@ -10,7 +10,7 @@ def test_metacognition_does_not_treat_confidence_as_truth() -> None:
         decision={"reason": "confidence=0.99"},
     )
     result = Metacognition().assess(trace)
-    assert "factual status is not established as VERIFIED" in result.unknown
+    assert "factual status is not established as VERIFIED with recorded provenance" in result.unknown
     assert "new_independent_evidence" in result.recalibration_triggers
 
 
@@ -53,10 +53,12 @@ def test_metacognition_does_not_call_verified_without_provenance() -> None:
 def test_metacognition_distinguishes_conflicting_and_refuted_evidence() -> None:
     conflicting = CycleTrace(
         cycle_id="m5",
+        status="BOUNDED",
         verification={"verification_status": "CONFLICTING", "verification_sources": ("a", "b")},
     )
     refuted = CycleTrace(
         cycle_id="m6",
+        status="BOUNDED",
         verification={"verification_status": "REFUTED", "verification_sources": ("a",)},
     )
 
@@ -70,6 +72,7 @@ def test_metacognition_distinguishes_conflicting_and_refuted_evidence() -> None:
 def test_metacognition_marks_review_decisions_for_reassessment() -> None:
     trace = CycleTrace(
         cycle_id="m7",
+        status="BOUNDED",
         decision={"verdict": "REVIEW", "reason": "human review required"},
     )
     result = Metacognition().assess(trace)
