@@ -81,3 +81,21 @@ def test_native_conversation_can_disable_web_research_explicitly():
     turn = conversation.respond("ANNE nasıl çalışıyor?")
 
     assert "Web araştırması yaptım" not in turn.response
+
+class FailingWebResearcher:
+    def research(self, query):
+        raise OSError("network unavailable")
+
+
+def test_native_conversation_survives_web_research_failure():
+    conversation = NativeConversation(
+        memory=FractalMemory(":memory:"),
+        web_researcher=FailingWebResearcher(),
+        use_web_research=True,
+    )
+
+    turn = conversation.respond("ANNE nasıl çalışıyor?")
+
+    assert turn.state.intent == "question"
+    assert "güvenli biçimde" not in turn.response
+    assert "cevabı uydurmak yerine" in turn.response
