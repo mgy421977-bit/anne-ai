@@ -47,9 +47,15 @@ class ExperienceLearner:
         if outcome == "SUCCESS":
             failure_class = FailureClass.UNKNOWN
 
-        factual_status = str(\n            trace.verification.get(\n                "verification_status",\n                trace.verification.get("status", "UNVERIFIED"),\n            )\n        ).upper()
+        factual_status = str(
+            trace.verification.get(
+                "verification_status",
+                trace.verification.get("status", "UNVERIFIED"),
+            )
+        ).upper()
         lesson = (
-            f"Observed {outcome.lower()} for strategy '{strategy or 'unspecified'}'; "
+            f"Observed {outcome.lower()} for strategy "
+            f"'{strategy or 'unspecified'}'; "
             "do not promote this observation to truth."
         )
         return Experience(
