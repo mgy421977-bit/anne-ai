@@ -44,7 +44,7 @@ def test_pipeline_halts_when_core_blocks():
 
     result = pipeline.yap(state, Hypothesis("h", "test", "test", 0.9))
 
-    assert result.output["verdict"] == "ABSTAIN"
+    assert result.output["verdict"] == "REDDET"
     assert result.output["action"] == "HALT"
 
 
