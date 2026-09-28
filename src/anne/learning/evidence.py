@@ -201,7 +201,6 @@ class EvidenceLedger:
                     "passage": entry.passage,
                     "retrieved_at": entry.retrieved_at,
                     "support": entry.support,
-                    "retrieved_at": entry.retrieved_at,
                 }
                 for evidence_id, entry in self._entries.items()
             ]
