@@ -36,13 +36,16 @@ class ExperienceLearner:
             reason = f"{reason} " + " ".join(
                 str(error.get("reason", "")) for error in trace.errors
             )
-        failure_class = self.planner.classify(" ".join(trace.errors[0].keys()) if trace.errors else "", reason)
-        if trace.status.upper() in {"EXECUTED", "SUCCESS"} and not failure_class != FailureClass.UNKNOWN:
-            outcome = "SUCCESS"
-        elif trace.status.upper() in {"EXECUTED", "SUCCESS"} and not trace.errors:
-            outcome = "SUCCESS"
-        else:
-            outcome = "FAILURE"
+
+        failure_class = self.planner.classify(trace.stop_reason, reason)
+        outcome = (
+            "SUCCESS"
+            if trace.status.upper() in {"EXECUTED", "SUCCESS"} and not trace.errors
+            else "FAILURE"
+        )
+
+        if outcome == "SUCCESS":
+            failure_class = FailureClass.UNKNOWN
 
         factual_status = str(trace.verification.get("status", "UNVERIFIED")).upper()
         lesson = (
