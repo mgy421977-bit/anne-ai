@@ -4,7 +4,7 @@ from anne.core.trace import CycleTrace
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator
 
 
-def test_adaptive_learning_requests_research_for_evidence_gap() -> None:
+def test_adaptive_learning_keeps_strategy_after_one_evidence_gap() -> None:
     trace = CycleTrace(
         cycle_id="c10",
         status="BOUNDED",
@@ -14,8 +14,8 @@ def test_adaptive_learning_requests_research_for_evidence_gap() -> None:
     )
     result = AdaptiveLearningCoordinator().observe(trace, strategy="answer_directly")
     assert result.information_gap.present is True
-    assert result.strategy.action == "RESEARCH"
-    assert result.strategy.strategy == "seek_fresh_independent_evidence"
+    assert result.strategy.action == "KEEP"
+    assert result.strategy.strategy == "answer_directly"
 
 
 def test_adaptive_learning_does_not_change_after_one_failure() -> None:
