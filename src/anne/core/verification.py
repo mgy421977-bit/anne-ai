@@ -12,7 +12,6 @@ from dataclasses import asdict, dataclass
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 from anne.core.source_independence import SourceIndependence
-from urllib.parse import urlparse
 
 
 class FactualStatus(StrEnum):
