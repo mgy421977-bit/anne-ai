@@ -44,7 +44,7 @@ class NativeConversation:
         self.pipeline = pipeline or AnnePipeline(self.memory)
         self.turns: list[ConversationTurn] = []
         self.user = Consciousness(id="user", weight=1.0, exists=True)
-        self.web_researcher = web_researcher or WebResearcher()
+        self.web_researcher: WebResearcher = web_researcher or WebResearcher()
         self.use_web_research = use_web_research
 
     def respond(self, user_input: str) -> ConversationTurn:
@@ -113,7 +113,7 @@ class NativeConversation:
             )
 
         if evidence:
-            claims: list[EvidenceItem] = list(evidence)
+            claims: list[EvidenceItem] = [item for item in evidence if isinstance(item, EvidenceItem)]
             synthesized = WebResearcher.answer(state.raw_input, claims)
             lines = [
                 "Web araştırması yaptım. Aşağıdaki yanıt yalnızca bulunan "
