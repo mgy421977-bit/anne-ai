@@ -11,6 +11,7 @@ from typing import Any
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
 from anne.core.anla_score import DEFAULT_TAU, MAX_ANLA_RETRIES, passes_anla
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
+from anne.core.values import ANNECore, CoreDecision
 from anne.core.ethic_core import EthicCore
 from anne.core.evidence import EvidenceGate, evidence_status_from_verification
 from anne.core.fail_fast import FailFastGate, FailFastResult
@@ -37,6 +38,7 @@ class AnnePipeline:
     ) -> None:
         self.memory = memory
         self.ethic = EthicCore()
+        self.core = ANNECore()
         self.anla_enabled = anla_enabled
         self.anla_tau = anla_tau
         self.max_anla_retries = max_anla_retries
@@ -218,7 +220,21 @@ class AnnePipeline:
             related_memories=state.related_memories,
         )
         state.ethic_score = score
-        state.logic_valid = score.total > 0.0
+        core_resolution = self.core.resolve(
+            goodness=score.goodness,
+            equality=score.equality,
+        )
+        state.context_map.update(
+            {
+                "core_decision": core_resolution.decision.value,
+                "core_goodness": core_resolution.goodness,
+                "core_equality": core_resolution.equality,
+                "core_reason": core_resolution.reason,
+            }
+        )
+        state.logic_valid = (
+            score.total > 0.0 and core_resolution.decision is not CoreDecision.BLOCK
+        )
         self.memory.save_learned_rule(f"type:{state.input_type}→{score.verdict}", score.total)
         return state
 
@@ -243,6 +259,7 @@ class AnnePipeline:
         hypothesis: Hypothesis,
         group_a: Sequence[Consciousness] | None = None,
         group_b: Sequence[Consciousness] | None = None,
+        common_solution: bool | None = None,
     ) -> CognitiveState:
         if state.authority_check_required and not state.authority_check_passed:
             state.action = "HALT"
@@ -284,6 +301,22 @@ class AnnePipeline:
         verdict = score.verdict if score else "UNKNOWN"
         rationale = score.reasoning if score else "No validated decision rationale available."
 
+        if (
+            score is not None
+            and group_a
+            and group_b
+            and common_solution is False
+        ):
+            separation = self.core.resolve(
+                goodness=score.goodness,
+                equality=score.equality,
+                parties_conflict=True,
+                common_solution=False,
+            )
+            state.context_map["core_decision"] = separation.decision.value
+            state.context_map["core_reason"] = separation.reason
+            verdict = "AYRI_ÇÖZÜM"
+
         if verdict == "AYRI_ÇÖZÜM" and group_a and group_b:
             output: dict[str, Any] = {
                 "verdict": verdict,
@@ -324,6 +357,13 @@ class AnnePipeline:
                 "low_prob_preserved": state.low_prob_preserved,
                 "note": "Low-probability alternatives preserved.",
             }
+
+        output["core"] = {
+            "decision": state.context_map.get("core_decision"),
+            "goodness": state.context_map.get("core_goodness"),
+            "equality": state.context_map.get("core_equality"),
+            "reason": state.context_map.get("core_reason"),
+        }
 
         verification_status = state.context_map.get("verification_status")
         action_risk = state.context_map.get("action_risk")
