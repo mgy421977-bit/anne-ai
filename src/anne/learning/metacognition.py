@@ -39,14 +39,20 @@ class Metacognition:
             )
         ).upper()
 
-        if status == "VERIFIED":
-            known.append("verification status is explicitly VERIFIED")
-        else:
-            unknown.append("factual status is not established as VERIFIED")
-            triggers.append("new_independent_evidence")
-
         sources = verification.get("verification_sources", ())
-        if sources:
+        has_sources = bool(sources)
+        if status == "VERIFIED" and has_sources:
+            known.append("verification status is explicitly VERIFIED with recorded sources")
+        else:
+            unknown.append("factual status is not established as VERIFIED with recorded provenance")
+            if status == "CONFLICTING":
+                triggers.append("resolve_conflicting_evidence")
+            elif status == "REFUTED":
+                triggers.append("reassess_refuted_claim")
+            else:
+                triggers.append("new_independent_evidence")
+
+        if has_sources:
             evidence_basis.append("verification_sources")
         else:
             unknown.append("verification source provenance is not recorded")
@@ -55,6 +61,12 @@ class Metacognition:
         reason = str(decision.get("reason", "")).strip()
         if reason:
             dependencies.append("decision_reason")
+        decision_status = str(
+            decision.get("status", decision.get("verdict", ""))
+        ).upper()
+        if decision_status in {"REVIEW", "ABSTAIN", "INSUFFICIENT_EVIDENCE", "CONFLICTING"}:
+            dependencies.append("decision_status")
+            triggers.append("decision_reassessment")
 
         if trace.intent:
             dependencies.append("intent")
@@ -69,6 +81,8 @@ class Metacognition:
 
         if trace.learning:
             dependencies.append("prior_learning_observation")
+        else:
+            assumptions.append("prior learning observation is not recorded")
 
         if trace.stop_reason:
             dependencies.append("stop_reason")
