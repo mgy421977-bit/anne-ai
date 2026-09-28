@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from anne.core.trace import CycleTrace
-from anne.learning.experience_learning import Experience, ExperienceLearner
+from anne.learning.experience_learning import Experience, ExperienceLearner\nfrom anne.learning.metacognition import Metacognition, MetacognitiveAssessment
 from anne.learning.information_gap import InformationGap, InformationGapDetector
 from anne.learning.strategy_adaptation import StrategyAdapter, StrategyDecision
 
@@ -42,7 +42,7 @@ class AdaptiveLearningCoordinator:
         strategy: str,
         prior_experiences: tuple[Experience, ...] = (),
     ) -> AdaptiveLearningResult:
-        gap = self.gap_detector.detect(trace)
+        metacognition = Metacognition().assess(trace)\n        gap = self.gap_detector.detect(trace)
         experience = self.experience_learner.from_trace(trace, strategy=strategy)
         experiences = (*prior_experiences, experience)
 
@@ -56,7 +56,7 @@ class AdaptiveLearningCoordinator:
         else:
             decision = self.strategy_adapter.adapt(strategy, experiences)
 
-        learning = {\n            "information_gap": {\n                "present": gap.present,\n                "categories": gap.categories,\n                "reason": gap.reason,\n            },\n            "experience": {\n                "source_cycle_id": experience.source_cycle_id,\n                "outcome": experience.outcome,\n                "failure_class": experience.failure_class,\n                "strategy": experience.strategy,\n                "lesson": experience.lesson,\n                "safe_to_reuse": experience.safe_to_reuse,\n                "factual_status": experience.factual_status,\n            },\n            "strategy_adaptation": {\n                "action": decision.action,\n                "strategy": decision.strategy,\n                "reason": decision.reason,\n                "source_cycle_ids": decision.source_cycle_ids,\n            },\n        }\n        enriched_trace = replace(trace, learning=learning)\n        return AdaptiveLearningResult(gap, experience, decision, enriched_trace)
+        learning = {\n            "metacognition": {\n                "known": metacognition.known,\n                "unknown": metacognition.unknown,\n                "evidence_basis": metacognition.evidence_basis,\n                "assumptions": metacognition.assumptions,\n                "decision_dependencies": metacognition.decision_dependencies,\n                "recalibration_triggers": metacognition.recalibration_triggers,\n            },\n            "information_gap": {\n                "present": gap.present,\n                "categories": gap.categories,\n                "reason": gap.reason,\n            },\n            "experience": {\n                "source_cycle_id": experience.source_cycle_id,\n                "outcome": experience.outcome,\n                "failure_class": experience.failure_class,\n                "strategy": experience.strategy,\n                "lesson": experience.lesson,\n                "safe_to_reuse": experience.safe_to_reuse,\n                "factual_status": experience.factual_status,\n            },\n            "strategy_adaptation": {\n                "action": decision.action,\n                "strategy": decision.strategy,\n                "reason": decision.reason,\n                "source_cycle_ids": decision.source_cycle_ids,\n            },\n        }\n        enriched_trace = replace(trace, learning=learning)\n        return AdaptiveLearningResult(gap, experience, decision, enriched_trace, metacognition)
 
 
 __all__ = ["AdaptiveLearningCoordinator", "AdaptiveLearningResult"]
