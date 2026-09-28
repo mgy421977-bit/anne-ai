@@ -29,6 +29,7 @@ from anne.learning.evidence import EvidenceLedgerEntry, EvidenceStatus
 from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 from anne.learning.web_research import WebResearcher
+from anne.learning.web_reevaluation import BoundedWebReEvaluator
 from anne.memory.local_memory import LocalMemory
 from anne.multi_agent import (
     AgentRole,
@@ -251,6 +252,8 @@ omit only when no semantic extraction is useful.
         self.runtime = AnneRuntime(decision_loop=self.decision_loop)
         self.workspace: CognitiveWorkspace | None = None
         self.web_researcher = WebResearcher()
+        self._last_research_ledger = None
+        self._last_research_question: str | None = None
         self.tools = _GuardedToolRegistry()
         self.tools.update(
             {
@@ -415,6 +418,8 @@ omit only when no semantic extraction is useful.
             sources_used=len(classified_evidence),
         )
         evidence_ledger = final_state.evidence_ledger
+        self._last_research_ledger = evidence_ledger
+        self._last_research_question = target_claim
         return {
             "ok": True,
             "query": target_claim,
@@ -468,11 +473,64 @@ omit only when no semantic extraction is useful.
             "evidence_ledger": evidence_ledger.as_dict(),
             "reevaluation": {
                 "action": "NOT_TRIGGERED",
+                "available": True,
                 "reason": (
                     "No evidence invalidation occurred during this research run; "
-                    "re-evaluation remains available through the provenance ledger."
+                    "explicit bounded re-evaluation is available through the research session."
                 ),
             },
+        }
+
+    def reevaluate_research(
+        self,
+        evidence_id: str,
+        *,
+        question: str | None = None,
+    ) -> dict[str, Any]:
+        """Explicitly invalidate one research dependency and rebuild once from fresh evidence."""
+        ledger = self._last_research_ledger
+        if ledger is None:
+            return {
+                "ok": False,
+                "error": "No completed web research session is available.",
+            }
+
+        target = (question or self._last_research_question or "").strip()
+        if not target:
+            return {"ok": False, "error": "Re-evaluation question is missing."}
+
+        result = BoundedWebReEvaluator(self.web_researcher).reevaluate(
+            question=target,
+            ledger=ledger,
+            evidence_id=evidence_id,
+        )
+        refreshed = result.refreshed_state
+        return {
+            "ok": True,
+            "plan": {
+                "action": result.plan.action,
+                "reason": result.plan.reason,
+                "invalidated_node": result.plan.invalidated_node,
+                "stale_nodes": list(result.plan.stale_nodes),
+            },
+            "fresh_evidence_ids": list(result.fresh_evidence_ids),
+            "queries_used": result.queries_used,
+            "sources_used": result.sources_used,
+            "refreshed_state": (
+                {
+                    "decision": refreshed.decision.action,
+                    "decision_reason": refreshed.decision.reason,
+                    "synthesis": refreshed.synthesis.status.value,
+                    "synthesis_reason": refreshed.synthesis.reason,
+                    "unresolved_hypotheses": list(
+                        refreshed.critic.unresolved_hypotheses
+                    ),
+                }
+                if refreshed is not None
+                else None
+            ),
+            "provenance": ledger.provenance(),
+            "evidence_ledger": ledger.as_dict(),
         }
 
     def collaborate(self, task: str, workers: dict[str, Worker]) -> CollaborationResult:
