@@ -38,7 +38,8 @@ class MetacognitiveReviewer:
     }
 
     def review(self, state: CognitiveState) -> MetacognitiveAssessment:
-        status = str(state.evidence_status)
+        status_value = state.context_map.get("evidence_status", state.evidence_status)
+        status = str(status_value)
         evidence_sufficient = (
             not state.requires_evidence
             or status == "verified"
@@ -149,8 +150,14 @@ class MetacognitiveReviewer:
                 "remain visible for later reassessment."
             )
         if needs_research:
-            return "Further bounded research is required before the result can be treated as sufficient."
-        return "Current evidence state is sufficient and no unresolved alternative was recorded."
+            return (
+                "Further bounded research is required before the result can be "
+                "treated as sufficient."
+            )
+        return (
+            "Current evidence state is sufficient and no unresolved alternative "
+            "was recorded."
+        )
 
 
 __all__ = ["MetacognitiveAssessment", "MetacognitiveReviewer"]
