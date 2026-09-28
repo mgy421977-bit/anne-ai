@@ -40,10 +40,12 @@ class MetacognitiveReviewer:
     def review(self, state: CognitiveState) -> MetacognitiveAssessment:
         status_value = state.context_map.get("evidence_status", state.evidence_status)
         status = str(status_value)
+        verified_value = state.context_map.get(
+            "evidence_verified", state.evidence_verified
+        )
         evidence_sufficient = (
             not state.requires_evidence
-            or status == "verified"
-            and state.evidence_verified
+            or status == "verified" and bool(verified_value)
         )
 
         verification_status = str(
