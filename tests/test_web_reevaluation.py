@@ -121,3 +121,30 @@ def test_re_evaluation_research_is_bounded_to_one_query():
     assert result.queries_used == 1
     assert result.sources_used == 1
     assert len(researcher.calls) == 1
+
+
+def test_re_evaluation_rebuilds_cognitive_state_from_fresh_evidence():
+    ledger, evidence_id = _ledger_with_downstream_dependency()
+    researcher = FakeResearcher(
+        (
+            EvidenceItem(
+                source="source-b",
+                claim="Original claim",
+                kind="web",
+                provenance="https://b.example/source",
+                confidence=0.9,
+                passage="Original claim",
+                support="contradicts",
+            ),
+        )
+    )
+
+    result = BoundedWebReEvaluator(researcher).reevaluate(
+        question="Original claim",
+        ledger=ledger,
+        evidence_id=evidence_id,
+    )
+
+    assert result.refreshed_state is not None
+    assert result.refreshed_state.synthesis.status.value == "REJECTED"
+    assert result.refreshed_state.decision.action == "RESEARCH"
