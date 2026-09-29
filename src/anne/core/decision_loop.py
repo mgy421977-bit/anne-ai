@@ -48,6 +48,18 @@ class DecisionResult:
             "reason": self.reason,
             "factual_status": self.output.get("factual_status", "unverified"),
             "trace": self.trace.as_dict() if self.trace is not None else None,
+            "research": (
+                {
+                    "action": self.research_state.decision.action,
+                    "reason": self.research_state.decision.reason,
+                    "research_allowed": self.research_state.decision.research_allowed,
+                    "questions": ResearchCognitiveLoop.next_research_questions(
+                        self.research_state
+                    ),
+                }
+                if self.research_state is not None
+                else None
+            ),
         }
 
 
