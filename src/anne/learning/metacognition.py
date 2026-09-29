@@ -45,10 +45,11 @@ class Metacognition:
         verification = trace.verification
         decision = trace.decision
         raw_status = verification.get("verification_status", verification.get("status"))
+        intent_recorded = bool(trace.intent)
         intent_requires_evidence = trace.intent.get("requires_evidence")
         evidence_required = intent_requires_evidence is True
         status = str(raw_status).upper() if raw_status is not None else (
-            "UNVERIFIED" if evidence_required else "NOT_REQUIRED"
+            "UNVERIFIED" if evidence_required or not intent_recorded else "NOT_REQUIRED"
         )
 
         sources = verification.get("verification_sources", ())
