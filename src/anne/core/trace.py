@@ -82,6 +82,7 @@ def trace_from_runtime(
     output: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
     learning_context: Mapping[str, Any] | None = None,
+    strategy: str | None = None,
 ) -> CycleTrace:
     """Copy explicit runtime observations without inferring truth or authority."""
     output = dict(output or {})
@@ -115,6 +116,8 @@ def trace_from_runtime(
     learning: dict[str, Any] = {}
     if learning_context is not None:
         learning["context"] = dict(learning_context)
+    if strategy is not None and strategy.strip():
+        learning["strategy"] = strategy
     return CycleTrace(
         cycle_id=cycle_id,
         parent_cycle_id=lineage[-2] if len(lineage) > 1 else None,
