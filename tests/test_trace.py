@@ -12,7 +12,7 @@ def test_cycle_trace_serializes_deterministically() -> None:
     assert trace.schema_version == TRACE_SCHEMA_VERSION
     assert trace.to_json() == trace.to_json()
     assert '"cycle_id":"or_1"' in trace.to_json()
-    assert '"schema_version":"1.1"' in trace.to_json()
+    assert '"schema_version":"1.2"' in trace.to_json()
 
 
 def test_cycle_trace_rejects_invalid_retry_count() -> None:
@@ -102,6 +102,44 @@ def test_cycle_trace_round_trips_inference_observations() -> None:
         derived_hypotheses=(
             {"id": "DH1", "status": "PROPOSED"},
         ),
+    )
+    restored = CycleTrace.from_dict(trace.as_dict())
+    assert restored == trace
+
+
+def test_runtime_adapter_preserves_re_evaluation_observations() -> None:
+    trace = trace_from_runtime(
+        cycle_id="or_5",
+        status="BOUNDED",
+        stage_trace=("INVALIDATION", "RESEARCH", "VERIFICATION"),
+        stop_reason="re_evaluation_complete",
+        retry_count=0,
+        lineage=("or_5",),
+        context={
+            "re_evaluation": {
+                "action": "RESEARCH",
+                "target_node": "A1",
+                "verification_status": "verified",
+                "replacement": "A1:re1",
+            },
+        },
+    )
+    payload = trace.as_dict()
+    assert payload["re_evaluation"]["action"] == "RESEARCH"
+    assert payload["re_evaluation"]["verification_status"] == "verified"
+    assert payload["re_evaluation"]["replacement"] == "A1:re1"
+    assert "authority" not in payload["re_evaluation"]
+
+
+def test_cycle_trace_round_trips_re_evaluation_observation() -> None:
+    trace = CycleTrace(
+        cycle_id="or_6",
+        status="BOUNDED",
+        re_evaluation={
+            "action": "RESEARCH",
+            "target_node": "A1",
+            "verification_status": "conflicting",
+        },
     )
     restored = CycleTrace.from_dict(trace.as_dict())
     assert restored == trace

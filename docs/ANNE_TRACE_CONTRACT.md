@@ -1,7 +1,7 @@
 # ANNE Canonical Trace Contract
 
 **Status:** Phase 1 foundation
-**Schema:** `1.1`
+**Schema:** `1.2`
 
 The canonical trace is an observability contract for one bounded cognitive cycle. It is provider-independent and does not grant authority.
 
@@ -12,7 +12,8 @@ The canonical trace is an observability contract for one bounded cognitive cycle
 3. Parent and lineage identifiers are explicit.
 4. Evidence and verification are recorded separately from confidence.
 5. Joint inference and derived hypotheses are recorded separately from verification and authority.
-6. Agency results are recorded separately from cognitive decisions.
+6. Re-evaluation observations are recorded separately from authority and do not imply correctness.
+7. Agency results are recorded separately from cognitive decisions.
 7. Provenance is explicit and never inferred from text similarity.
 8. Serialization is deterministic for replay and benchmark comparison.
 9. The trace cannot bypass FailFast, Evidence Gate, provenance verification, or Agency Gate.
@@ -27,6 +28,7 @@ The canonical trace is an observability contract for one bounded cognitive cycle
 - `evidence`: evidence records when available; evidence is not truth.
 - `joint_inferences`: explicit derived claims and their premise/source-independence observations; inference is not truth.
 - `derived_hypotheses`: bounded follow-up research targets produced from eligible joint inferences; proposals are not decisions.
+- `re_evaluation`: explicit invalidation, research, verification and replacement observations.
 - `verification`: verification status, sources, reason and evidence state.
 - `decision`: observed verdict/action/reason.
 - `agency`: Agency Gate decision and human-review requirement.
@@ -37,7 +39,7 @@ The canonical trace is an observability contract for one bounded cognitive cycle
 
 ## Versioning
 
-Schema `1.1` adds `joint_inferences` and `derived_hypotheses` as additive observability fields. Older serialized traces remain readable because missing fields default to empty tuples.
+Schema `1.2` adds `re_evaluation` as an additive observability field on top of schema 1.1. Older serialized traces remain readable because missing fields default to empty tuples.
 
 These fields are intentionally observational: recording a derived inference does not verify it, recording source-family diversity does not prove independence, and recording a proposed hypothesis does not authorize research or action.
 
@@ -48,3 +50,17 @@ This contract is introduced without changing decision semantics. The existing ru
 ## Bounded autonomous improvement
 
 Under explicit human directives, ANNE may research public sources, compare evidence, propose implementation changes, validate them in isolation, and prepare reviewable changes. Research remains evidence rather than authority. ANNE must not self-certify correctness, weaken safety or agency gates, merge its own changes, or silently change authorization policy.
+
+## Re-evaluation observability
+
+The re_evaluation section may record an explicit cycle such as:
+
+- invalidated evidence identifier;
+- stale target identifier;
+- research action and bounded research result;
+- verification status and sources;
+- replacement identifier when a replacement was created.
+
+These are observations of the epistemic maintenance loop. They do not grant
+authority, convert confidence into truth, or imply that a replacement is safe
+to execute.
