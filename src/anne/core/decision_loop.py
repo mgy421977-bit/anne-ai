@@ -88,6 +88,7 @@ class DecisionLoop:
         group_a: Sequence[Consciousness] | None = None,
         group_b: Sequence[Consciousness] | None = None,
         learning_context: dict[str, Any] | None = None,
+        strategy: str | None = None,
     ) -> DecisionResult:
         """Run one request through the canonical orchestrator path."""
         people = list(parties) if parties else [Consciousness(id="user")]
@@ -106,6 +107,7 @@ class DecisionLoop:
             verifier=verifier,
             group_a=group_a,
             group_b=group_b,
+            preferred_strategy=strategy,
         )
         if not result.fail_fast.passed:
             fail_output = {
