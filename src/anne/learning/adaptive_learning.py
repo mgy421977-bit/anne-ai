@@ -9,7 +9,11 @@ from anne.learning.experience_learning import Experience, ExperienceLearner
 from anne.learning.information_gap import InformationGap, InformationGapDetector
 from anne.learning.metacognition import Metacognition, MetacognitiveAssessment
 from anne.learning.strategy_adaptation import StrategyAdapter, StrategyDecision
-from anne.learning.contextual_strategy import ContextualStrategySelector, StrategyContext
+from anne.learning.contextual_strategy import (
+    ContextualStrategyChoice,
+    ContextualStrategySelector,
+    StrategyContext,
+)
 from anne.learning.strategy_outcome import StrategyOutcome, StrategyOutcomeEvaluator
 from anne.learning.strategy_recovery import StrategyRecovery, StrategyRecoveryEvaluator
 
@@ -23,7 +27,7 @@ class AdaptiveLearningResult:
     metacognition: MetacognitiveAssessment
     strategy_outcome: StrategyOutcome
     strategy_recovery: StrategyRecovery
-    contextual_choice: object
+    contextual_choice: ContextualStrategyChoice
 
 
 class AdaptiveLearningCoordinator:
@@ -74,6 +78,7 @@ class AdaptiveLearningCoordinator:
         )
         if (
             decision.action != "ABSTAIN"
+            and (experience.context_key or experience.context_conditions)
             and contextual_choice.selected_by_observation
             and contextual_choice.strategy != decision.strategy
         ):
