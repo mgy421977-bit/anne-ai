@@ -17,9 +17,11 @@ class _FakeOrchestrator:
 class _FakeDecisionLoop:
     def __init__(self) -> None:
         self.learning_context = None
+        self.strategy = None
 
     def run(self, *args, **kwargs):
         self.learning_context = kwargs.get("learning_context")
+        self.strategy = kwargs.get("strategy")
         return "decision-result"
 
 
@@ -102,3 +104,12 @@ def test_runtime_passes_explicit_learning_context_to_decision_loop() -> None:
         "key": "web_research",
         "conditions": {"freshness": "current"},
     }
+
+
+def test_runtime_request_preserves_explicit_selected_strategy() -> None:
+    loop = _FakeDecisionLoop()
+    runtime = AnneRuntime(decision_loop=loop)
+    request = AnneRequest(text="test", strategy="recheck_independent_evidence")
+
+    assert runtime.handle(request) == "decision-result"
+    assert loop.strategy == "recheck_independent_evidence"
