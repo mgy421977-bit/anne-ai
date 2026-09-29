@@ -51,18 +51,22 @@ class Metacognition:
             )
         ).upper()
 
-        if status == "VERIFIED":
+        sources = verification.get("verification_sources", ())
+        if status == "VERIFIED" and sources:
             known.append("verification status is explicitly VERIFIED")
+        elif status == "VERIFIED":
+            unknown.append("verification status is VERIFIED but provenance is incomplete")
+            triggers.append("provenance_completion")
         else:
             unknown.append("factual status is not established as VERIFIED")
             triggers.append("new_independent_evidence")
 
-        sources = verification.get("verification_sources", ())
         if sources:
             evidence_basis.append("verification_sources")
         else:
             unknown.append("verification source provenance is not recorded")
-            triggers.append("provenance_completion")
+            if "provenance_completion" not in triggers:
+                triggers.append("provenance_completion")
 
         reason = str(decision.get("reason", "")).strip()
         if reason:
@@ -91,12 +95,14 @@ class Metacognition:
         review_reasons: list[str] = []
         if status in {"UNVERIFIED", "CONFLICTING", "REFUTED"}:
             review_reasons.append("factual_status_requires_reassessment")
+        if status == "VERIFIED" and not sources:
+            review_reasons.append("verification_provenance_is_missing")
         if not trace.intent:
             review_reasons.append("intent_is_missing")
         if not reason:
             review_reasons.append("decision_reason_is_missing")
 
-        research_required = status in {"UNVERIFIED", "CONFLICTING", "REFUTED"}
+        research_required = status in {"UNVERIFIED", "CONFLICTING"}
         if research_required:
             research_reason = "verification_status_does_not_close_the_evidence_loop"
         elif not sources:
