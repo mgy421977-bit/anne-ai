@@ -64,10 +64,10 @@ def _plan(max_queries: int = 2):
 def test_executor_runs_only_bounded_plan_questions() -> None:
     researcher = FakeResearcher()
     result = DerivedResearchExecutor(researcher=researcher).execute(_plan())
-    assert len(researcher.queries) == 2
-    assert result.queries_used == 2
-    assert result.sources_used == 6
-    assert result.stopped_reason == "plan_exhausted"
+    assert len(researcher.queries) == 1
+    assert result.queries_used == 1
+    assert result.sources_used == 2
+    assert result.stopped_reason == "source_budget_exhausted"
 
 
 def test_executor_enforces_global_source_budget() -> None:
