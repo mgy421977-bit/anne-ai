@@ -5,7 +5,12 @@ whether retrieved content is true, fresh, independent, or authoritative.
 """
 from __future__ import annotations
 
+import time
+import urllib.request
+from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import StrEnum
 
 
@@ -102,10 +107,124 @@ class CacheDecision:
         }
 
 
+@dataclass(frozen=True)
+class TransportResult:
+    """Retrieved payload plus bounded transport metadata."""
+
+    content: str
+    retrieved_at: str
+    attempts: int
+    cache: CacheDecision
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "retrieved_at": self.retrieved_at,
+            "attempts": self.attempts,
+            "cache": self.cache.as_dict(),
+        }
+
+
+@dataclass(frozen=True)
+class _CacheEntry:
+    content: str
+    retrieved_at: datetime
+
+
+class WebResearchTransport:
+    """Bounded, provider-independent retrieval adapter."""
+
+    def __init__(
+        self,
+        *,
+        fetcher: Callable[[str], str] | None = None,
+        cache_policy: CachePolicy | None = None,
+        retry_policy: RetryPolicy | None = None,
+        clock: Callable[[], datetime] | None = None,
+        sleeper: Callable[[float], None] | None = None,
+    ) -> None:
+        self.fetcher = fetcher or self._default_fetcher
+        self.cache_policy = cache_policy or CachePolicy()
+        self.retry_policy = retry_policy or RetryPolicy()
+        self.clock = clock or (lambda: datetime.now(timezone.utc))
+        self.sleeper = sleeper or time.sleep
+        self._cache: OrderedDict[str, _CacheEntry] = OrderedDict()
+
+    @staticmethod
+    def _default_fetcher(url: str) -> str:
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": "ANNE-AI/0.3 (+generic-public-web-research)"},
+        )
+        with urllib.request.urlopen(request, timeout=8.0) as response:
+            raw = response.read()
+            if not isinstance(raw, bytes):
+                raise TypeError("web response body must be bytes")
+            return raw.decode("utf-8", errors="replace")
+
+    def _cache_decision(
+        self, entry: _CacheEntry | None, now: datetime
+    ) -> CacheDecision:
+        if entry is None:
+            return CacheDecision(CacheDisposition.MISS, None, self.cache_policy)
+        age = (now - entry.retrieved_at).total_seconds()
+        if age < self.cache_policy.ttl_seconds:
+            return CacheDecision(CacheDisposition.HIT, age, self.cache_policy)
+        return CacheDecision(CacheDisposition.EXPIRED, age, self.cache_policy)
+
+    def _store(self, url: str, content: str, retrieved_at: datetime) -> None:
+        self._cache[url] = _CacheEntry(content, retrieved_at)
+        self._cache.move_to_end(url)
+        while len(self._cache) > self.cache_policy.max_entries:
+            self._cache.popitem(last=False)
+
+    def fetch(self, url: str) -> TransportResult:
+        """Fetch a URL with bounded cache reuse and retry behavior."""
+        if not url.strip():
+            raise ValueError("url must not be empty")
+
+        now = self.clock()
+        entry = self._cache.get(url)
+        decision = self._cache_decision(entry, now)
+        if entry is not None and decision.disposition is CacheDisposition.HIT:
+            self._cache.move_to_end(url)
+            return TransportResult(
+                content=entry.content,
+                retrieved_at=entry.retrieved_at.isoformat(),
+                attempts=0,
+                cache=decision,
+            )
+
+        last_error: Exception | None = None
+        for attempt in range(1, self.retry_policy.max_attempts + 1):
+            try:
+                content = self.fetcher(url)
+                retrieved_at = self.clock()
+                self._store(url, content, retrieved_at)
+                return TransportResult(
+                    content=content,
+                    retrieved_at=retrieved_at.isoformat(),
+                    attempts=attempt,
+                    cache=decision,
+                )
+            except Exception as exc:
+                last_error = exc
+                if (
+                    self.retry_policy.disposition(attempt)
+                    is RetryDisposition.STOP
+                ):
+                    raise
+                self.sleeper(self.retry_policy.delay_for_retry(attempt))
+
+        assert last_error is not None
+        raise last_error
+
+
 __all__ = [
     "CacheDecision",
     "CacheDisposition",
     "CachePolicy",
     "RetryDisposition",
     "RetryPolicy",
+    "TransportResult",
+    "WebResearchTransport",
 ]
