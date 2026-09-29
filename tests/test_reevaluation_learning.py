@@ -1,4 +1,3 @@
-from anne.core.trace import CycleTrace
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator
 from anne.learning.derived_research_executor import DerivedResearchExecutor
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
