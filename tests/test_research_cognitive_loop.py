@@ -156,3 +156,58 @@ def test_loop_exposes_joint_inference_from_multiple_premises() -> None:
     assert joint.unverified_premises == 2
     assert joint.status.value == "unverified_premises"
     assert joint.source_independence.distinct_publisher_family_count == 2
+
+
+def test_loop_generates_followup_hypothesis_only_from_derived_joint_inference() -> None:
+    loop = ResearchCognitiveLoop()
+    initial = loop.initialize("Question")
+    evidence = [
+        EvidenceItem(
+            source="source-a",
+            claim=initial.hypotheses[0].claim,
+            kind="web",
+            provenance="https://alpha.example/source",
+            confidence=0.9,
+            status="verified",
+            passage=initial.hypotheses[0].claim,
+            support=SupportStatus.SUPPORTS.value,
+        ),
+        EvidenceItem(
+            source="source-b",
+            claim=initial.hypotheses[0].claim,
+            kind="web",
+            provenance="https://beta.example/source",
+            confidence=0.9,
+            status="verified",
+            passage=initial.hypotheses[0].claim,
+            support=SupportStatus.SUPPORTS.value,
+        ),
+    ]
+
+    state = loop.initialize("Question", evidence=evidence)
+
+    assert len(state.derived_hypotheses) == 1
+    assert state.derived_hypotheses[0].id == "DH1"
+    assert "Independently test" in state.derived_hypotheses[0].research_question
+
+
+def test_loop_does_not_generate_followup_hypothesis_from_unverified_joint_inference() -> None:
+    loop = ResearchCognitiveLoop()
+    initial = loop.initialize("Question")
+    evidence = [
+        _evidence(initial.hypotheses[0].claim, SupportStatus.SUPPORTS.value),
+        EvidenceItem(
+            source="second-source",
+            claim=initial.hypotheses[0].claim,
+            kind="web",
+            provenance="https://second.example/source",
+            confidence=0.9,
+            passage=initial.hypotheses[0].claim,
+            support=SupportStatus.SUPPORTS.value,
+        ),
+    ]
+
+    state = loop.initialize("Question", evidence=evidence)
+
+    assert state.joint_inferences[0].status.value == "unverified_premises"
+    assert state.derived_hypotheses == ()
