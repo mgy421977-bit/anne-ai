@@ -141,3 +141,51 @@ def test_web_research_preserves_transport_retrieval_timestamp() -> None:
     )
     assert researcher._get_text("https://example.test/source") == "payload"
     assert researcher._last_retrieved_at == stamp
+
+def test_web_research_applies_caller_defined_freshness_policy() -> None:
+    from datetime import datetime, timedelta, timezone
+
+    from anne.agent.runtime import AnneAgent
+    from anne.learning.evidence import EvidenceItem
+    from anne.learning.freshness import FreshnessPolicy
+    from anne.learning.research_planner import ResearchPlanner
+    from anne.learning.web_research import WebResearcher
+    from anne.learning.web_research_transport import WebResearchTransport
+
+    class FakeResearcher:
+        def research(self, query):
+            return [
+                EvidenceItem(
+                    source="test-source",
+                    claim=f"Evidence for {query}",
+                    kind="web",
+                    provenance="https://example.test/source",
+                    confidence=0.8,
+                    retrieved_at=datetime(
+                        2026, 9, 29, 4, 0, tzinfo=timezone.utc
+                    ).isoformat(),
+                )
+            ]
+
+    agent = object.__new__(AnneAgent)
+    agent.web_researcher = WebResearcher(
+        transport=WebResearchTransport(
+            fetcher=lambda _: "unused",
+            clock=lambda: datetime(
+                2026, 9, 29, 4, 0, tzinfo=timezone.utc
+            ),
+        )
+    )
+    agent.response_verifier = None
+    agent.workspace = None
+    agent.freshness_policy = FreshnessPolicy(
+        aging_after=timedelta(hours=1),
+        stale_after=timedelta(hours=3),
+    )
+    agent.research_planner = ResearchPlanner()
+    agent.web_researcher.research = FakeResearcher().research
+
+    result = agent._web_research("test query")
+    freshness = result["evidence"][0]["freshness"]
+
+    assert freshness["status"] == "aging"
