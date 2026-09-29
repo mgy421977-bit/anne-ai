@@ -81,6 +81,7 @@ def trace_from_runtime(
     lineage: tuple[str, ...],
     output: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
+    learning_context: Mapping[str, Any] | None = None,
 ) -> CycleTrace:
     """Copy explicit runtime observations without inferring truth or authority."""
     output = dict(output or {})
@@ -111,6 +112,9 @@ def trace_from_runtime(
         for key in ("intent", "intent_confidence", "ambiguity", "requires_evidence")
         if key in context
     }
+    learning: dict[str, Any] = {}
+    if learning_context is not None:
+        learning["context"] = dict(learning_context)
     return CycleTrace(
         cycle_id=cycle_id,
         parent_cycle_id=lineage[-2] if len(lineage) > 1 else None,
@@ -126,6 +130,7 @@ def trace_from_runtime(
         verification=verification,
         decision=decision,
         agency=agency,
+        learning=learning,
     )
 
 
