@@ -18,6 +18,7 @@ from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.joint_inference import JointInference, JointInferenceEngine
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation import ReEvaluationPlan
+from anne.learning.reevaluation_loop import ReEvaluationCycleResult, ReEvaluationLoop
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 
 
@@ -34,6 +35,7 @@ class ResearchCognitiveState:
     derived_research_plan: ResearchPlan | None = None
     derived_research_result: DerivedResearchResult | None = None
     derived_verifications: tuple[VerificationResult, ...] = ()
+    re_evaluation: ReEvaluationCycleResult | None = None
     adaptive_learning: AdaptiveLearningResult | None = None
 
 
@@ -179,6 +181,7 @@ class ResearchCognitiveLoop:
             derived_research_plan,
             None,
             (),
+            None,
             adaptive_result,
         )
 
@@ -249,7 +252,97 @@ class ResearchCognitiveLoop:
             refreshed.derived_research_plan,
             result,
             tuple(verifications),
+            None,
             refreshed.adaptive_learning,
+        )
+
+    def reassess_after_invalidation(
+        self,
+        state: ResearchCognitiveState,
+        *,
+        invalidated_evidence_id: str,
+        target_node_id: str,
+        research_question: str,
+        loop: ReEvaluationLoop | None = None,
+    ) -> ResearchCognitiveState:
+        """Re-enter research only after explicit provenance invalidation."""
+        cycle = (loop or ReEvaluationLoop()).run(
+            state.evidence_ledger,
+            invalidated_evidence_id=invalidated_evidence_id,
+            target_node_id=target_node_id,
+            research_question=research_question,
+        )
+        if cycle.research_result is None:
+            return ResearchCognitiveState(
+                state.plan,
+                state.hypotheses,
+                state.critic,
+                state.synthesis,
+                state.decision,
+                state.evidence_ledger,
+                state.joint_inferences,
+                state.derived_hypotheses,
+                state.derived_research_plan,
+                state.derived_research_result,
+                state.derived_verifications,
+                cycle,
+                state.adaptive_learning,
+            )
+
+        fresh_evidence = cycle.research_result.evidence
+        refreshed = self.initialize(
+            state.plan.main_question,
+            evidence=fresh_evidence,
+            queries_used=cycle.research_result.queries_used,
+            sources_used=cycle.research_result.sources_used,
+            max_hypotheses=len(state.hypotheses),
+        )
+
+        for item in fresh_evidence:
+            evidence_id = state.evidence_ledger.evidence_id(
+                EvidenceLedgerEntry(
+                    claim=item.claim,
+                    source=item.source,
+                    provenance=item.provenance,
+                    confidence=item.confidence,
+                    passage=item.passage,
+                    support=item.support,
+                    retrieved_at=item.retrieved_at,
+                )
+            )
+            for hypothesis in state.hypotheses:
+                if item.claim.strip() == hypothesis.claim.strip():
+                    state.evidence_ledger.graph.add_edge(
+                        ProvenanceEdge(
+                            evidence_id,
+                            hypothesis.id,
+                            item.support.strip().lower() or "unclear",
+                        )
+                    )
+
+        synthesis_id = f"SYNTHESIS:re{len(state.evidence_ledger.graph.downstream(target_node_id)) + 1}"
+        state.evidence_ledger.graph.add_node(
+            ProvenanceNode(synthesis_id, "decision_synthesis", refreshed.synthesis.reason)
+        )
+        for hypothesis in state.hypotheses:
+            state.evidence_ledger.graph.add_edge(
+                ProvenanceEdge(hypothesis.id, synthesis_id, "informs")
+            )
+
+        return ResearchCognitiveState(
+            state.plan,
+            state.hypotheses,
+            refreshed.critic,
+            refreshed.synthesis,
+            refreshed.decision,
+            state.evidence_ledger,
+            refreshed.joint_inferences,
+            refreshed.derived_hypotheses,
+            refreshed.derived_research_plan,
+            state.derived_research_result,
+            state.derived_verifications,
+            cycle,
+            state.adaptive_learning,
         )
 
     def continue_from_re_evaluation(
