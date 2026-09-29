@@ -99,3 +99,14 @@ def test_runtime_metacognition_never_grants_execution_authority() -> None:
     assert result.output["action"] == "RESEARCH"
     assert result.output["metacognitive_next_step"] == "RESEARCH"
     assert result.output["original_output"]["action"] == "PROCEED"
+
+
+def test_runtime_serializes_bounded_research_guidance() -> None:
+    loop = _decision_loop_for_state(verification_status="UNVERIFIED")
+
+    result = loop.run("Question")
+    payload = result.as_dict()
+
+    assert payload["research"]["action"] == "RESEARCH"
+    assert payload["research"]["research_allowed"] is True
+    assert payload["research"]["questions"]
