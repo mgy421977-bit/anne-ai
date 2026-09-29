@@ -74,12 +74,16 @@ class ExperienceLearner:
         if outcome == "SUCCESS":
             failure_class = FailureClass.UNKNOWN
 
-        factual_status = str(
-            trace.verification.get(
-                "verification_status",
-                trace.verification.get("status", "UNVERIFIED"),
-            )
-        ).upper()
+        raw_factual_status = trace.verification.get(
+            "verification_status",
+            trace.verification.get("status"),
+        )
+        evidence_required = trace.intent.get("requires_evidence") is True
+        factual_status = (
+            str(raw_factual_status).upper()
+            if raw_factual_status is not None
+            else ("UNVERIFIED" if evidence_required else "NOT_REQUIRED")
+        )
         lesson = (
             f"Observed {outcome.lower()} for strategy "
             f"'{strategy or 'unspecified'}'; "
