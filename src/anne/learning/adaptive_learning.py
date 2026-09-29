@@ -9,6 +9,7 @@ from anne.learning.experience_learning import Experience, ExperienceLearner
 from anne.learning.information_gap import InformationGap, InformationGapDetector
 from anne.learning.metacognition import Metacognition, MetacognitiveAssessment
 from anne.learning.strategy_adaptation import StrategyAdapter, StrategyDecision
+from anne.learning.strategy_outcome import StrategyOutcome, StrategyOutcomeEvaluator
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,7 @@ class AdaptiveLearningResult:
     strategy: StrategyDecision
     trace: CycleTrace
     metacognition: MetacognitiveAssessment
+    strategy_outcome: StrategyOutcome
 
 
 class AdaptiveLearningCoordinator:
@@ -29,10 +31,14 @@ class AdaptiveLearningCoordinator:
         gap_detector: InformationGapDetector | None = None,
         experience_learner: ExperienceLearner | None = None,
         strategy_adapter: StrategyAdapter | None = None,
+        strategy_outcome_evaluator: StrategyOutcomeEvaluator | None = None,
     ) -> None:
         self.gap_detector = gap_detector or InformationGapDetector()
         self.experience_learner = experience_learner or ExperienceLearner()
         self.strategy_adapter = strategy_adapter or StrategyAdapter()
+        self.strategy_outcome_evaluator = (
+            strategy_outcome_evaluator or StrategyOutcomeEvaluator()
+        )
 
     def observe(
         self,
@@ -47,6 +53,9 @@ class AdaptiveLearningCoordinator:
         experiences = (*prior_experiences, experience)
 
         decision = self.strategy_adapter.adapt(strategy, experiences)
+        strategy_outcome = self.strategy_outcome_evaluator.evaluate(
+            decision, experiences
+        )
 
         learning = {
             "metacognition": {
@@ -77,10 +86,16 @@ class AdaptiveLearningCoordinator:
                 "reason": decision.reason,
                 "source_cycle_ids": decision.source_cycle_ids,
             },
+            "strategy_outcome": strategy_outcome.as_dict(),
         }
         enriched_trace = replace(trace, learning=learning)
         return AdaptiveLearningResult(
-            gap, experience, decision, enriched_trace, metacognition
+            gap,
+            experience,
+            decision,
+            enriched_trace,
+            metacognition,
+            strategy_outcome,
         )
 
 
