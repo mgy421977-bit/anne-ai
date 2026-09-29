@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-TRACE_SCHEMA_VERSION = "1.1"
+TRACE_SCHEMA_VERSION = "1.2"
 
 
 @dataclass(frozen=True)
@@ -26,6 +26,7 @@ class CycleTrace:
     evidence: tuple[Mapping[str, Any], ...] = ()
     joint_inferences: tuple[Mapping[str, Any], ...] = ()
     derived_hypotheses: tuple[Mapping[str, Any], ...] = ()
+    re_evaluation: Mapping[str, Any] = field(default_factory=dict)
     verification: Mapping[str, Any] = field(default_factory=dict)
     decision: Mapping[str, Any] = field(default_factory=dict)
     agency: Mapping[str, Any] = field(default_factory=dict)
@@ -121,6 +122,7 @@ def trace_from_runtime(
         intent=intent,
         joint_inferences=tuple(context.get("joint_inferences", ())),
         derived_hypotheses=tuple(context.get("derived_hypotheses", ())),
+        re_evaluation=dict(context.get("re_evaluation", {})),
         verification=verification,
         decision=decision,
         agency=agency,
