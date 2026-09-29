@@ -129,3 +129,96 @@ def test_re_evaluation_rebuilds_state_from_fresh_evidence() -> None:
         node["status"] == "active"
         for node in refreshed.evidence_ledger.provenance()["nodes"]
     )
+
+
+def test_loop_exposes_joint_inference_from_multiple_premises() -> None:
+    loop = ResearchCognitiveLoop()
+    initial = loop.initialize("Question")
+    evidence = [
+        _evidence(initial.hypotheses[0].claim, SupportStatus.SUPPORTS.value),
+        EvidenceItem(
+            source="second-source",
+            claim=initial.hypotheses[0].claim,
+            kind="web",
+            provenance="https://second.example/source",
+            confidence=0.85,
+            passage=initial.hypotheses[0].claim,
+            support=SupportStatus.SUPPORTS.value,
+        ),
+    ]
+
+    state = loop.initialize("Question", evidence=evidence)
+
+    assert len(state.joint_inferences) == 1
+    joint = state.joint_inferences[0]
+    assert joint.claim == initial.hypotheses[0].claim
+    assert len(joint.evidence_ids) == 2
+    assert joint.unverified_premises == 2
+    assert joint.status.value == "unverified_premises"
+    assert joint.source_independence.distinct_publisher_family_count == 2
+
+
+def test_derived_hypothesis_generator_accepts_only_derived_inference() -> None:
+    from anne.core.source_independence import SourceIndependenceAssessment, SourceIndependenceStatus
+    from anne.learning.derived_hypothesis import DerivedHypothesisGenerator
+    from anne.learning.joint_inference import JointInference, JointInferenceStatus
+
+    independence = SourceIndependenceAssessment(
+        status=SourceIndependenceStatus.MULTIPLE_PUBLISHER_FAMILIES,
+        publisher_families=("alpha.example", "beta.example"),
+    )
+    derived = JointInference(
+        claim="A and B jointly imply X",
+        evidence_ids=("E-1", "E-2"),
+        status=JointInferenceStatus.DERIVED,
+        source_independence=independence,
+        verified_premises=2,
+        unverified_premises=0,
+        conflicting_premises=0,
+        reason="derived from explicit premises",
+    )
+    unresolved = JointInference(
+        claim="Y",
+        evidence_ids=("E-3",),
+        status=JointInferenceStatus.UNVERIFIED_PREMISES,
+        source_independence=independence,
+        verified_premises=0,
+        unverified_premises=1,
+        conflicting_premises=0,
+        reason="premise is unverified",
+    )
+
+    result = DerivedHypothesisGenerator().generate((derived, unresolved))
+
+    assert len(result) == 1
+    assert result[0].id == "DH1"
+    assert result[0].claim == "A and B jointly imply X"
+    assert "Independently test" in result[0].research_question
+
+
+def test_derived_hypothesis_generator_is_bounded() -> None:
+    from anne.core.source_independence import SourceIndependenceAssessment, SourceIndependenceStatus
+    from anne.learning.derived_hypothesis import DerivedHypothesisGenerator
+    from anne.learning.joint_inference import JointInference, JointInferenceStatus
+
+    independence = SourceIndependenceAssessment(
+        status=SourceIndependenceStatus.MULTIPLE_PUBLISHER_FAMILIES,
+        publisher_families=("alpha.example", "beta.example"),
+    )
+    inferences = tuple(
+        JointInference(
+            claim=f"claim {index}",
+            evidence_ids=(f"E-{index}",),
+            status=JointInferenceStatus.DERIVED,
+            source_independence=independence,
+            verified_premises=1,
+            unverified_premises=0,
+            conflicting_premises=0,
+            reason="derived",
+        )
+        for index in range(5)
+    )
+
+    result = DerivedHypothesisGenerator().generate(inferences, max_hypotheses=2)
+    assert len(result) == 2
+    assert [item.id for item in result] == ["DH1", "DH2"]
