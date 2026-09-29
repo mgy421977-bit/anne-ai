@@ -71,6 +71,14 @@ class StrategyOutcomeEvaluator:
             )
 
         previous = experiences[-2]
+        if previous.context_fingerprint != latest.context_fingerprint:
+            return StrategyOutcome(
+                latest.strategy,
+                StrategyEffectiveness.INSUFFICIENT_OBSERVATION,
+                (previous.source_cycle_id, latest.source_cycle_id),
+                "observations_have_different_explicit_context_fingerprints",
+            )
+
         if previous.strategy == latest.strategy:
             return StrategyOutcome(
                 latest.strategy,

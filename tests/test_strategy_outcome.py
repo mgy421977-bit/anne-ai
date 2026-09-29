@@ -124,3 +124,38 @@ def test_adaptive_trace_records_strategy_outcome_without_authority() -> None:
     assert result.strategy_outcome.causal_claim is False
     assert result.trace.learning["strategy_outcome"]["effectiveness"] == "improved"
     assert result.trace.learning["strategy_outcome"]["causal_claim"] is False
+
+
+def test_strategy_outcome_does_not_compare_different_explicit_contexts() -> None:
+    previous = Experience(
+        source_cycle_id="c-context-1",
+        outcome="FAILURE",
+        failure_class="evidence_gap",
+        strategy="research",
+        lesson="observation",
+        safe_to_reuse=False,
+        factual_status="UNVERIFIED",
+        context_key="web_research",
+        context_conditions=(("source_count", "1"),),
+    )
+    latest = Experience(
+        source_cycle_id="c-context-2",
+        outcome="SUCCESS",
+        failure_class="evidence_gap",
+        strategy="recheck_independent_evidence",
+        lesson="observation",
+        safe_to_reuse=False,
+        factual_status="UNVERIFIED",
+        context_key="web_research",
+        context_conditions=(("source_count", "2"),),
+    )
+    decision = StrategyDecision(
+        "CHANGE",
+        "recheck_independent_evidence",
+        "selected_from_observed_exact_context_outcomes",
+    )
+
+    result = StrategyOutcomeEvaluator().evaluate(decision, (previous, latest))
+
+    assert result.effectiveness is StrategyEffectiveness.INSUFFICIENT_OBSERVATION
+    assert "different_explicit_context" in result.reason
