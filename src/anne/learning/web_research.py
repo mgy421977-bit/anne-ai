@@ -125,9 +125,12 @@ class WebResearcher:
 
     def __init__(self, transport: WebResearchTransport | None = None) -> None:
         self.transport = transport or WebResearchTransport(timeout_seconds=self.timeout)
+        self._last_retrieved_at = ""
 
     def _get_text(self, url: str) -> str:
-        return self.transport.fetch(url).content
+        result = self.transport.fetch(url)
+        self._last_retrieved_at = result.retrieved_at
+        return result.content
 
     def _get_json(self, url: str) -> dict[str, Any]:
         return cast(dict[str, Any], json.loads(self._get_text(url)))
@@ -315,6 +318,7 @@ class WebResearcher:
                     kind="web",
                     provenance=url,
                     confidence=min(0.90, 0.50 + score * 0.40),
+                    retrieved_at=self._last_retrieved_at,
                 )
             )
         return items
@@ -334,6 +338,7 @@ class WebResearcher:
             provenance=url,
             confidence=min(0.95, 0.62 + score * 0.33),
             passage=extract[:1200],
+            retrieved_at=self._last_retrieved_at,
         )
 
     def _duckduckgo_instant(self, query: str) -> EvidenceItem | None:
@@ -350,6 +355,7 @@ class WebResearcher:
             kind="web",
             provenance=url,
             confidence=min(0.86, 0.46 + score * 0.40),
+            retrieved_at=self._last_retrieved_at,
         )
 
     def _duckduckgo_search(self, query: str) -> list[EvidenceItem]:
@@ -377,6 +383,7 @@ class WebResearcher:
                     provenance=href or url,
                     confidence=min(0.84, 0.44 + score * 0.40),
                     passage=passage[:1200],
+                    retrieved_at=self._last_retrieved_at,
                 )
             )
         return items
@@ -428,6 +435,7 @@ class WebResearcher:
                     provenance=destination or href or url,
                     confidence=min(0.84, 0.44 + score * 0.40),
                     passage=passage[:1200],
+                    retrieved_at=self._last_retrieved_at,
                 )
             )
         return items

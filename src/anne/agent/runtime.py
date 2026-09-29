@@ -375,6 +375,7 @@ omit only when no semantic extraction is useful.
                 status=EvidenceStatus.UNVERIFIED,
                 passage=item.passage,
                 support=item.support,
+                retrieved_at=item.retrieved_at,
             )
 
             if isinstance(response_verifier, BoundedMultiSourceVerifier):
