@@ -159,3 +159,77 @@ def test_strategy_outcome_does_not_compare_different_explicit_contexts() -> None
 
     assert result.effectiveness is StrategyEffectiveness.INSUFFICIENT_OBSERVATION
     assert "different_explicit_context" in result.reason
+
+
+def test_strategy_outcome_requires_explicit_cycle_lineage() -> None:
+    previous = Experience(
+        source_cycle_id="c-lineage-1",
+        outcome="FAILURE",
+        failure_class="evidence_gap",
+        strategy="research",
+        lesson="observation",
+        safe_to_reuse=False,
+        factual_status="UNVERIFIED",
+        context_key="web_research",
+        context_conditions=(("source_count", "2"),),
+        lineage=("c-lineage-1",),
+    )
+    latest = Experience(
+        source_cycle_id="c-lineage-2",
+        outcome="SUCCESS",
+        failure_class="evidence_gap",
+        strategy="recheck_independent_evidence",
+        lesson="observation",
+        safe_to_reuse=False,
+        factual_status="UNVERIFIED",
+        context_key="web_research",
+        context_conditions=(("source_count", "2"),),
+        lineage=("c-lineage-2",),
+    )
+    decision = StrategyDecision(
+        "CHANGE",
+        "recheck_independent_evidence",
+        "selected_from_observed_exact_context_outcomes",
+    )
+
+    result = StrategyOutcomeEvaluator().evaluate(decision, (previous, latest))
+
+    assert result.effectiveness is StrategyEffectiveness.INSUFFICIENT_OBSERVATION
+    assert "same_explicit_cycle_lineage" in result.reason
+
+
+def test_strategy_outcome_accepts_parent_cycle_lineage() -> None:
+    previous = Experience(
+        source_cycle_id="c-parent",
+        outcome="FAILURE",
+        failure_class="evidence_gap",
+        strategy="research",
+        lesson="observation",
+        safe_to_reuse=False,
+        factual_status="UNVERIFIED",
+        context_key="web_research",
+        context_conditions=(("source_count", "2"),),
+        lineage=("c-parent",),
+    )
+    latest = Experience(
+        source_cycle_id="c-child",
+        outcome="SUCCESS",
+        failure_class="evidence_gap",
+        strategy="recheck_independent_evidence",
+        lesson="observation",
+        safe_to_reuse=False,
+        factual_status="UNVERIFIED",
+        context_key="web_research",
+        context_conditions=(("source_count", "2"),),
+        parent_cycle_id="c-parent",
+        lineage=("c-parent", "c-child"),
+    )
+    decision = StrategyDecision(
+        "CHANGE",
+        "recheck_independent_evidence",
+        "selected_from_observed_exact_context_outcomes",
+    )
+
+    result = StrategyOutcomeEvaluator().evaluate(decision, (previous, latest))
+
+    assert result.effectiveness is StrategyEffectiveness.IMPROVED
