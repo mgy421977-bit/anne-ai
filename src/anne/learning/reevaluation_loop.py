@@ -112,6 +112,10 @@ class ReEvaluationLoop:
         target_node_id: str,
         research_question: str,
     ) -> ReEvaluationCycleResult:
+        downstream = ledger.graph.downstream(invalidated_evidence_id)
+        if target_node_id not in downstream:
+            raise ValueError("target_node_id must be a stale downstream node")
+
         plan = self.planner.create_plan(ledger.graph, invalidated_evidence_id)
         if not plan.requires_research:
             return ReEvaluationCycleResult(plan, None, None, None, None)
