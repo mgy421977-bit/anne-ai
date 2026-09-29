@@ -40,6 +40,7 @@ class AnneRuntime:
             text,
             parties=request.parties,
             learning_context=request.learning_context,
+            strategy=request.strategy,
         )
 
     def run(
@@ -48,12 +49,14 @@ class AnneRuntime:
         *,
         parties: tuple[Consciousness, ...] | None = None,
         learning_context: Mapping[str, Any] | None = None,
+        strategy: str | None = None,
     ) -> DecisionResult:
         return self.decision_loop.run(
             text,
             parties=parties,
             verifier=self.verifier,
             learning_context=dict(learning_context) if learning_context is not None else None,
+            strategy=strategy,
         )
 
     def run_cognitive(
