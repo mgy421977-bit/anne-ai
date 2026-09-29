@@ -1,0 +1,126 @@
+from anne.core.trace import CycleTrace
+from anne.learning.adaptive_learning import AdaptiveLearningCoordinator
+from anne.learning.experience_learning import Experience
+from anne.learning.strategy_adaptation import StrategyDecision
+from anne.learning.strategy_outcome import (
+    StrategyEffectiveness,
+    StrategyOutcomeEvaluator,
+)
+
+
+def _experience(
+    cycle_id: str,
+    *,
+    strategy: str,
+    outcome: str,
+    failure_class: str = "unknown",
+) -> Experience:
+    return Experience(
+        source_cycle_id=cycle_id,
+        outcome=outcome,
+        failure_class=failure_class,
+        strategy=strategy,
+        lesson="observation only",
+        safe_to_reuse=False,
+        factual_status="UNVERIFIED",
+    )
+
+
+def test_changed_strategy_followed_by_success_is_observed_as_improvement() -> None:
+    experiences = (
+        _experience(
+            "c1",
+            strategy="research",
+            outcome="FAILURE",
+            failure_class="evidence_gap",
+        ),
+        _experience(
+            "c2",
+            strategy="recheck_independent_evidence",
+            outcome="SUCCESS",
+        ),
+    )
+    decision = StrategyDecision(
+        "KEEP",
+        "recheck_independent_evidence",
+        "observe",
+    )
+
+    result = StrategyOutcomeEvaluator().evaluate(decision, experiences)
+
+    assert result.effectiveness is StrategyEffectiveness.IMPROVED
+    assert result.compared_cycle_ids == ("c1", "c2")
+    assert result.causal_claim is False
+
+
+def test_changed_strategy_followed_by_failure_is_not_improved() -> None:
+    experiences = (
+        _experience(
+            "c1",
+            strategy="research",
+            outcome="FAILURE",
+            failure_class="evidence_gap",
+        ),
+        _experience(
+            "c2",
+            strategy="recheck_independent_evidence",
+            outcome="FAILURE",
+            failure_class="evidence_gap",
+        ),
+    )
+    decision = StrategyDecision(
+        "KEEP",
+        "recheck_independent_evidence",
+        "observe",
+    )
+
+    result = StrategyOutcomeEvaluator().evaluate(decision, experiences)
+
+    assert result.effectiveness is StrategyEffectiveness.NOT_IMPROVED
+
+
+def test_same_strategy_is_not_mistaken_for_learning() -> None:
+    experiences = (
+        _experience("c1", strategy="research", outcome="FAILURE"),
+        _experience("c2", strategy="research", outcome="SUCCESS"),
+    )
+    decision = StrategyDecision("KEEP", "research", "observe")
+
+    result = StrategyOutcomeEvaluator().evaluate(decision, experiences)
+
+    assert result.effectiveness is StrategyEffectiveness.NO_CHANGE
+
+
+def test_first_observation_is_insufficient() -> None:
+    decision = StrategyDecision("KEEP", "research", "observe")
+    result = StrategyOutcomeEvaluator().evaluate(
+        decision,
+        (_experience("c1", strategy="research", outcome="SUCCESS"),),
+    )
+
+    assert result.effectiveness is StrategyEffectiveness.INSUFFICIENT_OBSERVATION
+
+
+def test_adaptive_trace_records_strategy_outcome_without_authority() -> None:
+    prior = _experience(
+        "c1",
+        strategy="research",
+        outcome="FAILURE",
+        failure_class="evidence_gap",
+    )
+    trace = CycleTrace(
+        cycle_id="c2",
+        status="SUCCESS",
+        verification={"status": "VERIFIED"},
+    )
+
+    result = AdaptiveLearningCoordinator().observe(
+        trace,
+        strategy="recheck_independent_evidence",
+        prior_experiences=(prior,),
+    )
+
+    assert result.strategy_outcome.effectiveness is StrategyEffectiveness.IMPROVED
+    assert result.strategy_outcome.causal_claim is False
+    assert result.trace.learning["strategy_outcome"]["effectiveness"] == "improved"
+    assert result.trace.learning["strategy_outcome"]["causal_claim"] is False
