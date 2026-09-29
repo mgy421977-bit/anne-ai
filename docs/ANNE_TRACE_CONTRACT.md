@@ -33,7 +33,7 @@ The canonical trace is an observability contract for one bounded cognitive cycle
 - `decision`: observed verdict/action/reason.
 - `agency`: Agency Gate decision and human-review requirement.
 - `provenance`: explicit provenance graph/dependency references.
-- `learning`: failure/retry/experience signals.
+- `learning`: failure/retry/experience signals. An optional `learning.context` object is copied only from an explicit runtime context supplied to the trace adapter; it is never inferred from confidence, outcomes, semantics, verification, truth, or authority.
 - `metrics`: latency/resource counters.
 - `errors`: structured failures.
 
