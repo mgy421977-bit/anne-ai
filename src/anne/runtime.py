@@ -18,6 +18,7 @@ class AnneRequest:
     text: str
     parties: tuple[Consciousness, ...] = ()
     learning_context: Mapping[str, Any] | None = None
+    strategy: str | None = None
 
 
 class AnneRuntime:
