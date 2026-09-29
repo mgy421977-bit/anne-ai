@@ -79,6 +79,18 @@ class StrategyOutcomeEvaluator:
                 "observations_have_different_explicit_context_fingerprints",
             )
 
+        lineage = set(latest.lineage)
+        if (
+            previous.source_cycle_id not in lineage
+            and latest.parent_cycle_id != previous.source_cycle_id
+        ):
+            return StrategyOutcome(
+                latest.strategy,
+                StrategyEffectiveness.INSUFFICIENT_OBSERVATION,
+                (previous.source_cycle_id, latest.source_cycle_id),
+                "observations_are_not_in_the_same_explicit_cycle_lineage",
+            )
+
         if previous.strategy == latest.strategy:
             return StrategyOutcome(
                 latest.strategy,
