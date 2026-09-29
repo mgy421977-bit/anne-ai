@@ -2,6 +2,20 @@
 
 from anne.core.trace import CycleTrace
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator
+from anne.learning.experience_learning import Experience
+from anne.learning.strategy_recovery import StrategyRecoveryAction
+
+
+def _experience(cycle_id: str, strategy: str, outcome: str) -> Experience:
+    return Experience(
+        source_cycle_id=cycle_id,
+        outcome=outcome,
+        failure_class="evidence_gap",
+        strategy=strategy,
+        lesson="observation only",
+        safe_to_reuse=False,
+        factual_status="UNVERIFIED",
+    )
 
 
 def test_adaptive_learning_keeps_strategy_after_one_evidence_gap() -> None:
@@ -38,3 +52,26 @@ def test_adaptive_learning_preserves_execution_boundary() -> None:
     result = AdaptiveLearningCoordinator().observe(trace, strategy="execute")
     assert result.strategy.action == "ABSTAIN"
     assert result.strategy.strategy == "require_authority_review"
+
+
+def test_adaptive_learning_can_observe_bounded_rollback_need() -> None:
+    trace = CycleTrace(
+        cycle_id="c13",
+        status="BOUNDED",
+        stop_reason="evidence_gap",
+        verification={"status": "UNVERIFIED"},
+    )
+    prior = (
+        _experience("c11", "research", "FAILURE"),
+        _experience("c12", "recheck_independent_evidence", "FAILURE"),
+    )
+
+    result = AdaptiveLearningCoordinator().observe(
+        trace,
+        strategy="recheck_independent_evidence",
+        prior_experiences=prior,
+    )
+
+    assert result.strategy_recovery.action is StrategyRecoveryAction.ROLLBACK
+    assert result.strategy_recovery.strategy == "research"
+    assert result.trace.learning["strategy_recovery"]["action"] == "rollback"
