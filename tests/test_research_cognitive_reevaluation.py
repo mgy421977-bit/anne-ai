@@ -73,7 +73,12 @@ def test_cognitive_loop_reenters_synthesis_after_invalidation() -> None:
 
     replacement = refreshed.re_evaluation.rebuild
     assert replacement is not None
-    assert refreshed.evidence_ledger.graph.get(replacement.replacement_node).status.value == "active"
+    assert (
+        refreshed.evidence_ledger.graph.get(
+            replacement.replacement_node
+        ).status.value
+        == "active"
+    )
 
     # Re-synthesis uses fresh evidence but does not rewrite ledger history.
     statuses = [
