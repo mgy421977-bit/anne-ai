@@ -105,6 +105,10 @@ class AdaptiveLearningCoordinator:
                 "assumptions": metacognition.assumptions,
                 "decision_dependencies": metacognition.decision_dependencies,
                 "recalibration_triggers": metacognition.recalibration_triggers,
+                "evaluation_status": metacognition.evaluation_status,
+                "research_required": metacognition.research_required,
+                "research_reason": metacognition.research_reason,
+                "requires_review": metacognition.requires_review,
             },
             "information_gap": {
                 "present": gap.present,
