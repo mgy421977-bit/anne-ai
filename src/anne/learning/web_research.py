@@ -124,7 +124,7 @@ class WebResearcher:
     }
 
     def __init__(self, transport: WebResearchTransport | None = None) -> None:
-        self.transport = transport or WebResearchTransport()
+        self.transport = transport or WebResearchTransport(timeout_seconds=self.timeout)
 
     def _get_text(self, url: str) -> str:
         return self.transport.fetch(url).content
