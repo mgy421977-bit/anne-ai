@@ -137,5 +137,6 @@ def test_re_evaluation_requires_explicit_stale_target() -> None:
         )
     except ValueError as exc:
         assert "stale downstream" in str(exc)
+        assert ledger.graph.get(old_id).status.value == "active"
     else:
         raise AssertionError("re-evaluation must not select a target implicitly")
