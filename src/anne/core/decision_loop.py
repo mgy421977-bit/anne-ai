@@ -125,6 +125,7 @@ class DecisionLoop:
                 lineage=result.lineage or (),
                 output=fail_output,
                 learning_context=learning_context,
+                strategy=strategy,
             )
             return DecisionResult(
                 "ABORTED",
@@ -159,6 +160,7 @@ class DecisionLoop:
             output=out,
             context=state.context_map if state is not None else None,
             learning_context=learning_context,
+            strategy=strategy,
         )
         return DecisionResult(
             "ABORTED" if aborted else "EXECUTED",
