@@ -42,6 +42,8 @@ def test_metacognition_exposes_missing_intent_as_assumption() -> None:
     result = Metacognition().assess(trace)
     assert "intent is not explicitly recorded" in result.assumptions
     assert "intent_clarification" in result.recalibration_triggers
+    assert "verification is not required by the recorded intent" not in result.known
+    assert result.research_required is False
     assert result.evaluation_status == "PROCESS_REVIEW_REQUIRED"
 
 
@@ -144,3 +146,16 @@ def test_metacognition_does_not_research_when_evidence_is_not_required() -> None
     assert result.evaluation_status == "PROCESS_COMPLETE"
     assert result.research_required is False
     assert result.requires_review is False
+
+
+def test_metacognition_does_not_learn_missing_intent_as_not_required() -> None:
+    trace = CycleTrace(
+        cycle_id="m10",
+        status="SUCCESS",
+        decision={"reason": "intent was omitted"},
+    )
+    result = Metacognition().assess(trace)
+    assert "verification is not required by the recorded intent" not in result.known
+    assert "factual status is not established as VERIFIED" in result.unknown
+    assert result.research_required is False
+    assert result.requires_review is True
