@@ -124,3 +124,20 @@ def test_transport_result_exposes_metadata_without_authority() -> None:
     assert result.attempts == 1
     assert "verified" not in result.as_dict()
     assert "authority" not in result.as_dict()
+
+
+def test_web_research_preserves_transport_retrieval_timestamp() -> None:
+    from datetime import datetime, timezone
+
+    stamp = datetime(2026, 9, 29, 5, 0, tzinfo=timezone.utc).isoformat()
+    researcher = WebResearcher(
+        transport=__import__(
+            "anne.learning.web_research_transport",
+            fromlist=["WebResearchTransport"],
+        ).WebResearchTransport(
+            fetcher=lambda _: "payload",
+            clock=lambda: datetime(2026, 9, 29, 5, 0, tzinfo=timezone.utc),
+        )
+    )
+    assert researcher._get_text("https://example.test/source") == "payload"
+    assert researcher._last_retrieved_at == stamp
