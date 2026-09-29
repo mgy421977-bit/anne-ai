@@ -4,9 +4,11 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from anne.core.trace import CycleTrace
+from anne.core.verification import BoundedMultiSourceVerifier, VerificationResult
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
+from anne.learning.derived_research_executor import DerivedResearchExecutor, DerivedResearchResult
 from anne.learning.derived_hypothesis import DerivedHypothesis, DerivedHypothesisGenerator
 from anne.learning.derived_research_planner import DerivedResearchPlanner
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
@@ -30,6 +32,8 @@ class ResearchCognitiveState:
     joint_inferences: tuple[JointInference, ...] = ()
     derived_hypotheses: tuple[DerivedHypothesis, ...] = ()
     derived_research_plan: ResearchPlan | None = None
+    derived_research_result: DerivedResearchResult | None = None
+    derived_verifications: tuple[VerificationResult, ...] = ()
     adaptive_learning: AdaptiveLearningResult | None = None
 
 
@@ -173,7 +177,79 @@ class ResearchCognitiveLoop:
             tuple(joint_inferences),
             derived_hypotheses,
             derived_research_plan,
+            None,
+            (),
             adaptive_result,
+        )
+
+    def execute_derived_research(
+        self,
+        state: ResearchCognitiveState,
+        *,
+        executor: DerivedResearchExecutor | None = None,
+    ) -> DerivedResearchResult | None:
+        """Execute only the explicit bounded derived-research plan."""
+        if state.derived_research_plan is None:
+            return None
+        return (executor or DerivedResearchExecutor()).execute(state.derived_research_plan)
+
+    def reassess_after_derived_research(
+        self,
+        state: ResearchCognitiveState,
+        *,
+        executor: DerivedResearchExecutor | None = None,
+        max_hypotheses: int = 3,
+    ) -> ResearchCognitiveState:
+        """Verify fresh derived evidence, then re-enter the normal loop."""
+        result = self.execute_derived_research(state, executor=executor)
+        if result is None:
+            return state
+
+        verifier = BoundedMultiSourceVerifier()
+        verifications: list[VerificationResult] = []
+        annotated = list(result.evidence)
+
+        for hypothesis in state.derived_hypotheses:
+            verification = verifier.verify_evidence(hypothesis.claim, result.evidence)
+            verifications.append(verification)
+            support_by_provenance = {
+                row["provenance"]: row["support"] for row in verification.trace
+            }
+            for index, item in enumerate(annotated):
+                support = support_by_provenance.get(item.provenance)
+                if support not in {"supports", "contradicts"}:
+                    continue
+                annotated[index] = type(item)(
+                    source=item.source,
+                    claim=item.claim,
+                    kind=item.kind,
+                    provenance=item.provenance,
+                    confidence=item.confidence,
+                    passage=item.passage,
+                    support=support,
+                    retrieved_at=item.retrieved_at,
+                )
+
+        refreshed = self.initialize(
+            state.plan.main_question,
+            evidence=annotated,
+            queries_used=result.queries_used,
+            sources_used=result.sources_used,
+            max_hypotheses=max_hypotheses,
+        )
+        return ResearchCognitiveState(
+            refreshed.plan,
+            refreshed.hypotheses,
+            refreshed.critic,
+            refreshed.synthesis,
+            refreshed.decision,
+            refreshed.evidence_ledger,
+            refreshed.joint_inferences,
+            refreshed.derived_hypotheses,
+            refreshed.derived_research_plan,
+            result,
+            tuple(verifications),
+            refreshed.adaptive_learning,
         )
 
     def continue_from_re_evaluation(
