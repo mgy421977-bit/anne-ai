@@ -79,3 +79,10 @@ def test_transport_policies_do_not_create_factual_authority() -> None:
     assert retry.disposition(2) is RetryDisposition.STOP
     assert "verified" not in cache.as_dict()
     assert "authority" not in cache.as_dict()
+
+
+def test_transport_rejects_invalid_timeout() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="timeout_seconds"):
+        WebResearchTransport(timeout_seconds=0)
