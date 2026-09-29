@@ -113,7 +113,7 @@ class FailureRecoveryController:
         attempt: int,
         preferred_strategy: str | None = None,
     ) -> ReframePlan:
-        strategy = preferred_strategy if preferred_strategy in cls._EXPLICIT_STRATEGY_PREFIXES else cls._STRATEGIES[failure.kind]
+            "recheck_independent_evidence": "Recheck the claim against independent evidence: ",
         prefix = cls._EXPLICIT_STRATEGY_PREFIXES[strategy]
         return ReframePlan(
             strategy=strategy,
