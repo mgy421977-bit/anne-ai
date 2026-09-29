@@ -143,3 +143,52 @@ def test_cycle_trace_round_trips_re_evaluation_observation() -> None:
     )
     restored = CycleTrace.from_dict(trace.as_dict())
     assert restored == trace
+
+
+def test_runtime_adapter_records_explicit_learning_context() -> None:
+    trace = trace_from_runtime(
+        cycle_id="or_7",
+        status="BOUNDED",
+        stage_trace=("DUY", "BAK", "GÖR"),
+        stop_reason="research_required",
+        retry_count=0,
+        lineage=("or_7",),
+        context={"intent_confidence": 0.99},
+        learning_context={
+            "key": "web_research",
+            "conditions": {"source_count": 2, "freshness": "current"},
+        },
+    )
+    assert trace.learning == {
+        "context": {
+            "key": "web_research",
+            "conditions": {"source_count": 2, "freshness": "current"},
+        }
+    }
+
+
+def test_runtime_adapter_does_not_fabricate_learning_context() -> None:
+    trace = trace_from_runtime(
+        cycle_id="or_8",
+        status="BOUNDED",
+        stage_trace=("DUY", "ANLA"),
+        stop_reason="bounded",
+        retry_count=0,
+        lineage=("or_8",),
+        output={"confidence": 0.99},
+        context={"intent_confidence": 0.99, "verification_status": "verified"},
+    )
+    assert trace.learning == {}
+
+
+def test_runtime_adapter_keeps_learning_context_explicit() -> None:
+    trace = trace_from_runtime(
+        cycle_id="or_9",
+        status="BOUNDED",
+        stage_trace=("DUY", "BAK", "GÖR"),
+        stop_reason="bounded",
+        retry_count=0,
+        lineage=("or_9",),
+        context={"learning_context": {"key": "inferred_should_not_be_used"}},
+    )
+    assert trace.learning == {}
