@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from anne.learning.context_fingerprint import ExplicitContextFingerprint
 from anne.learning.experience_learning import Experience
 
 
@@ -21,10 +22,11 @@ class StrategyContext:
     conditions: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
-        normalized = tuple(
-            sorted({(str(key), str(value)) for key, value in self.conditions})
+        normalized = ExplicitContextFingerprint(
+            self.context_key, self.conditions
         )
-        object.__setattr__(self, "conditions", normalized)
+        object.__setattr__(self, "context_key", normalized.key)
+        object.__setattr__(self, "conditions", normalized.conditions)
 
     @property
     def fingerprint(self) -> tuple[str, str, tuple[tuple[str, str], ...]]:
@@ -59,7 +61,12 @@ class ContextualStrategyChoice:
 class ContextualStrategySelector:
     """Select from observed candidates without inventing a strategy."""
 
-    def __init__(self, *, max_experiences: int = 64, max_candidates: int = 8) -> None:
+    def __init__(
+        self,
+        *,
+        max_experiences: int = 64,
+        max_candidates: int = 8,
+    ) -> None:
         if max_experiences < 1 or max_candidates < 1:
             raise ValueError("selection bounds must be positive")
         self.max_experiences = max_experiences

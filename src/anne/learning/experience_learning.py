@@ -7,10 +7,14 @@ reuse under the current conditions.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from anne.core.self_correction import FailureClass, SelfCorrectionPlanner
 from anne.core.trace import CycleTrace
+from anne.learning.context_fingerprint import ExplicitContextFingerprint
+from anne.learning.context_fingerprint import ExplicitContextFingerprint
 
 
 @dataclass(frozen=True)
@@ -26,15 +30,11 @@ class Experience:
     context_conditions: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
-        normalized = tuple(
-            sorted(
-                {
-                    (str(key), str(value))
-                    for key, value in self.context_conditions
-                }
-            )
+        normalized = ExplicitContextFingerprint(
+            self.context_key, self.context_conditions
         )
-        object.__setattr__(self, "context_conditions", normalized)
+        object.__setattr__(self, "context_key", normalized.key)
+        object.__setattr__(self, "context_conditions", normalized.conditions)
 
     @property
     def context_fingerprint(self) -> tuple[
@@ -46,8 +46,16 @@ class Experience:
 class ExperienceLearner:
     """Convert observed traces into bounded, non-authoritative experience."""
 
-    def __init__(self, planner: SelfCorrectionPlanner | None = None) -> None:
+    def __init__(
+        self,
+        planner: SelfCorrectionPlanner | None = None,
+        *,
+        max_context_conditions: int = 16,
+    ) -> None:
+        if max_context_conditions < 1:
+            raise ValueError("max_context_conditions must be positive")
         self.planner = planner or SelfCorrectionPlanner()
+        self.max_context_conditions = max_context_conditions
 
     def from_trace(self, trace: CycleTrace, *, strategy: str = "") -> Experience:
         reason = trace.stop_reason or ""
@@ -78,20 +86,9 @@ class ExperienceLearner:
             "do not promote this observation to truth."
         )
         context = trace.learning.get("context", {})
-        context_key = (
-            str(context.get("key", ""))
-            if isinstance(context, dict)
-            else ""
-        )
-        raw_conditions = (
-            context.get("conditions", {})
-            if isinstance(context, dict)
-            else {}
-        )
-        context_conditions = (
-            tuple(sorted((str(key), str(value)) for key, value in raw_conditions.items()))
-            if isinstance(raw_conditions, dict)
-            else ()
+        explicit = ExplicitContextFingerprint.from_context(
+            context if isinstance(context, Mapping) else {},
+            max_conditions=self.max_context_conditions,
         )
         return Experience(
             source_cycle_id=trace.cycle_id,
@@ -101,8 +98,8 @@ class ExperienceLearner:
             lesson=lesson,
             safe_to_reuse=False,
             factual_status=factual_status,
-            context_key=context_key,
-            context_conditions=context_conditions,
+            context_key=explicit.key,
+            context_conditions=explicit.conditions,
         )
 
 
