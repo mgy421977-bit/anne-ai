@@ -8,8 +8,8 @@ from anne.core.verification import BoundedMultiSourceVerifier, VerificationResul
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
-from anne.learning.derived_research_executor import DerivedResearchExecutor, DerivedResearchResult
 from anne.learning.derived_hypothesis import DerivedHypothesis, DerivedHypothesisGenerator
+from anne.learning.derived_research_executor import DerivedResearchExecutor, DerivedResearchResult
 from anne.learning.derived_research_planner import DerivedResearchPlanner
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.experience_learning import Experience
@@ -320,7 +320,10 @@ class ResearchCognitiveLoop:
                         )
                     )
 
-        synthesis_id = f"SYNTHESIS:re{len(state.evidence_ledger.graph.downstream(target_node_id)) + 1}"
+        synthesis_id = (
+            "SYNTHESIS:re"
+            f"{len(state.evidence_ledger.graph.downstream(target_node_id)) + 1}"
+        )
         state.evidence_ledger.graph.add_node(
             ProvenanceNode(synthesis_id, "decision_synthesis", refreshed.synthesis.reason)
         )
