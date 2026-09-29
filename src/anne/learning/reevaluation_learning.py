@@ -38,6 +38,10 @@ class ReEvaluationLearningAdapter:
             status = "BOUNDED"
             stop_reason = "reevaluation_refuted"
             decision_status = "REVIEW"
+        elif cycle.research_result is not None and not cycle.research_result.evidence:
+            status = "BOUNDED"
+            stop_reason = "reevaluation_insufficient_evidence"
+            decision_status = "REVIEW"
         elif verification_status == "UNVERIFIED":
             status = "BOUNDED"
             stop_reason = "reevaluation_unverified"
