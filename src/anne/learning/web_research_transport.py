@@ -141,21 +141,24 @@ class WebResearchTransport:
         retry_policy: RetryPolicy | None = None,
         clock: Callable[[], datetime] | None = None,
         sleeper: Callable[[float], None] | None = None,
+        timeout_seconds: float = 8.0,
     ) -> None:
         self.fetcher = fetcher or self._default_fetcher
         self.cache_policy = cache_policy or CachePolicy()
         self.retry_policy = retry_policy or RetryPolicy()
         self.clock = clock or (lambda: datetime.now(timezone.utc))
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be positive")
         self.sleeper = sleeper or time.sleep
+        self.timeout_seconds = timeout_seconds
         self._cache: OrderedDict[str, _CacheEntry] = OrderedDict()
 
-    @staticmethod
-    def _default_fetcher(url: str) -> str:
+    def _default_fetcher(self, url: str) -> str:
         request = urllib.request.Request(
             url,
             headers={"User-Agent": "ANNE-AI/0.3 (+generic-public-web-research)"},
         )
-        with urllib.request.urlopen(request, timeout=8.0) as response:
+        with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
             raw = response.read()
             if not isinstance(raw, bytes):
                 raise TypeError("web response body must be bytes")
