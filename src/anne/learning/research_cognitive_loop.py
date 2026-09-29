@@ -7,6 +7,8 @@ from anne.core.trace import CycleTrace
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
+from anne.learning.derived_hypothesis import DerivedHypothesis, DerivedHypothesisGenerator
+from anne.learning.derived_research_planner import DerivedResearchPlanner
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.experience_learning import Experience
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
@@ -26,16 +28,13 @@ class ResearchCognitiveState:
     decision: LoopDecision
     evidence_ledger: EvidenceLedger
     joint_inferences: tuple[JointInference, ...] = ()
+    derived_hypotheses: tuple[DerivedHypothesis, ...] = ()
+    derived_research_plan: ResearchPlan | None = None
     adaptive_learning: AdaptiveLearningResult | None = None
 
 
 class ResearchCognitiveLoop:
-    """Bounded orchestration of research plus observed-cycle learning.
-
-    Research remains evidence gathering, never authority. Adaptive learning
-    observes completed traces and can recommend the next bounded step, but it
-    does not execute tools, grant authority, or weaken safety gates.
-    """
+    """Bounded orchestration of research plus observed-cycle learning."""
 
     def __init__(
         self,
@@ -44,12 +43,14 @@ class ResearchCognitiveLoop:
         hypothesis_engine: HypothesisEngine | None = None,
         critic_loop: CriticLoopController | None = None,
         adaptive_learning: AdaptiveLearningCoordinator | None = None,
+        derived_research_planner: DerivedResearchPlanner | None = None,
     ) -> None:
         self.planner = planner or ResearchPlanner()
         self.hypothesis_engine = hypothesis_engine or HypothesisEngine()
         self.critic_loop = critic_loop or CriticLoopController()
         self.decision_synthesizer = DecisionSynthesizer()
         self.adaptive_learning = adaptive_learning or AdaptiveLearningCoordinator()
+        self.derived_research_planner = derived_research_planner or DerivedResearchPlanner()
 
     def initialize(
         self,
@@ -86,6 +87,7 @@ class ResearchCognitiveLoop:
                 confidence=item.confidence,
                 passage=item.passage,
                 support=item.support,
+                retrieved_at=item.retrieved_at,
             )
             evidence_id = evidence_ledger.record(entry)
             for hypothesis in hypotheses:
@@ -98,28 +100,32 @@ class ResearchCognitiveLoop:
 
         joint_inferences: list[JointInference] = []
         for hypothesis in hypotheses:
-            premise_ids: list[str] = []
-            for item in evidence_items:
-                if item.claim.strip() != hypothesis.claim.strip():
-                    continue
-                entry = EvidenceLedgerEntry(
-                    claim=item.claim,
-                    source=item.source,
-                    provenance=item.provenance,
-                    confidence=item.confidence,
-                    passage=item.passage,
-                    support=item.support,
-                    retrieved_at=item.retrieved_at,
+            premise_ids = tuple(
+                evidence_ledger.evidence_id(
+                    EvidenceLedgerEntry(
+                        claim=item.claim,
+                        source=item.source,
+                        provenance=item.provenance,
+                        confidence=item.confidence,
+                        passage=item.passage,
+                        support=item.support,
+                        retrieved_at=item.retrieved_at,
+                    )
                 )
-                premise_ids.append(evidence_ledger.evidence_id(entry))
+                for item in evidence_items
+                if item.claim.strip() == hypothesis.claim.strip()
+            )
             if premise_ids:
                 joint_inferences.append(
                     joint_inference_engine.infer(
                         claim=hypothesis.claim,
-                        evidence_ids=tuple(premise_ids),
+                        evidence_ids=premise_ids,
                         ledger=evidence_ledger,
                     )
                 )
+
+        derived_hypotheses = DerivedHypothesisGenerator().generate(tuple(joint_inferences))
+        derived_research_plan = self.derived_research_planner.create_plan(derived_hypotheses)
 
         synthesis_id = "SYNTHESIS"
         evidence_ledger.graph.add_node(
@@ -165,6 +171,8 @@ class ResearchCognitiveLoop:
             decision,
             evidence_ledger,
             tuple(joint_inferences),
+            derived_hypotheses,
+            derived_research_plan,
             adaptive_result,
         )
 
@@ -207,6 +215,8 @@ class ResearchCognitiveLoop:
     def next_research_questions(state: ResearchCognitiveState) -> tuple[str, ...]:
         if state.decision.action != "RESEARCH":
             return ()
+        if state.derived_research_plan is not None:
+            return tuple(item.question for item in state.derived_research_plan.subquestions)
         unresolved = set(state.critic.unresolved_hypotheses)
         if "H1" in unresolved and len(state.plan.subquestions) >= 3:
             return (state.plan.subquestions[2].question,)
