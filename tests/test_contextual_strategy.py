@@ -1,3 +1,4 @@
+from anne.learning.context_fingerprint import ExplicitContextFingerprint
 from anne.learning.contextual_strategy import (
     ContextualStrategySelector,
     StrategyContext,
@@ -182,3 +183,51 @@ def test_selector_bounds_candidates_and_history() -> None:
 
     assert result.candidates[0].observations == 2
     assert result.candidates[0].source_cycle_ids == ("cycle-2", "cycle-3")
+
+
+def test_experience_learner_uses_only_explicit_trace_context() -> None:
+    from anne.core.trace import CycleTrace
+    from anne.learning.experience_learning import ExperienceLearner
+
+    trace = CycleTrace(
+        cycle_id="c1",
+        status="FAILED",
+        stop_reason="evidence_gap",
+        learning={
+            "context": {
+                "key": "web_research",
+                "conditions": {
+                    "source_count": 2,
+                    "freshness": "current",
+                },
+            }
+        },
+    )
+    experience = ExperienceLearner().from_trace(trace, strategy="research")
+    assert experience.context_key == "web_research"
+    assert experience.context_conditions == (
+        ("freshness", "current"),
+        ("source_count", "2"),
+    )
+
+
+def test_experience_learner_does_not_invent_context() -> None:
+    from anne.core.trace import CycleTrace
+    from anne.learning.experience_learning import ExperienceLearner
+
+    trace = CycleTrace(
+        cycle_id="c2",
+        status="FAILED",
+        stop_reason="evidence_gap",
+    )
+    experience = ExperienceLearner().from_trace(trace, strategy="research")
+    assert experience.context_key == ""
+    assert experience.context_conditions == ()
+
+
+def test_context_fingerprint_rejects_unbounded_condition_input() -> None:
+    result = ExplicitContextFingerprint.from_context(
+        {"conditions": {str(index): index for index in range(20)}},
+        max_conditions=4,
+    )
+    assert len(result.conditions) == 4
