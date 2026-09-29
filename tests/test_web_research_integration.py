@@ -380,3 +380,20 @@ def test_web_research_exposes_decision_synthesis(monkeypatch) -> None:
     assert synthesis["rejected_hypotheses"] == []
     assert synthesis["is_ambiguous"] is False
     assert synthesis["reason"]
+
+
+def test_web_research_uses_injected_transport() -> None:
+    from anne.learning.web_research_transport import WebResearchTransport
+
+    calls: list[str] = []
+
+    def fetcher(url: str) -> str:
+        calls.append(url)
+        return '{"ok": true}'
+
+    researcher = WebResearcher(
+        transport=WebResearchTransport(fetcher=fetcher)
+    )
+
+    assert researcher._get_text("https://example.test/data") == '{"ok": true}'
+    assert calls == ["https://example.test/data"]
