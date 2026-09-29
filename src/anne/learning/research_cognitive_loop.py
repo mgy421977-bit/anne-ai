@@ -331,6 +331,14 @@ class ResearchCognitiveLoop:
             state.evidence_ledger.graph.add_edge(
                 ProvenanceEdge(hypothesis.id, synthesis_id, "informs")
             )
+        if cycle.rebuild is not None:
+            state.evidence_ledger.graph.add_edge(
+                ProvenanceEdge(
+                    cycle.rebuild.replacement_node,
+                    synthesis_id,
+                    "informs",
+                )
+            )
 
         return ResearchCognitiveState(
             state.plan,
