@@ -128,3 +128,19 @@ def test_metacognition_does_not_force_research_for_refuted_claim() -> None:
     assert result.requires_review is True
     assert result.research_required is False
     assert result.research_reason == ""
+
+
+def test_metacognition_does_not_research_when_evidence_is_not_required() -> None:
+    trace = CycleTrace(
+        cycle_id="m9",
+        status="SUCCESS",
+        intent={"intent": "explore", "requires_evidence": False},
+        decision={"reason": "non-factual exploratory response"},
+    )
+    result = Metacognition().assess(trace)
+    assert result.known == (
+        "verification is not required by the recorded intent",
+    )
+    assert result.evaluation_status == "PROCESS_COMPLETE"
+    assert result.research_required is False
+    assert result.requires_review is False
