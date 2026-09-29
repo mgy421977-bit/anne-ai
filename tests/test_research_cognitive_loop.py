@@ -129,3 +129,30 @@ def test_re_evaluation_rebuilds_state_from_fresh_evidence() -> None:
         node["status"] == "active"
         for node in refreshed.evidence_ledger.provenance()["nodes"]
     )
+
+
+def test_loop_exposes_joint_inference_from_multiple_premises() -> None:
+    loop = ResearchCognitiveLoop()
+    initial = loop.initialize("Question")
+    evidence = [
+        _evidence(initial.hypotheses[0].claim, SupportStatus.SUPPORTS.value),
+        EvidenceItem(
+            source="second-source",
+            claim=initial.hypotheses[0].claim,
+            kind="web",
+            provenance="https://second.example/source",
+            confidence=0.85,
+            passage=initial.hypotheses[0].claim,
+            support=SupportStatus.SUPPORTS.value,
+        ),
+    ]
+
+    state = loop.initialize("Question", evidence=evidence)
+
+    assert len(state.joint_inferences) == 1
+    joint = state.joint_inferences[0]
+    assert joint.claim == initial.hypotheses[0].claim
+    assert len(joint.evidence_ids) == 2
+    assert joint.unverified_premises == 2
+    assert joint.status.value == "unverified_premises"
+    assert joint.source_independence.distinct_publisher_family_count == 2
