@@ -29,6 +29,7 @@ def _decision_loop_for_state(
     verification_status: str | None,
     verification_sources: tuple[str, ...] = (),
     requires_evidence: bool | None = None,
+    intent: str | None = None,
 ) -> DecisionLoop:
     fail_fast = FailFastResult(True, "ok")
     state = SimpleNamespace(
@@ -42,6 +43,7 @@ def _decision_loop_for_state(
                 if requires_evidence is not None
                 else {}
             ),
+            **({"intent": intent} if intent is not None else {}),
         },
         ethic_score=None,
     )
@@ -121,6 +123,7 @@ def test_runtime_does_not_research_when_evidence_is_not_required() -> None:
     loop = _decision_loop_for_state(
         verification_status=None,
         requires_evidence=False,
+        intent="explore",
     )
 
     result = loop.run("Exploratory question")
@@ -130,11 +133,7 @@ def test_runtime_does_not_research_when_evidence_is_not_required() -> None:
     assert result.action == "PROCEED"
     assert result.research_state is not None
     assert result.research_state.decision.action == "PROCEED"
-    assert (
-        result.research_state.adaptive_learning.metacognition.verification_status
-        == "NOT_REQUIRED"
-    )
-    assert (
-        result.research_state.adaptive_learning.metacognition.research_required
-        is False
-    )
+    assessment = result.research_state.adaptive_learning.metacognition
+    assert "verification is not required by the recorded intent" in assessment.known
+    assert assessment.research_required is False
+    assert assessment.requires_review is False
