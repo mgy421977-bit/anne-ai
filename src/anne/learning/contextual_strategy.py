@@ -61,7 +61,12 @@ class ContextualStrategyChoice:
 class ContextualStrategySelector:
     """Select from observed candidates without inventing a strategy."""
 
-    def __init__(self, *, max_experiences: int = 64, max_candidates: int = 8) -> None:
+    def __init__(
+        self,
+        *,
+        max_experiences: int = 64,
+        max_candidates: int = 8,
+    ) -> None:
         if max_experiences < 1 or max_candidates < 1:
             raise ValueError("selection bounds must be positive")
         self.max_experiences = max_experiences
