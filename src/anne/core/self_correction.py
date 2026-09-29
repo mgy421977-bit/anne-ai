@@ -48,6 +48,11 @@ class SelfCorrectionPlanner:
     _MAP = {
         "semantic_reject": FailureClass.SEMANTIC,
         "anla": FailureClass.SEMANTIC,
+        "reevaluation_conflict": FailureClass.FACTUAL,
+        "reevaluation_refuted": FailureClass.FACTUAL,
+        "reevaluation_unverified": FailureClass.UNCERTAINTY,
+        "reevaluation_insufficient_evidence": FailureClass.EVIDENCE_GAP,
+        "reevaluation_research_error": FailureClass.EVIDENCE_GAP,
         "evidence_gap": FailureClass.EVIDENCE_GAP,
         "uncertainty": FailureClass.UNCERTAINTY,
         "ethical": FailureClass.ETHICAL,
