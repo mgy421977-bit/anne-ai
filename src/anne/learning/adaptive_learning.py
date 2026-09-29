@@ -119,6 +119,14 @@ class AdaptiveLearningCoordinator:
                 "lesson": experience.lesson,
                 "safe_to_reuse": experience.safe_to_reuse,
                 "factual_status": experience.factual_status,
+                "parent_cycle_id": experience.parent_cycle_id,
+                "lineage": list(experience.lineage),
+            },
+            "strategy_lineage": {
+                "source_cycle_id": experience.source_cycle_id,
+                "parent_cycle_id": experience.parent_cycle_id,
+                "lineage": list(experience.lineage),
+                "strategy": decision.strategy,
             },
             "strategy_adaptation": {
                 "action": decision.action,
