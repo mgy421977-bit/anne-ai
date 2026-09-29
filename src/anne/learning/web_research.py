@@ -16,6 +16,7 @@ from html.parser import HTMLParser
 from typing import Any, cast
 
 from .evidence import EvidenceItem
+from .web_research_transport import WebResearchTransport
 
 
 class _DuckDuckGoParser(HTMLParser):
@@ -122,21 +123,14 @@ class WebResearcher:
         "how", "why", "about", "is", "are", "a", "an", "of", "to", "in",
     }
 
-    @staticmethod
-    def _get_text(url: str) -> str:
-        request = urllib.request.Request(
-            url,
-            headers={"User-Agent": "ANNE-AI/0.3 (+generic-public-web-research)"},
-        )
-        with urllib.request.urlopen(request, timeout=WebResearcher.timeout) as response:
-            raw = response.read()
-            if not isinstance(raw, bytes):
-                raise TypeError("web response body must be bytes")
-            return raw.decode("utf-8", errors="replace")
+    def __init__(self, transport: WebResearchTransport | None = None) -> None:
+        self.transport = transport or WebResearchTransport()
 
-    @classmethod
-    def _get_json(cls, url: str) -> dict[str, Any]:
-        return cast(dict[str, Any], json.loads(cls._get_text(url)))
+    def _get_text(self, url: str) -> str:
+        return self.transport.fetch(url).content
+
+    def _get_json(self, url: str) -> dict[str, Any]:
+        return cast(dict[str, Any], json.loads(self._get_text(url)))
 
     @classmethod
     def _extract_passage(cls, html: str, query: str, max_chars: int = 1200) -> str:
