@@ -1,5 +1,3 @@
-from dataclasses import replace
-
 from anne.core.verification import FactualStatus
 from anne.learning.derived_research_executor import DerivedResearchExecutor
 from anne.learning.evidence import EvidenceItem, EvidenceLedgerEntry
