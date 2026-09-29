@@ -12,6 +12,7 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
+from anne.core.trace import CycleTrace, trace_from_runtime
 from anne.core.verification import ClaimVerifier
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
@@ -28,6 +29,7 @@ class DecisionResult:
     ethic_total: float | None = None
     state: CognitiveState | None = None
     reason: str = ""
+    trace: CycleTrace | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -40,6 +42,7 @@ class DecisionResult:
             "ethic_total": self.ethic_total,
             "reason": self.reason,
             "factual_status": self.output.get("factual_status", "unverified"),
+            "trace": self.trace.as_dict() if self.trace is not None else None,
         }
 
 
@@ -84,6 +87,7 @@ class DecisionLoop:
         verifier: ClaimVerifier | None = None,
         group_a: Sequence[Consciousness] | None = None,
         group_b: Sequence[Consciousness] | None = None,
+        learning_context: dict[str, Any] | None = None,
     ) -> DecisionResult:
         """Run one request through the canonical orchestrator path."""
         people = list(parties) if parties else [Consciousness(id="user")]
@@ -104,18 +108,30 @@ class DecisionLoop:
             group_b=group_b,
         )
         if not result.fail_fast.passed:
+            fail_output = {
+                "verdict": "FAIL_FAST",
+                "action": "HALT",
+                "reason": result.fail_fast.reason,
+                "rule_id": result.fail_fast.rule_id,
+            }
+            trace = trace_from_runtime(
+                cycle_id=result.lineage[-1] if result.lineage else f"or_{uuid4().hex[:12]}",
+                status="ABORTED",
+                stage_trace=result.stage_trace,
+                stop_reason=result.stop_reason or "fail_fast",
+                retry_count=result.retry_count,
+                lineage=result.lineage or (),
+                output=fail_output,
+                learning_context=learning_context,
+            )
             return DecisionResult(
                 "ABORTED",
                 "FAIL_FAST",
                 "HALT",
-                {
-                    "verdict": "FAIL_FAST",
-                    "action": "HALT",
-                    "reason": result.fail_fast.reason,
-                    "rule_id": result.fail_fast.rule_id,
-                },
+                fail_output,
                 fail_fast=result.fail_fast.as_dict(),
                 reason=result.fail_fast.reason,
+                trace=trace,
             )
 
         state = result.state
@@ -131,6 +147,17 @@ class DecisionLoop:
             aborted = False
         ethic_total = state.ethic_score.total if state and state.ethic_score else None
         anla_score = state.context_map.get("anla_score") if state else None
+        trace = trace_from_runtime(
+            cycle_id=result.lineage[-1] if result.lineage else f"or_{uuid4().hex[:12]}",
+            status=result.status,
+            stage_trace=result.stage_trace,
+            stop_reason=result.stop_reason,
+            retry_count=result.retry_count,
+            lineage=result.lineage or (),
+            output=out,
+            context=state.context_map if state is not None else None,
+            learning_context=learning_context,
+        )
         return DecisionResult(
             "ABORTED" if aborted else "EXECUTED",
             str(verdict),
@@ -141,6 +168,7 @@ class DecisionLoop:
             ethic_total,
             state,
             str(out.get("reason") or out.get("note") or ""),
+            trace,
         )
 
     def run_cognitive(
