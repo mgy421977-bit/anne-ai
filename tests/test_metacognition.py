@@ -1,3 +1,5 @@
+import pytest
+
 from anne.core.trace import CycleTrace
 from anne.learning.metacognition import Metacognition
 
@@ -159,3 +161,86 @@ def test_metacognition_does_not_learn_missing_intent_as_not_required() -> None:
     assert "factual status is not established as VERIFIED" in result.unknown
     assert result.research_required is False
     assert result.requires_review is True
+
+
+@pytest.mark.parametrize(
+    ("name", "intent", "verification", "reason", "expected_status", "expected_research"),
+    [
+        (
+            "not_required",
+            {"intent": "explore", "requires_evidence": False},
+            {},
+            "exploratory response",
+            "PROCESS_COMPLETE",
+            False,
+        ),
+        (
+            "unverified",
+            {"intent": "answer", "requires_evidence": True},
+            {"verification_status": "UNVERIFIED"},
+            "evidence pending",
+            "PROCESS_REVIEW_REQUIRED",
+            True,
+        ),
+        (
+            "conflicting",
+            {"intent": "answer", "requires_evidence": True},
+            {"verification_status": "CONFLICTING"},
+            "sources conflict",
+            "PROCESS_REVIEW_REQUIRED",
+            True,
+        ),
+        (
+            "refuted",
+            {"intent": "answer", "requires_evidence": True},
+            {"verification_status": "REFUTED", "verification_sources": ("source-a",)},
+            "claim disproved",
+            "PROCESS_REVIEW_REQUIRED",
+            False,
+        ),
+        (
+            "verified_with_provenance",
+            {"intent": "answer", "requires_evidence": True},
+            {"verification_status": "VERIFIED", "verification_sources": ("source-a",)},
+            "claim supported",
+            "PROCESS_COMPLETE",
+            False,
+        ),
+        (
+            "verified_without_provenance",
+            {"intent": "answer", "requires_evidence": True},
+            {"verification_status": "VERIFIED"},
+            "claim supported",
+            "PROCESS_REVIEW_REQUIRED",
+            False,
+        ),
+        (
+            "missing_intent",
+            {},
+            {},
+            "intent omitted",
+            "PROCESS_REVIEW_REQUIRED",
+            False,
+        ),
+    ],
+)
+def test_metacognition_contract_matrix(
+    name: str,
+    intent: dict,
+    verification: dict,
+    reason: str,
+    expected_status: str,
+    expected_research: bool,
+) -> None:
+    trace = CycleTrace(
+        cycle_id=f"matrix-{name}",
+        status="SUCCESS",
+        intent=intent,
+        verification=verification,
+        decision={"reason": reason},
+    )
+
+    result = Metacognition().assess(trace)
+
+    assert result.evaluation_status == expected_status
+    assert result.research_required is expected_research
