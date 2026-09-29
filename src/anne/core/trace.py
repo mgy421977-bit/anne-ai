@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-TRACE_SCHEMA_VERSION = "1.0"
+TRACE_SCHEMA_VERSION = "1.1"
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,8 @@ class CycleTrace:
     intent: Mapping[str, Any] = field(default_factory=dict)
     hypotheses: tuple[Mapping[str, Any], ...] = ()
     evidence: tuple[Mapping[str, Any], ...] = ()
+    joint_inferences: tuple[Mapping[str, Any], ...] = ()
+    derived_hypotheses: tuple[Mapping[str, Any], ...] = ()
     verification: Mapping[str, Any] = field(default_factory=dict)
     decision: Mapping[str, Any] = field(default_factory=dict)
     agency: Mapping[str, Any] = field(default_factory=dict)
@@ -55,7 +57,15 @@ class CycleTrace:
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> CycleTrace:
         data = dict(payload)
-        for key in ("stage_trace", "lineage", "hypotheses", "evidence", "errors"):
+        for key in (
+            "stage_trace",
+            "lineage",
+            "hypotheses",
+            "evidence",
+            "joint_inferences",
+            "derived_hypotheses",
+            "errors",
+        ):
             data[key] = tuple(data.get(key, ()))
         return cls(**data)
 
@@ -109,6 +119,8 @@ def trace_from_runtime(
         retry_count=retry_count,
         lineage=lineage,
         intent=intent,
+        joint_inferences=tuple(context.get("joint_inferences", ())),
+        derived_hypotheses=tuple(context.get("derived_hypotheses", ())),
         verification=verification,
         decision=decision,
         agency=agency,
