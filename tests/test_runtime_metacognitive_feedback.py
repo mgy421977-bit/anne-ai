@@ -3,7 +3,6 @@ from types import SimpleNamespace
 from anne.core.cognitive_orchestrator import OrchestrationResult
 from anne.core.decision_loop import DecisionLoop
 from anne.core.fail_fast import FailFastResult
-from anne.core.trace import CycleTrace
 from anne.learning.critic_loop import LoopDecision
 from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 
@@ -70,7 +69,9 @@ def test_runtime_routes_verified_trace_with_missing_intent_to_review() -> None:
     assert result.action == "REVIEW"
     assert result.research_state is not None
     assert result.research_state.adaptive_learning is not None
-    assert result.research_state.adaptive_learning.metacognition.requires_review is True
+    assert (
+        result.research_state.adaptive_learning.metacognition.requires_review is True
+    )
     assert result.trace is not None
     assert result.trace.learning["metacognition"]["requires_review"] is True
 
