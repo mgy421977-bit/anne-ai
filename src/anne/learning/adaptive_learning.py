@@ -10,6 +10,7 @@ from anne.learning.information_gap import InformationGap, InformationGapDetector
 from anne.learning.metacognition import Metacognition, MetacognitiveAssessment
 from anne.learning.strategy_adaptation import StrategyAdapter, StrategyDecision
 from anne.learning.strategy_outcome import StrategyOutcome, StrategyOutcomeEvaluator
+from anne.learning.strategy_recovery import StrategyRecovery, StrategyRecoveryEvaluator
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,7 @@ class AdaptiveLearningResult:
     trace: CycleTrace
     metacognition: MetacognitiveAssessment
     strategy_outcome: StrategyOutcome
+    strategy_recovery: StrategyRecovery
 
 
 class AdaptiveLearningCoordinator:
@@ -32,12 +34,16 @@ class AdaptiveLearningCoordinator:
         experience_learner: ExperienceLearner | None = None,
         strategy_adapter: StrategyAdapter | None = None,
         strategy_outcome_evaluator: StrategyOutcomeEvaluator | None = None,
+        strategy_recovery_evaluator: StrategyRecoveryEvaluator | None = None,
     ) -> None:
         self.gap_detector = gap_detector or InformationGapDetector()
         self.experience_learner = experience_learner or ExperienceLearner()
         self.strategy_adapter = strategy_adapter or StrategyAdapter()
         self.strategy_outcome_evaluator = (
             strategy_outcome_evaluator or StrategyOutcomeEvaluator()
+        )
+        self.strategy_recovery_evaluator = (
+            strategy_recovery_evaluator or StrategyRecoveryEvaluator()
         )
 
     def observe(
@@ -55,6 +61,9 @@ class AdaptiveLearningCoordinator:
         decision = self.strategy_adapter.adapt(strategy, experiences)
         strategy_outcome = self.strategy_outcome_evaluator.evaluate(
             decision, experiences
+        )
+        strategy_recovery = self.strategy_recovery_evaluator.evaluate(
+            strategy, experiences
         )
 
         learning = {
@@ -87,6 +96,7 @@ class AdaptiveLearningCoordinator:
                 "source_cycle_ids": decision.source_cycle_ids,
             },
             "strategy_outcome": strategy_outcome.as_dict(),
+            "strategy_recovery": strategy_recovery.as_dict(),
         }
         enriched_trace = replace(trace, learning=learning)
         return AdaptiveLearningResult(
@@ -96,6 +106,7 @@ class AdaptiveLearningCoordinator:
             enriched_trace,
             metacognition,
             strategy_outcome,
+            strategy_recovery,
         )
 
 
