@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from anne.core.trace import CycleTrace
-from anne.runtime import AnneRequest, AnneRuntime
+from anne.runtime import AnneRuntime
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
 from anne.learning.experience_learning import Experience
 
