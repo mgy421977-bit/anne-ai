@@ -11,6 +11,7 @@ from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerE
 from anne.learning.experience_learning import Experience
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
+from anne.learning.joint_inference import JointInference, JointInferenceEngine
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation import ReEvaluationPlan
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
@@ -24,6 +25,7 @@ class ResearchCognitiveState:
     synthesis: DecisionSynthesis
     decision: LoopDecision
     evidence_ledger: EvidenceLedger
+    joint_inferences: tuple[JointInference, ...] = ()
     adaptive_learning: AdaptiveLearningResult | None = None
 
 
@@ -69,6 +71,7 @@ class ResearchCognitiveLoop:
         critic = EvidenceHypothesisBridge().assess(hypotheses, evidence_items)
         synthesis = self.decision_synthesizer.synthesize(critic)
         evidence_ledger = EvidenceLedger()
+        joint_inference_engine = JointInferenceEngine()
 
         for hypothesis in hypotheses:
             evidence_ledger.graph.add_node(
@@ -91,6 +94,31 @@ class ResearchCognitiveLoop:
                 relation = item.support.strip().lower() or "unclear"
                 evidence_ledger.graph.add_edge(
                     ProvenanceEdge(evidence_id, hypothesis.id, relation)
+                )
+
+        joint_inferences: list[JointInference] = []
+        for hypothesis in hypotheses:
+            premise_ids: list[str] = []
+            for item in evidence_items:
+                if item.claim.strip() != hypothesis.claim.strip():
+                    continue
+                entry = EvidenceLedgerEntry(
+                    claim=item.claim,
+                    source=item.source,
+                    provenance=item.provenance,
+                    confidence=item.confidence,
+                    passage=item.passage,
+                    support=item.support,
+                    retrieved_at=item.retrieved_at,
+                )
+                premise_ids.append(evidence_ledger.evidence_id(entry))
+            if premise_ids:
+                joint_inferences.append(
+                    joint_inference_engine.infer(
+                        claim=hypothesis.claim,
+                        evidence_ids=tuple(premise_ids),
+                        ledger=evidence_ledger,
+                    )
                 )
 
         synthesis_id = "SYNTHESIS"
@@ -136,6 +164,7 @@ class ResearchCognitiveLoop:
             synthesis,
             decision,
             evidence_ledger,
+            tuple(joint_inferences),
             adaptive_result,
         )
 
