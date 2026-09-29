@@ -192,3 +192,16 @@ def test_runtime_adapter_keeps_learning_context_explicit() -> None:
         context={"learning_context": {"key": "inferred_should_not_be_used"}},
     )
     assert trace.learning == {}
+
+
+def test_runtime_adapter_records_explicit_strategy() -> None:
+    trace = trace_from_runtime(
+        cycle_id="or_strategy",
+        status="BOUNDED",
+        stage_trace=("DUY", "YAP", "RETRY_GATE"),
+        stop_reason="retry_authorized",
+        retry_count=1,
+        lineage=("or_parent", "or_strategy"),
+        strategy="recheck_independent_evidence",
+    )
+    assert trace.learning["strategy"] == "recheck_independent_evidence"
