@@ -25,7 +25,6 @@ def test_loop_exposes_bounded_plan_for_derived_hypotheses() -> None:
 
 from dataclasses import replace
 
-from anne.learning.derived_hypothesis import DerivedHypothesis
 from anne.learning.derived_research_executor import DerivedResearchExecutor
 from anne.learning.derived_research_planner import DerivedResearchPlanner
 
