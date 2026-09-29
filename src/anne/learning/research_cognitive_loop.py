@@ -7,6 +7,7 @@ from anne.core.trace import CycleTrace
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
+from anne.learning.derived_hypothesis import DerivedHypothesis, DerivedHypothesisGenerator
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.experience_learning import Experience
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
@@ -26,6 +27,7 @@ class ResearchCognitiveState:
     decision: LoopDecision
     evidence_ledger: EvidenceLedger
     joint_inferences: tuple[JointInference, ...] = ()
+    derived_hypotheses: tuple[DerivedHypothesis, ...] = ()
     adaptive_learning: AdaptiveLearningResult | None = None
 
 
@@ -72,6 +74,7 @@ class ResearchCognitiveLoop:
         synthesis = self.decision_synthesizer.synthesize(critic)
         evidence_ledger = EvidenceLedger()
         joint_inference_engine = JointInferenceEngine()
+        derived_hypothesis_generator = DerivedHypothesisGenerator()
 
         for hypothesis in hypotheses:
             evidence_ledger.graph.add_node(
@@ -121,6 +124,8 @@ class ResearchCognitiveLoop:
                     )
                 )
 
+        derived_hypotheses = derived_hypothesis_generator.generate(tuple(joint_inferences))
+
         synthesis_id = "SYNTHESIS"
         evidence_ledger.graph.add_node(
             ProvenanceNode(synthesis_id, "decision_synthesis", synthesis.reason)
@@ -165,6 +170,7 @@ class ResearchCognitiveLoop:
             decision,
             evidence_ledger,
             tuple(joint_inferences),
+            derived_hypotheses,
             adaptive_result,
         )
 
