@@ -33,9 +33,9 @@ MetacognitiveAssessment records:
 - research_required;
 - research_reason.
 
-`evaluation_status` is `PROCESS_REVIEW_REQUIRED` when the recorded process has an explicit review gap such as missing intent, missing decision rationale, or an unresolved factual status. Otherwise it is `PROCESS_COMPLETE`.
+`evaluation_status` is `PROCESS_REVIEW_REQUIRED` when the recorded process has an explicit review gap such as missing intent, missing decision rationale, missing verification provenance, or an unresolved factual status. Otherwise it is `PROCESS_COMPLETE`.
 
-`research_required` is true when verification is `UNVERIFIED`, `CONFLICTING`, or `REFUTED`. This is a research/reassessment signal, not a truth assertion.
+`research_required` is true when verification is `UNVERIFIED` or `CONFLICTING`. A `REFUTED` status requires review/reassessment but does not by itself authorize or require new research. Missing verification provenance requires review, not automatic research. These are bounded signals, not truth assertions.
 
 ## Safety boundary
 
@@ -67,4 +67,4 @@ Recalibration triggers are explicit observations such as:
 - `intent_clarification`
 - `decision_reason_recording`
 
-The trigger itself does not execute research or an action. A bounded planner or runtime component must separately decide whether and how to act on it.
+The trigger itself does not execute research or an action. A bounded planner or runtime component must separately decide whether and how to act on it. In particular, missing provenance is a review condition, and `REFUTED` is a review/reassessment condition; neither independently authorizes research.
