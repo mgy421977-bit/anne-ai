@@ -37,7 +37,7 @@ class StrategyRecovery:
 
 
 class StrategyRecoveryEvaluator:
-    """Choose bounded keep/rollback guidance from a recent experience window."""
+    """Choose bounded rollback guidance from an exact context and lineage."""
 
     def __init__(self, *, window: int = 4, failure_threshold: int = 2) -> None:
         if window < 2:
@@ -46,6 +46,13 @@ class StrategyRecoveryEvaluator:
             raise ValueError("failure_threshold must be >= 2")
         self.window = window
         self.failure_threshold = failure_threshold
+
+    @staticmethod
+    def _same_lineage(previous: Experience, latest: Experience) -> bool:
+        return (
+            previous.source_cycle_id in latest.lineage
+            or latest.parent_cycle_id == previous.source_cycle_id
+        )
 
     def evaluate(
         self,
@@ -69,33 +76,60 @@ class StrategyRecoveryEvaluator:
                 "not_enough_observations_for_rollback",
             )
 
-        if not all(item.outcome == "FAILURE" for item in current[-self.failure_threshold :]):
+        latest = current[-1]
+        same_context = [
+            item
+            for item in current
+            if item.context_fingerprint == latest.context_fingerprint
+        ]
+        if len(same_context) < self.failure_threshold:
+            return StrategyRecovery(
+                StrategyRecoveryAction.INSUFFICIENT_OBSERVATION,
+                current_strategy,
+                tuple(item.source_cycle_id for item in same_context),
+                "not_enough_same_context_observations_for_rollback",
+            )
+
+        if not all(
+            item.outcome == "FAILURE"
+            for item in same_context[-self.failure_threshold :]
+        ):
             return StrategyRecovery(
                 StrategyRecoveryAction.KEEP,
                 current_strategy,
-                tuple(item.source_cycle_id for item in current),
-                "recent_strategy_has_not_repeatedly_failed",
+                tuple(item.source_cycle_id for item in same_context),
+                "recent_strategy_has_not_repeatedly_failed_in_same_context",
             )
 
-        prior_strategies = [
-            item.strategy
+        prior = [
+            item
             for item in recent
-            if item.strategy != current_strategy and item.outcome == "FAILURE"
+            if item.strategy != current_strategy
+            and item.outcome == "FAILURE"
+            and item.context_fingerprint == latest.context_fingerprint
+            and self._same_lineage(item, latest)
         ]
-        if not prior_strategies:
+        if not prior:
             return StrategyRecovery(
                 StrategyRecoveryAction.ABSTAIN,
                 "reassess_without_assuming_cause",
-                tuple(item.source_cycle_id for item in current),
-                "no_prior_strategy_available_for_safe_rollback",
+                tuple(
+                    item.source_cycle_id
+                    for item in same_context[-self.failure_threshold :]
+                ),
+                "no_prior_strategy_in_same_explicit_context_lineage",
             )
 
-        previous_strategy = prior_strategies[-1]
+        previous = prior[-1]
         return StrategyRecovery(
             StrategyRecoveryAction.ROLLBACK,
-            previous_strategy,
-            tuple(item.source_cycle_id for item in current[-self.failure_threshold :]),
-            "current_strategy_repeatedly_failed; rollback_to_prior_observed_strategy",
+            previous.strategy,
+            tuple(
+                item.source_cycle_id
+                for item in same_context[-self.failure_threshold :]
+            ),
+            "current_strategy_repeatedly_failed; "
+            "rollback_to_prior_observed_strategy_in_same_context_lineage",
         )
 
 
