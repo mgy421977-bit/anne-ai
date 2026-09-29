@@ -49,15 +49,15 @@ class DerivedResearchExecutor:
 
     def execute(self, plan: ResearchPlan) -> DerivedResearchResult:
         evidence: list[EvidenceItem] = []
+        seen_provenance: set[str] = set()
         queries_used = 0
-        sources_used = 0
         stopped_reason = "plan_exhausted"
 
         for subquestion in plan.subquestions:
             if queries_used >= plan.stop_conditions.max_queries:
                 stopped_reason = "query_budget_exhausted"
                 break
-            if sources_used >= plan.stop_conditions.max_sources:
+            if len(seen_provenance) >= plan.stop_conditions.max_sources:
                 stopped_reason = "source_budget_exhausted"
                 break
 
@@ -68,11 +68,17 @@ class DerivedResearchExecutor:
                 stopped_reason = "retrieval_error"
                 continue
 
-            bounded = tuple(found[: self.max_evidence_per_question])
-            evidence.extend(bounded)
-            sources_used += len({item.provenance for item in bounded if item.provenance})
+            for item in found[: self.max_evidence_per_question]:
+                provenance = item.provenance.strip()
+                if not provenance or provenance in seen_provenance:
+                    continue
+                if len(seen_provenance) >= plan.stop_conditions.max_sources:
+                    stopped_reason = "source_budget_exhausted"
+                    break
+                seen_provenance.add(provenance)
+                evidence.append(item)
 
-            if sources_used >= plan.stop_conditions.max_sources:
+            if len(seen_provenance) >= plan.stop_conditions.max_sources:
                 stopped_reason = "source_budget_exhausted"
                 break
 
@@ -80,7 +86,7 @@ class DerivedResearchExecutor:
             plan_question=plan.main_question,
             evidence=tuple(evidence),
             queries_used=queries_used,
-            sources_used=sources_used,
+            sources_used=len(seen_provenance),
             stopped_reason=stopped_reason,
         )
 
