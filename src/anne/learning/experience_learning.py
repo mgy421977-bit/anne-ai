@@ -22,6 +22,25 @@ class Experience:
     lesson: str
     safe_to_reuse: bool
     factual_status: str
+    context_key: str = ""
+    context_conditions: tuple[tuple[str, str], ...] = ()
+
+    def __post_init__(self) -> None:
+        normalized = tuple(
+            sorted(
+                {
+                    (str(key), str(value))
+                    for key, value in self.context_conditions
+                }
+            )
+        )
+        object.__setattr__(self, "context_conditions", normalized)
+
+    @property
+    def context_fingerprint(self) -> tuple[
+        str, str, tuple[tuple[str, str], ...]
+    ]:
+        return (self.failure_class, self.context_key, self.context_conditions)
 
 
 class ExperienceLearner:
@@ -58,6 +77,22 @@ class ExperienceLearner:
             f"'{strategy or 'unspecified'}'; "
             "do not promote this observation to truth."
         )
+        context = trace.learning.get("context", {})
+        context_key = (
+            str(context.get("key", ""))
+            if isinstance(context, dict)
+            else ""
+        )
+        raw_conditions = (
+            context.get("conditions", {})
+            if isinstance(context, dict)
+            else {}
+        )
+        context_conditions = (
+            tuple(sorted((str(key), str(value)) for key, value in raw_conditions.items()))
+            if isinstance(raw_conditions, dict)
+            else ()
+        )
         return Experience(
             source_cycle_id=trace.cycle_id,
             outcome=outcome,
@@ -66,6 +101,8 @@ class ExperienceLearner:
             lesson=lesson,
             safe_to_reuse=False,
             factual_status=factual_status,
+            context_key=context_key,
+            context_conditions=context_conditions,
         )
 
 
