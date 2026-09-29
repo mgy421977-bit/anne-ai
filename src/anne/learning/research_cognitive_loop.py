@@ -18,6 +18,7 @@ from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.joint_inference import JointInference, JointInferenceEngine
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation import ReEvaluationPlan
+from anne.learning.reevaluation_learning import ReEvaluationLearningAdapter
 from anne.learning.reevaluation_loop import ReEvaluationCycleResult, ReEvaluationLoop
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 
@@ -264,14 +265,30 @@ class ResearchCognitiveLoop:
         target_node_id: str,
         research_question: str,
         loop: ReEvaluationLoop | None = None,
+        strategy: str = "research",
+        prior_experiences: tuple[Experience, ...] = (),
     ) -> ResearchCognitiveState:
-        """Re-enter research only after explicit provenance invalidation."""
+        """Re-enter research and feed the outcome into bounded learning."""
         cycle = (loop or ReEvaluationLoop()).run(
             state.evidence_ledger,
             invalidated_evidence_id=invalidated_evidence_id,
             target_node_id=target_node_id,
             research_question=research_question,
         )
+        cycle_trace = ReEvaluationLearningAdapter().to_trace(
+            cycle,
+            cycle_id=f"reeval:{invalidated_evidence_id}:{target_node_id}",
+            strategy=strategy,
+        )
+        history = prior_experiences
+        if state.adaptive_learning is not None:
+            history = (*history, state.adaptive_learning.experience)
+        adaptive_result = self.adaptive_learning.observe(
+            cycle_trace,
+            strategy=strategy,
+            prior_experiences=history,
+        )
+
         if cycle.research_result is None:
             return ResearchCognitiveState(
                 state.plan,
@@ -286,7 +303,7 @@ class ResearchCognitiveLoop:
                 state.derived_research_result,
                 state.derived_verifications,
                 cycle,
-                state.adaptive_learning,
+                adaptive_result,
             )
 
         fresh_evidence = cycle.research_result.evidence
@@ -353,7 +370,7 @@ class ResearchCognitiveLoop:
             state.derived_research_result,
             state.derived_verifications,
             cycle,
-            state.adaptive_learning,
+            adaptive_result,
         )
 
     def continue_from_re_evaluation(
