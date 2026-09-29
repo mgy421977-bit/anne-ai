@@ -1,7 +1,7 @@
 # ANNE Canonical Trace Contract
 
 **Status:** Phase 1 foundation
-**Schema:** `1.0`
+**Schema:** `1.1`
 
 The canonical trace is an observability contract for one bounded cognitive cycle. It is provider-independent and does not grant authority.
 
@@ -11,10 +11,11 @@ The canonical trace is an observability contract for one bounded cognitive cycle
 2. Retry counts are non-negative.
 3. Parent and lineage identifiers are explicit.
 4. Evidence and verification are recorded separately from confidence.
-5. Agency results are recorded separately from cognitive decisions.
-6. Provenance is explicit and never inferred from text similarity.
-7. Serialization is deterministic for replay and benchmark comparison.
-8. The trace cannot bypass FailFast, Evidence Gate, provenance verification, or Agency Gate.
+5. Joint inference and derived hypotheses are recorded separately from verification and authority.
+6. Agency results are recorded separately from cognitive decisions.
+7. Provenance is explicit and never inferred from text similarity.
+8. Serialization is deterministic for replay and benchmark comparison.
+9. The trace cannot bypass FailFast, Evidence Gate, provenance verification, or Agency Gate.
 
 ## Canonical sections
 
@@ -24,6 +25,8 @@ The canonical trace is an observability contract for one bounded cognitive cycle
 - `intent`: explicit intent/routing information.
 - `hypotheses`: candidate records when available.
 - `evidence`: evidence records when available; evidence is not truth.
+- `joint_inferences`: explicit derived claims and their premise/source-independence observations; inference is not truth.
+- `derived_hypotheses`: bounded follow-up research targets produced from eligible joint inferences; proposals are not decisions.
 - `verification`: verification status, sources, reason and evidence state.
 - `decision`: observed verdict/action/reason.
 - `agency`: Agency Gate decision and human-review requirement.
@@ -32,9 +35,15 @@ The canonical trace is an observability contract for one bounded cognitive cycle
 - `metrics`: latency/resource counters.
 - `errors`: structured failures.
 
+## Versioning
+
+Schema `1.1` adds `joint_inferences` and `derived_hypotheses` as additive observability fields. Older serialized traces remain readable because missing fields default to empty tuples.
+
+These fields are intentionally observational: recording a derived inference does not verify it, recording source-family diversity does not prove independence, and recording a proposed hypothesis does not authorize research or action.
+
 ## Fast activation path
 
-This contract is introduced without changing decision semantics. The next integration step is to emit one canonical trace from the existing `CognitiveOrchestrator`/`DecisionLoop` path, then feed the same trace into metacognition and experience-learning components.
+This contract is introduced without changing decision semantics. The existing runtime adapter can copy explicit inference observations into the trace, after which the same trace can feed metacognition and experience-learning components.
 
 ## Bounded autonomous improvement
 
