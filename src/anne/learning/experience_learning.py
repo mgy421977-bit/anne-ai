@@ -8,12 +8,10 @@ reuse under the current conditions.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from anne.core.self_correction import FailureClass, SelfCorrectionPlanner
 from anne.core.trace import CycleTrace
-from anne.learning.context_fingerprint import ExplicitContextFingerprint
 from anne.learning.context_fingerprint import ExplicitContextFingerprint
 
 
@@ -28,6 +26,8 @@ class Experience:
     factual_status: str
     context_key: str = ""
     context_conditions: tuple[tuple[str, str], ...] = ()
+    parent_cycle_id: str | None = None
+    lineage: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         normalized = ExplicitContextFingerprint(
@@ -100,6 +100,8 @@ class ExperienceLearner:
             factual_status=factual_status,
             context_key=explicit.key,
             context_conditions=explicit.conditions,
+            parent_cycle_id=trace.parent_cycle_id,
+            lineage=trace.lineage,
         )
 
 
