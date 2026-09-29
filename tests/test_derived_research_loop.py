@@ -1,3 +1,8 @@
+from dataclasses import replace
+
+from anne.learning.derived_hypothesis import DerivedHypothesis
+from anne.learning.derived_research_executor import DerivedResearchExecutor
+from anne.learning.derived_research_planner import DerivedResearchPlanner
 from anne.learning.evidence import EvidenceItem
 from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 
@@ -21,12 +26,6 @@ def test_loop_exposes_bounded_plan_for_derived_hypotheses() -> None:
     refreshed = loop.initialize("Question", evidence=(evidence,))
     assert refreshed.derived_hypotheses == ()
     assert refreshed.derived_research_plan is None
-
-
-from dataclasses import replace
-
-from anne.learning.derived_research_executor import DerivedResearchExecutor
-from anne.learning.derived_research_planner import DerivedResearchPlanner
 
 
 class FakeResearcher:
