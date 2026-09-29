@@ -32,6 +32,7 @@ class EvidenceItem:
     confidence: float
     passage: str = ""
     support: str = SupportStatus.UNCLEAR.value
+    retrieved_at: str = ""
 
     def __post_init__(self) -> None:
         if not self.source.strip():
