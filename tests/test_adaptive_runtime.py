@@ -75,3 +75,24 @@ def test_adaptive_runtime_requires_canonical_trace() -> None:
         assert "canonical trace" in str(exc)
     else:
         raise AssertionError("expected canonical trace failure")
+
+
+def test_adaptive_runtime_applies_bounded_strategy_change_on_repeated_failure() -> None:
+    runtime = _FakeRuntime()
+    controller = AdaptiveRuntimeController(
+        runtime, initial_strategy="research", max_experiences=8
+    )
+
+    controller.run("one")
+    controller.run("two")
+    third = controller.run("three")
+    fourth = controller.run("four")
+
+    assert third.next_strategy == "seek_fresh_independent_evidence"
+    assert runtime.calls == [
+        "research",
+        "research",
+        "research",
+        "seek_fresh_independent_evidence",
+    ]
+    assert fourth.learning.experience.strategy == "seek_fresh_independent_evidence"
