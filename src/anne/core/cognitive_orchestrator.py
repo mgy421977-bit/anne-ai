@@ -170,6 +170,7 @@ class CognitiveOrchestrator:
         verifier: ClaimVerifier | None = None,
         group_a: Sequence[Consciousness] | None = None,
         group_b: Sequence[Consciousness] | None = None,
+        preferred_strategy: str | None = None,
     ) -> OrchestrationResult:
         people = list(parties) if parties else [Consciousness(id="user")]
         ff = self.pipeline.fail_fast(raw_input)
@@ -479,6 +480,7 @@ class CognitiveOrchestrator:
                 failure,
                 current_question,
                 attempt=retry_count + 1,
+                preferred_strategy=preferred_strategy,
             )
             retry = FailureRecoveryController.authorize_retry(
                 attempt=retry_count,
