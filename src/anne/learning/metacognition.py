@@ -65,7 +65,7 @@ class Metacognition:
 
         if sources:
             evidence_basis.append("verification_sources")
-        else:
+        elif status != "NOT_REQUIRED":
             unknown.append("verification source provenance is not recorded")
             if "provenance_completion" not in triggers:
                 triggers.append("provenance_completion")
@@ -107,7 +107,7 @@ class Metacognition:
         research_required = status in {"UNVERIFIED", "CONFLICTING"} and evidence_required
         if research_required:
             research_reason = "verification_status_does_not_close_the_evidence_loop"
-        elif not sources:
+        elif status == "VERIFIED" and not sources:
             research_reason = "provenance_is_incomplete"
         else:
             research_reason = ""
