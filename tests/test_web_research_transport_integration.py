@@ -6,6 +6,7 @@ import pytest
 
 from anne.learning.web_research_transport import (
     CacheDisposition,
+    CachePolicy,
     RetryPolicy,
     TransportResult,
     WebResearchTransport,
@@ -22,7 +23,7 @@ def test_transport_uses_cache_within_ttl() -> None:
 
     transport = WebResearchTransport(
         fetcher=fetcher,
-        cache_ttl_seconds=60,
+        cache_policy=CachePolicy(ttl_seconds=60),
         clock=lambda: now,
     )
 
@@ -48,7 +49,7 @@ def test_expired_cache_retrieves_fresh_content() -> None:
 
     transport = WebResearchTransport(
         fetcher=fetcher,
-        cache_ttl_seconds=60,
+        cache_policy=CachePolicy(ttl_seconds=60),
         clock=lambda: now[0],
     )
 
