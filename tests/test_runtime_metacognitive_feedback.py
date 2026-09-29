@@ -26,8 +26,9 @@ class _ProceedCritic:
 
 def _decision_loop_for_state(
     *,
-    verification_status: str,
+    verification_status: str | None,
     verification_sources: tuple[str, ...] = (),
+    requires_evidence: bool | None = None,
 ) -> DecisionLoop:
     fail_fast = FailFastResult(True, "ok")
     state = SimpleNamespace(
@@ -36,6 +37,11 @@ def _decision_loop_for_state(
         context_map={
             "verification_status": verification_status,
             "verification_sources": verification_sources,
+            **(
+                {"requires_evidence": requires_evidence}
+                if requires_evidence is not None
+                else {}
+            ),
         },
         ethic_score=None,
     )
@@ -110,3 +116,25 @@ def test_runtime_serializes_bounded_research_guidance() -> None:
     assert payload["research"]["action"] == "RESEARCH"
     assert payload["research"]["research_allowed"] is True
     assert payload["research"]["questions"]
+
+def test_runtime_does_not_research_when_evidence_is_not_required() -> None:
+    loop = _decision_loop_for_state(
+        verification_status=None,
+        requires_evidence=False,
+    )
+
+    result = loop.run("Exploratory question")
+
+    assert result.status == "EXECUTED"
+    assert result.verdict == "ONAYLA"
+    assert result.action == "PROCEED"
+    assert result.research_state is not None
+    assert result.research_state.decision.action == "PROCEED"
+    assert (
+        result.research_state.adaptive_learning.metacognition.verification_status
+        == "NOT_REQUIRED"
+    )
+    assert (
+        result.research_state.adaptive_learning.metacognition.research_required
+        is False
+    )
