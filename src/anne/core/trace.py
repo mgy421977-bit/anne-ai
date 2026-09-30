@@ -33,6 +33,7 @@ class CycleTrace:
     provenance: Mapping[str, Any] = field(default_factory=dict)
     learning: Mapping[str, Any] = field(default_factory=dict)
     language: Mapping[str, Any] = field(default_factory=dict)
+    language_corroboration: Mapping[str, Any] = field(default_factory=dict)
     metrics: Mapping[str, Any] = field(default_factory=dict)
     errors: tuple[Mapping[str, Any], ...] = ()
 
