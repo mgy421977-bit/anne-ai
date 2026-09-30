@@ -21,6 +21,8 @@ class ReEvaluationLearningAdapter:
         strategy: str = "research",
         parent_cycle_id: str | None = None,
         parent_lineage: tuple[str, ...] = (),
+        context_key: str = "",
+        context_conditions: tuple[tuple[str, str], ...] = (),
     ) -> CycleTrace:
         verification_status = (
             ""
@@ -63,6 +65,13 @@ class ReEvaluationLearningAdapter:
             else cycle.verification.as_dict()
         )
         lineage = (*parent_lineage, cycle_id) if parent_cycle_id else (cycle_id,)
+        learning = {}
+        if context_key or context_conditions:
+            learning["context"] = {
+                "key": context_key,
+                "conditions": dict(context_conditions),
+            }
+        learning["strategy"] = strategy
         return CycleTrace(
             cycle_id=cycle_id,
             parent_cycle_id=parent_cycle_id,
@@ -76,6 +85,7 @@ class ReEvaluationLearningAdapter:
                 "strategy": strategy,
             },
             re_evaluation=cycle.as_dict(),
+            learning=learning,
         )
 
 
