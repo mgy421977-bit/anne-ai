@@ -12,6 +12,8 @@ def test_metacognition_does_not_treat_confidence_as_truth() -> None:
     result = Metacognition().assess(trace)
     assert "factual status is not established as VERIFIED" in result.unknown
     assert "new_independent_evidence" in result.recalibration_triggers
+    assert result.research_required is True
+    assert result.requires_review is True
 
 
 def test_metacognition_records_explicit_verified_basis() -> None:
@@ -30,6 +32,9 @@ def test_metacognition_records_explicit_verified_basis() -> None:
     assert result.known == ("verification status is explicitly VERIFIED",)
     assert result.evidence_basis == ("verification_sources",)
     assert "decision_reason" in result.decision_dependencies
+    assert result.evaluation_status == "PROCESS_COMPLETE"
+    assert result.research_required is False
+    assert result.requires_review is False
 
 
 def test_metacognition_exposes_missing_intent_as_assumption() -> None:
@@ -37,3 +42,23 @@ def test_metacognition_exposes_missing_intent_as_assumption() -> None:
     result = Metacognition().assess(trace)
     assert "intent is not explicitly recorded" in result.assumptions
     assert "intent_clarification" in result.recalibration_triggers
+    assert result.evaluation_status == "PROCESS_REVIEW_REQUIRED"
+
+
+def test_metacognition_marks_conflicting_evidence_for_research() -> None:
+    trace = CycleTrace(
+        cycle_id="m4",
+        status="BOUNDED",
+        intent={"intent": "answer"},
+        decision={"reason": "sources conflict"},
+        verification={
+            "verification_status": "CONFLICTING",
+            "verification_sources": ("source-a", "source-b"),
+        },
+    )
+    result = Metacognition().assess(trace)
+    assert result.research_required is True
+    assert result.requires_review is True
+    assert result.research_reason == (
+        "verification_status_does_not_close_the_evidence_loop"
+    )
