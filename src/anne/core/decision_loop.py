@@ -258,6 +258,8 @@ class DecisionLoop:
                     context_conditions=observed.context_conditions,
                     parent_cycle_id=observed.parent_cycle_id,
                     lineage=observed.lineage,
+                    language_corroboration_status=observed.language_corroboration_status,
+                    language_corroboration_providers=observed.language_corroboration_providers,
                 )
         enriched_trace = (
             research_state.adaptive_learning.trace
