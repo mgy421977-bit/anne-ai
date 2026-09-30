@@ -211,3 +211,31 @@ def test_metacognition_controller_routes_language_divergence_to_review():
 
     assert decision.action == "REVIEW"
     assert decision.research_allowed is False
+
+
+def test_metacognition_does_not_research_when_evidence_is_not_required() -> None:
+    trace = CycleTrace(
+        cycle_id="m11",
+        status="SUCCESS",
+        intent={"intent": "explore", "requires_evidence": False},
+        decision={"reason": "non-factual exploratory response"},
+    )
+    result = Metacognition().assess(trace)
+    assert result.known == (
+        "verification is not required by the recorded intent",
+    )
+    assert result.evaluation_status == "PROCESS_COMPLETE"
+    assert result.research_required is False
+    assert result.requires_review is False
+
+
+def test_metacognition_missing_intent_is_not_treated_as_not_required() -> None:
+    trace = CycleTrace(
+        cycle_id="m12",
+        status="SUCCESS",
+        decision={"reason": "intent omitted"},
+    )
+    result = Metacognition().assess(trace)
+    assert "verification is not required by the recorded intent" not in result.known
+    assert "factual status is not established as VERIFIED" in result.unknown
+    assert result.evaluation_status == "PROCESS_REVIEW_REQUIRED"
