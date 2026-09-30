@@ -56,6 +56,8 @@ def _decision_loop_for_state(
     loop = DecisionLoop.__new__(DecisionLoop)
     loop.orchestrator = _FakeOrchestrator(orchestration)
     loop.research_loop = ResearchCognitiveLoop(critic_loop=_ProceedCritic())
+    loop._experience_history = ()
+    loop._experience_history_limit = 64
     return loop
 
 
