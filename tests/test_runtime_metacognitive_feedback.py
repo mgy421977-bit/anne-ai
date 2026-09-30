@@ -190,9 +190,47 @@ def test_runtime_research_reassessment_learning_second_cycle() -> None:
     assert refreshed.re_evaluation is not None
     assert refreshed.re_evaluation.verification is not None
     assert refreshed.re_evaluation.verification.status is FactualStatus.VERIFIED
+    assert refreshed.re_evaluation.rebuild is not None
+    assert refreshed.re_evaluation.rebuild.action == "REACTIVATED"
+
+    fresh_ids = {
+        evidence_id
+        for evidence_id, entry in refreshed.evidence_ledger._entries.items()
+        if entry.provenance in {
+            "https://alpha.example/a",
+            "https://beta.example/b",
+        }
+    }
+    assert len(fresh_ids) == 2
+    assert old_id not in fresh_ids
+    assert all(
+        refreshed.evidence_ledger.graph.get(evidence_id).status.value == "active"
+        for evidence_id in fresh_ids
+    )
+
+    replacement_id = refreshed.re_evaluation.rebuild.replacement_node
+    replacement = refreshed.evidence_ledger.graph.get(replacement_id)
+    assert replacement.status.value == "active"
+    replacement_edges = [
+        edge
+        for edge in refreshed.evidence_ledger.graph._edges
+        if edge.target_id == replacement_id
+    ]
+    assert {edge.source_id for edge in replacement_edges} == fresh_ids
+
     assert refreshed.adaptive_learning is not None
     assert refreshed.adaptive_learning.experience is not None
+    experience = refreshed.adaptive_learning.experience
+    assert experience.outcome == "SUCCESS"
+    assert experience.factual_status == "VERIFIED"
+    assert experience.source_cycle_id.startswith("reeval:")
+
     assert refreshed.evidence_ledger.graph.get(old_id).status.value == "invalidated"
     assert refreshed.evidence_ledger.graph.get("A1").status.value == "stale"
     assert refreshed.synthesis.reason
+    assert any(
+        node.kind == "decision_synthesis"
+        and node.content == refreshed.synthesis.reason
+        for node in refreshed.evidence_ledger.graph._nodes.values()
+    )
     assert refreshed.decision.action in {"PROCEED", "RESEARCH", "REVIEW"}
