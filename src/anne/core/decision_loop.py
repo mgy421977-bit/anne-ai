@@ -13,6 +13,10 @@ from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinking
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.core.trace import CycleTrace, trace_from_runtime
+from anne.learning.research_cognitive_loop import (
+    ResearchCognitiveLoop,
+    ResearchCognitiveState,
+)
 from anne.core.verification import ClaimVerifier
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
@@ -30,6 +34,7 @@ class DecisionResult:
     state: CognitiveState | None = None
     reason: str = ""
     trace: CycleTrace | None = None
+    research_state: ResearchCognitiveState | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -43,6 +48,18 @@ class DecisionResult:
             "reason": self.reason,
             "factual_status": self.output.get("factual_status", "unverified"),
             "trace": self.trace.as_dict() if self.trace is not None else None,
+            "research": (
+                {
+                    "action": self.research_state.decision.action,
+                    "reason": self.research_state.decision.reason,
+                    "research_allowed": self.research_state.decision.research_allowed,
+                    "questions": ResearchCognitiveLoop.next_research_questions(
+                        self.research_state
+                    ),
+                }
+                if self.research_state is not None
+                else None
+            ),
         }
 
 
@@ -76,6 +93,7 @@ class DecisionLoop:
             self.pipeline,
             resource_profile=self.resource_profile,
         )
+        self.research_loop = ResearchCognitiveLoop()
 
     def run(
         self,
@@ -162,17 +180,55 @@ class DecisionLoop:
             learning_context=learning_context,
             strategy=strategy,
         )
+        research_state = self.research_loop.initialize(
+            raw_input,
+            completed_trace=trace,
+            strategy=strategy or "research",
+        )
+        enriched_trace = (
+            research_state.adaptive_learning.trace
+            if research_state.adaptive_learning is not None
+            else trace
+        )
+        next_step = research_state.decision.action
+        final_status = "ABORTED" if aborted else "EXECUTED"
+        final_verdict = str(verdict)
+        final_action = str(action)
+        final_reason = str(out.get("reason") or out.get("note") or "")
+
+        # Metacognitive guidance is a bounded post-cycle control signal.
+        # It may stop a result from being treated as final, but it never
+        # grants execution authority and it never executes research itself.
+        if not aborted and next_step in {"RESEARCH", "REVIEW"}:
+            original_output = dict(out)
+            out = {
+                **original_output,
+                "original_output": original_output,
+                "verdict": next_step,
+                "action": next_step,
+                "reason": research_state.decision.reason,
+                "metacognitive_next_step": next_step,
+                "research_questions": ResearchCognitiveLoop.next_research_questions(
+                    research_state
+                ),
+            }
+            final_status = "BOUNDED"
+            final_verdict = next_step
+            final_action = next_step
+            final_reason = research_state.decision.reason
+
         return DecisionResult(
-            "ABORTED" if aborted else "EXECUTED",
-            str(verdict),
-            str(action),
+            final_status,
+            final_verdict,
+            final_action,
             out,
             result.fail_fast.as_dict(),
             anla_score if isinstance(anla_score, (int, float)) else None,
             ethic_total,
             state,
-            str(out.get("reason") or out.get("note") or ""),
-            trace,
+            final_reason,
+            enriched_trace,
+            research_state,
         )
 
     def run_cognitive(
