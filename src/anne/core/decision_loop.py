@@ -195,10 +195,15 @@ class DecisionLoop:
         current_experience = getattr(self, "_experience_history", ())
         history_limit = getattr(self, "_experience_history_limit", 64)
         if explicit_context.key or explicit_context.conditions:
-            persisted = self.memory.get_experience_observations(
-                context_key=explicit_context.key,
-                context_conditions=explicit_context.conditions,
-                limit=history_limit,
+            memory = getattr(self, "memory", None)
+            persisted = (
+                memory.get_experience_observations(
+                    context_key=explicit_context.key,
+                    context_conditions=explicit_context.conditions,
+                    limit=history_limit,
+                )
+                if memory is not None
+                else ()
             )
             persisted_experiences = tuple(
                 Experience(**item) for item in reversed(persisted)
@@ -229,8 +234,11 @@ class DecisionLoop:
                 *current_experience,
                 observed,
             )[-history_limit :]
-            if observed.context_key or observed.context_conditions:
-                self.memory.save_experience_observation(
+            memory = getattr(self, "memory", None)
+            if memory is not None and (
+                observed.context_key or observed.context_conditions
+            ):
+                memory.save_experience_observation(
                     source_cycle_id=observed.source_cycle_id,
                     outcome=observed.outcome,
                     failure_class=observed.failure_class,
