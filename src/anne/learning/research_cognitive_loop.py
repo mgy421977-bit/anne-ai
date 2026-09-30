@@ -22,6 +22,7 @@ from anne.learning.reevaluation import ReEvaluationPlan
 from anne.learning.reevaluation_learning import ReEvaluationLearningAdapter
 from anne.learning.reevaluation_loop import ReEvaluationCycleResult, ReEvaluationLoop
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
+from anne.memory.fractal_memory import FractalMemory
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,7 @@ class ResearchCognitiveLoop:
         critic_loop: CriticLoopController | None = None,
         adaptive_learning: AdaptiveLearningCoordinator | None = None,
         derived_research_planner: DerivedResearchPlanner | None = None,
+        memory: FractalMemory | None = None,
     ) -> None:
         self.planner = planner or ResearchPlanner()
         self.hypothesis_engine = hypothesis_engine or HypothesisEngine()
@@ -60,6 +62,7 @@ class ResearchCognitiveLoop:
         self.adaptive_learning = adaptive_learning or AdaptiveLearningCoordinator()
         self.metacognitive_controller = MetacognitiveController()
         self.derived_research_planner = derived_research_planner or DerivedResearchPlanner()
+        self.memory = memory
 
     def initialize(
         self,
@@ -287,10 +290,17 @@ class ResearchCognitiveLoop:
             else None
         )
         cycle_id = f"reeval:{invalidated_evidence_id}:{target_node_id}"
+        context_key = ""
+        context_conditions: tuple[tuple[str, str], ...] = ()
+        if parent_experience is not None:
+            context_key = parent_experience.context_key
+            context_conditions = parent_experience.context_conditions
         cycle_trace = ReEvaluationLearningAdapter().to_trace(
             cycle,
             cycle_id=cycle_id,
             strategy=strategy,
+            context_key=context_key,
+            context_conditions=context_conditions,
             parent_cycle_id=(
                 parent_experience.source_cycle_id
                 if parent_experience is not None
@@ -310,6 +320,24 @@ class ResearchCognitiveLoop:
             strategy=strategy,
             prior_experiences=history,
         )
+        if self.memory is not None and adaptive_result.experience is not None and (
+            adaptive_result.experience.context_key
+            or adaptive_result.experience.context_conditions
+        ):
+            observed = adaptive_result.experience
+            self.memory.save_experience_observation(
+                source_cycle_id=observed.source_cycle_id,
+                outcome=observed.outcome,
+                failure_class=observed.failure_class,
+                strategy=observed.strategy,
+                lesson=observed.lesson,
+                safe_to_reuse=observed.safe_to_reuse,
+                factual_status=observed.factual_status,
+                context_key=observed.context_key,
+                context_conditions=observed.context_conditions,
+                parent_cycle_id=observed.parent_cycle_id,
+                lineage=observed.lineage,
+            )
 
         if cycle.research_result is None:
             return ResearchCognitiveState(
