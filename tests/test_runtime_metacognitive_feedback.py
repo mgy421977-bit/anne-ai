@@ -238,3 +238,69 @@ def test_runtime_research_reassessment_learning_second_cycle() -> None:
         for node in refreshed.evidence_ledger.graph._nodes.values()
     )
     assert refreshed.decision.action in {"PROCEED", "RESEARCH", "REVIEW"}
+
+
+def test_runtime_hands_off_experience_only_with_exact_explicit_context() -> None:
+    loop = _decision_loop_for_state(verification_status="UNVERIFIED")
+    context = {
+        "key": "web_research",
+        "conditions": {"freshness": "current", "source_count": 2},
+    }
+
+    # Force the runtime observation itself to be a bounded failure so that
+    # repeated same-context observations can exercise strategy adaptation.
+    loop.orchestrator.result.status = "BOUNDED"
+    loop.orchestrator.result.stop_reason = "evidence_gap"
+
+    first = loop.run(
+        "Question",
+        learning_context=context,
+        strategy="research",
+    )
+    second = loop.run(
+        "Question",
+        learning_context=context,
+        strategy="research",
+    )
+
+    assert first.research_state is not None
+    assert first.research_state.adaptive_learning is not None
+    assert second.research_state is not None
+    assert second.research_state.adaptive_learning is not None
+    assert second.research_state.adaptive_learning.strategy.action == "CHANGE"
+    assert (
+        second.research_state.adaptive_learning.strategy.strategy
+        == "seek_fresh_independent_evidence"
+    )
+    assert second.research_state.adaptive_learning.experience.safe_to_reuse is False
+
+
+def test_runtime_does_not_cross_contaminate_experience_between_contexts() -> None:
+    loop = _decision_loop_for_state(verification_status="UNVERIFIED")
+    loop.orchestrator.result.status = "BOUNDED"
+    loop.orchestrator.result.stop_reason = "evidence_gap"
+
+    loop.run(
+        "Question A",
+        learning_context={
+            "key": "web_research",
+            "conditions": {"freshness": "current"},
+        },
+        strategy="research",
+    )
+    isolated = loop.run(
+        "Question B",
+        learning_context={
+            "key": "local_research",
+            "conditions": {"freshness": "current"},
+        },
+        strategy="research",
+    )
+
+    assert isolated.research_state is not None
+    assert isolated.research_state.adaptive_learning is not None
+    assert isolated.research_state.adaptive_learning.strategy.action == "KEEP"
+    assert (
+        isolated.research_state.adaptive_learning.strategy.strategy
+        == "research"
+    )
