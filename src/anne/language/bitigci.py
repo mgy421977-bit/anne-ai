@@ -60,6 +60,14 @@ class BitigciProvider:
                 warnings=("Bitigçi result contains no lexical meaning.",),
             )
 
+        source_ref = str(payload.get("source_ref") or "").strip()
+        if not source_ref:
+            return LanguageLookupResult(
+                self.provider_name,
+                normalized,
+                warnings=("Bitigçi result has no explicit source provenance.",),
+            )
+
         examples = tuple(
             str(item).strip()
             for item in payload.get("examples", ())
@@ -72,10 +80,6 @@ class BitigciProvider:
             else ()
         )
 
-        source_ref = str(
-            payload.get("source_ref")
-            or f"https://bitigci.shakalin.net/madde/{normalized.replace(' ', '-')}"
-        )
         digest_input = meaning + "\n" + "\n".join(examples)
         content_hash = sha256(digest_input.encode("utf-8")).hexdigest()
 
