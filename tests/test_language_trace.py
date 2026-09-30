@@ -6,6 +6,7 @@ from anne.core.fail_fast import FailFastResult
 from anne.language.bitigci import BitigciProvider
 from anne.language.service import TurkishLanguageEvidenceService
 from anne.learning.critic_loop import LoopDecision
+from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 
 
 class _FakeOrchestrator:
@@ -56,10 +57,7 @@ def _loop() -> DecisionLoop:
     loop = DecisionLoop.__new__(DecisionLoop)
     loop.memory = None
     loop.orchestrator = _FakeOrchestrator()
-    loop.research_loop = __import__(
-        "anne.learning.research_cognitive_loop",
-        fromlist=["ResearchCognitiveLoop"],
-    ).ResearchCognitiveLoop(
+    loop.research_loop = ResearchCognitiveLoop(
         critic_loop=_ProceedCritic(),
         language_service=TurkishLanguageEvidenceService(
             provider=BitigciProvider(resolver=resolver)
