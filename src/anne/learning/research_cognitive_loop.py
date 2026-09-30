@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from anne.core.trace import CycleTrace
 from anne.core.verification import BoundedMultiSourceVerifier, VerificationResult
 from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
+from anne.learning.metacognitive_controller import MetacognitiveController
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
 from anne.learning.derived_hypothesis import DerivedHypothesis, DerivedHypothesisGenerator
@@ -57,6 +58,7 @@ class ResearchCognitiveLoop:
         self.critic_loop = critic_loop or CriticLoopController()
         self.decision_synthesizer = DecisionSynthesizer()
         self.adaptive_learning = adaptive_learning or AdaptiveLearningCoordinator()
+        self.metacognitive_controller = MetacognitiveController()
         self.derived_research_planner = derived_research_planner or DerivedResearchPlanner()
 
     def initialize(
@@ -169,6 +171,10 @@ class ResearchCognitiveLoop:
                     reason=adaptive_result.strategy.reason,
                     research_allowed=True,
                 )
+            decision = self.metacognitive_controller.apply(
+                adaptive_result.metacognition,
+                decision,
+            )
 
         return ResearchCognitiveState(
             plan,

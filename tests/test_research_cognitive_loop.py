@@ -156,3 +156,47 @@ def test_loop_exposes_joint_inference_from_multiple_premises() -> None:
     assert joint.unverified_premises == 2
     assert joint.status.value == "unverified_premises"
     assert joint.source_independence.distinct_publisher_family_count == 2
+
+
+def test_loop_routes_missing_intent_to_review_without_research() -> None:
+    from anne.core.trace import CycleTrace
+
+    trace = CycleTrace(
+        cycle_id="cycle-review",
+        status="SUCCESS",
+        decision={"reason": "completed"},
+        verification={
+            "verification_status": "VERIFIED",
+            "verification_sources": ("source-a",),
+        },
+    )
+    state = ResearchCognitiveLoop().initialize(
+        "Question",
+        completed_trace=trace,
+    )
+
+    assert state.adaptive_learning is not None
+    assert state.adaptive_learning.metacognition.requires_review is True
+    assert state.decision.action == "REVIEW"
+    assert state.decision.research_allowed is False
+
+
+def test_loop_routes_unverified_metacognition_to_bounded_research() -> None:
+    from anne.core.trace import CycleTrace
+
+    trace = CycleTrace(
+        cycle_id="cycle-research",
+        status="BOUNDED",
+        intent={"intent": "answer"},
+        decision={"reason": "need evidence"},
+        verification={"verification_status": "UNVERIFIED"},
+    )
+    state = ResearchCognitiveLoop().initialize(
+        "Question",
+        completed_trace=trace,
+    )
+
+    assert state.adaptive_learning is not None
+    assert state.adaptive_learning.metacognition.research_required is True
+    assert state.decision.action == "RESEARCH"
+    assert state.decision.research_allowed is True
