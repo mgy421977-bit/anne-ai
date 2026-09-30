@@ -28,6 +28,7 @@ def _decision_loop_for_state(
     *,
     verification_status: str,
     verification_sources: tuple[str, ...] = (),
+    requires_evidence: bool = True,
 ) -> DecisionLoop:
     fail_fast = FailFastResult(True, "ok")
     state = SimpleNamespace(
@@ -36,6 +37,8 @@ def _decision_loop_for_state(
         context_map={
             "verification_status": verification_status,
             "verification_sources": verification_sources,
+            "requires_evidence": requires_evidence,
+            "intent": "answer",
         },
         ethic_score=None,
     )
