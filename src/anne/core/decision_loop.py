@@ -195,12 +195,23 @@ class DecisionLoop:
         current_experience = getattr(self, "_experience_history", ())
         history_limit = getattr(self, "_experience_history_limit", 64)
         if explicit_context.key or explicit_context.conditions:
-            prior_experiences = tuple(
+            persisted = self.memory.get_experience_observations(
+                context_key=explicit_context.key,
+                context_conditions=explicit_context.conditions,
+                limit=history_limit,
+            )
+            persisted_experiences = tuple(
+                Experience(**item) for item in reversed(persisted)
+            )
+            in_process = tuple(
                 item
                 for item in current_experience
                 if item.context_key == explicit_context.key
                 and item.context_conditions == explicit_context.conditions
-            )[-history_limit :]
+            )
+            prior_experiences = (
+                persisted_experiences + in_process
+            )[-history_limit:]
         else:
             prior_experiences = ()
 
@@ -216,6 +227,20 @@ class DecisionLoop:
                 *current_experience,
                 observed,
             )[-history_limit :]
+            if observed.context_key or observed.context_conditions:
+                self.memory.save_experience_observation(
+                    source_cycle_id=observed.source_cycle_id,
+                    outcome=observed.outcome,
+                    failure_class=observed.failure_class,
+                    strategy=observed.strategy,
+                    lesson=observed.lesson,
+                    safe_to_reuse=observed.safe_to_reuse,
+                    factual_status=observed.factual_status,
+                    context_key=observed.context_key,
+                    context_conditions=observed.context_conditions,
+                    parent_cycle_id=observed.parent_cycle_id,
+                    lineage=observed.lineage,
+                )
         enriched_trace = (
             research_state.adaptive_learning.trace
             if research_state.adaptive_learning is not None
