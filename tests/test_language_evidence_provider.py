@@ -43,6 +43,16 @@ def test_bitigci_provider_does_not_turn_missing_meaning_into_evidence():
     assert "no lexical meaning" in result.warnings[0].lower()
 
 
+def test_bitigci_provider_requires_explicit_provenance():
+    result = BitigciProvider(
+        lambda _: {"meaning": "Anlam var ama kaynak yok."}
+    ).lookup("kelime")
+
+    assert result.available is False
+    assert result.evidence == ()
+    assert "source provenance" in result.warnings[0].lower()
+
+
 def test_provider_failure_is_bounded():
     def failing(_: str):
         raise RuntimeError("network")
