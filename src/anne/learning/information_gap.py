@@ -25,15 +25,16 @@ class InformationGapDetector:
         verification_status = str(
             verification.get("status", verification.get("verification_status", ""))
         ).upper()
+        evidence_required = trace.intent.get("requires_evidence") is True
         decision_status = str(
             decision.get("status", decision.get("verdict", ""))
         ).upper()
 
-        if verification_status in {"UNVERIFIED", "CONFLICTING", "REFUTED"}:
+        if evidence_required and verification_status in {"UNVERIFIED", "CONFLICTING", "REFUTED"}:
             categories.append("evidence")
         if decision_status in {"INSUFFICIENT_EVIDENCE", "CONFLICTING"}:
             categories.append("decision_evidence")
-        if not verification and not trace.evidence:
+        if evidence_required and not verification and not trace.evidence:
             categories.append("missing_trace_evidence")
         if any(
             "evidence" in str(error).lower() or "unknown" in str(error).lower()
