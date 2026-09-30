@@ -28,6 +28,7 @@ def _decision_loop_for_state(
     *,
     verification_status: str,
     verification_sources: tuple[str, ...] = (),
+    requires_evidence: bool = True,
 ) -> DecisionLoop:
     fail_fast = FailFastResult(True, "ok")
     state = SimpleNamespace(
@@ -36,6 +37,8 @@ def _decision_loop_for_state(
         context_map={
             "verification_status": verification_status,
             "verification_sources": verification_sources,
+            "requires_evidence": requires_evidence,
+            "intent": "answer",
         },
         ethic_score=None,
     )
@@ -110,3 +113,128 @@ def test_runtime_serializes_bounded_research_guidance() -> None:
     assert payload["research"]["action"] == "RESEARCH"
     assert payload["research"]["research_allowed"] is True
     assert payload["research"]["questions"]
+
+from anne.core.verification import FactualStatus
+from anne.learning.derived_research_executor import DerivedResearchExecutor
+from anne.learning.evidence import EvidenceItem, EvidenceLedgerEntry
+from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
+from anne.learning.reevaluation_loop import ReEvaluationLoop
+
+
+class _FakeReevaluationResearcher:
+    def research(self, query: str) -> list[EvidenceItem]:
+        claim = "The answer is supported."
+        return [
+            EvidenceItem(
+                source="source-a",
+                claim=claim,
+                kind="web",
+                provenance="https://alpha.example/a",
+                confidence=0.9,
+                passage=claim,
+            ),
+            EvidenceItem(
+                source="source-b",
+                claim=claim,
+                kind="web",
+                provenance="https://beta.example/b",
+                confidence=0.9,
+                passage=f"Independent source confirms: {claim}",
+            ),
+        ]
+
+
+def test_runtime_research_reassessment_learning_second_cycle() -> None:
+    loop = _decision_loop_for_state(verification_status="UNVERIFIED")
+
+    first = loop.run("The answer is supported.")
+
+    assert first.status == "BOUNDED"
+    assert first.action == "RESEARCH"
+    assert first.research_state is not None
+    assert first.trace is not None
+
+    state = first.research_state
+    hypothesis = state.hypotheses[0]
+    old_id = state.evidence_ledger.record(
+        EvidenceLedgerEntry(
+            claim=hypothesis.claim,
+            source="old",
+            provenance="https://old.example/a",
+            confidence=0.9,
+            passage=hypothesis.claim,
+        )
+    )
+    state.evidence_ledger.graph.add_edge(
+        ProvenanceEdge(old_id, hypothesis.id, "supports")
+    )
+    state.evidence_ledger.graph.add_node(
+        ProvenanceNode("A1", "answer", hypothesis.claim)
+    )
+    state.evidence_ledger.graph.add_edge(
+        ProvenanceEdge(hypothesis.id, "A1", "derived_from")
+    )
+
+    refreshed = loop.research_loop.reassess_after_invalidation(
+        state,
+        invalidated_evidence_id=old_id,
+        target_node_id="A1",
+        research_question="Independently re-test the answer",
+        loop=ReEvaluationLoop(
+            research_executor=DerivedResearchExecutor(
+                researcher=_FakeReevaluationResearcher()
+            )
+        ),
+    )
+
+    assert refreshed.re_evaluation is not None
+    assert refreshed.re_evaluation.verification is not None
+    assert refreshed.re_evaluation.verification.status is FactualStatus.VERIFIED
+    assert refreshed.re_evaluation.rebuild is not None
+    assert refreshed.re_evaluation.rebuild.action == "REACTIVATED"
+
+    fresh_ids = {
+        evidence_id
+        for evidence_id, entry in refreshed.evidence_ledger._entries.items()
+        if entry.provenance in {
+            "https://alpha.example/a",
+            "https://beta.example/b",
+        }
+    }
+    assert len(fresh_ids) == 2
+    assert old_id not in fresh_ids
+    assert all(
+        refreshed.evidence_ledger.graph.get(evidence_id).status.value == "active"
+        for evidence_id in fresh_ids
+    )
+
+    replacement_id = refreshed.re_evaluation.rebuild.replacement_node
+    replacement = refreshed.evidence_ledger.graph.get(replacement_id)
+    assert replacement.status.value == "active"
+    replacement_edges = [
+        edge
+        for edge in refreshed.evidence_ledger.graph._edges
+        if edge.target_id == replacement_id
+    ]
+    assert {edge.source_id for edge in replacement_edges} == fresh_ids
+
+    assert refreshed.adaptive_learning is not None
+    assert refreshed.adaptive_learning.experience is not None
+    experience = refreshed.adaptive_learning.experience
+    assert experience.outcome == "SUCCESS"
+    assert experience.factual_status == "VERIFIED"
+    assert experience.source_cycle_id.startswith("reeval:")
+    assert first.research_state.adaptive_learning is not None
+    first_experience = first.research_state.adaptive_learning.experience
+    assert experience.parent_cycle_id == first_experience.source_cycle_id
+    assert experience.lineage == (*first_experience.lineage, experience.source_cycle_id)
+
+    assert refreshed.evidence_ledger.graph.get(old_id).status.value == "invalidated"
+    assert refreshed.evidence_ledger.graph.get("A1").status.value == "stale"
+    assert refreshed.synthesis.reason
+    assert any(
+        node.kind == "decision_synthesis"
+        and node.content == refreshed.synthesis.reason
+        for node in refreshed.evidence_ledger.graph._nodes.values()
+    )
+    assert refreshed.decision.action in {"PROCEED", "RESEARCH", "REVIEW"}

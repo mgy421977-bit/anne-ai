@@ -281,10 +281,26 @@ class ResearchCognitiveLoop:
             target_node_id=target_node_id,
             research_question=research_question,
         )
+        parent_experience = (
+            state.adaptive_learning.experience
+            if state.adaptive_learning is not None
+            else None
+        )
+        cycle_id = f"reeval:{invalidated_evidence_id}:{target_node_id}"
         cycle_trace = ReEvaluationLearningAdapter().to_trace(
             cycle,
-            cycle_id=f"reeval:{invalidated_evidence_id}:{target_node_id}",
+            cycle_id=cycle_id,
             strategy=strategy,
+            parent_cycle_id=(
+                parent_experience.source_cycle_id
+                if parent_experience is not None
+                else None
+            ),
+            parent_lineage=(
+                parent_experience.lineage
+                if parent_experience is not None
+                else ()
+            ),
         )
         history = prior_experiences
         if state.adaptive_learning is not None:
