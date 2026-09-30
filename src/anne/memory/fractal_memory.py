@@ -71,7 +71,16 @@ class FractalMemory:
             context_conditions TEXT NOT NULL DEFAULT '[]',
             parent_cycle_id TEXT,
             lineage TEXT NOT NULL DEFAULT '[]',
+            language_corroboration_status TEXT NOT NULL DEFAULT '',
+            language_corroboration_providers TEXT NOT NULL DEFAULT '[]',
             created_at TEXT NOT NULL)""")
+        self._ensure_columns(
+            "experience_observations",
+            {
+                "language_corroboration_status": "TEXT NOT NULL DEFAULT ''",
+                "language_corroboration_providers": "TEXT NOT NULL DEFAULT '[]'",
+            },
+        )
         self._ensure_columns(
             "hypotheses",
             {
@@ -271,13 +280,15 @@ class FractalMemory:
         context_conditions: tuple[tuple[str, str], ...] = (),
         parent_cycle_id: str | None = None,
         lineage: tuple[str, ...] = (),
+        language_corroboration_status: str = "",
+        language_corroboration_providers: tuple[str, ...] = (),
     ) -> None:
         """Persist bounded learning evidence as an observation, never as authority."""
         self.conn.execute(
             """INSERT OR REPLACE INTO experience_observations
             (source_cycle_id,outcome,failure_class,strategy,lesson,safe_to_reuse,
-             factual_status,context_key,context_conditions,parent_cycle_id,lineage,created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+             factual_status,context_key,context_conditions,parent_cycle_id,lineage,language_corroboration_status,language_corroboration_providers,created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 source_cycle_id,
                 outcome,
@@ -290,6 +301,8 @@ class FractalMemory:
                 json.dumps(list(context_conditions)),
                 parent_cycle_id,
                 json.dumps(list(lineage)),
+                language_corroboration_status,
+                json.dumps(list(language_corroboration_providers)),
                 datetime.now().isoformat(),
             ),
         )
@@ -305,7 +318,7 @@ class FractalMemory:
         """Return only exact-context observations; no semantic recall is used."""
         rows = self.conn.cursor().execute(
             """SELECT source_cycle_id,outcome,failure_class,strategy,lesson,safe_to_reuse,
-            factual_status,context_key,context_conditions,parent_cycle_id,lineage
+            factual_status,context_key,context_conditions,parent_cycle_id,lineage,language_corroboration_status,language_corroboration_providers
             FROM experience_observations
             WHERE context_key=? AND context_conditions=?
             ORDER BY created_at DESC, rowid DESC LIMIT ?""",
@@ -324,6 +337,8 @@ class FractalMemory:
                 "context_conditions": tuple(tuple(item) for item in json.loads(row[8])),
                 "parent_cycle_id": row[9],
                 "lineage": tuple(json.loads(row[10])),
+                "language_corroboration_status": row[11],
+                "language_corroboration_providers": tuple(json.loads(row[12])),
             }
             for row in rows
         ]
