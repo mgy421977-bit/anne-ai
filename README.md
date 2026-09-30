@@ -750,3 +750,10 @@ See [`ROADMAP.md`](ROADMAP.md) for milestone-level criteria.
 Apache License 2.0 — see [`LICENSE`](LICENSE).
 
 **Author:** Mustafa Gökhan Yılmaz · ORCID [0009-0002-6591-0163](https://orcid.org/0009-0002-6591-0163) · İzmir, Türkiye
+
+
+---
+
+## Investor technical diligence
+
+[`docs/INVESTOR_TECHNICAL_DUE_DILIGENCE.md`](docs/INVESTOR_TECHNICAL_DUE_DILIGENCE.md) documents the current architecture, empirical evidence, limitations, reproducibility boundaries, and remaining investor-grade proof requirements.
