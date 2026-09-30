@@ -224,6 +224,10 @@ def test_runtime_research_reassessment_learning_second_cycle() -> None:
     assert experience.outcome == "SUCCESS"
     assert experience.factual_status == "VERIFIED"
     assert experience.source_cycle_id.startswith("reeval:")
+    assert first.research_state.adaptive_learning is not None
+    first_experience = first.research_state.adaptive_learning.experience
+    assert experience.parent_cycle_id == first_experience.source_cycle_id
+    assert experience.lineage == (*first_experience.lineage, experience.source_cycle_id)
 
     assert refreshed.evidence_ledger.graph.get(old_id).status.value == "invalidated"
     assert refreshed.evidence_ledger.graph.get("A1").status.value == "stale"
