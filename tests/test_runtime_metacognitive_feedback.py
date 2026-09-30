@@ -29,6 +29,8 @@ def _decision_loop_for_state(
     verification_status: str,
     verification_sources: tuple[str, ...] = (),
     requires_evidence: bool = True,
+    lineage_id: str = "or_runtime_test",
+    memory_db_path: str | None = None,
 ) -> DecisionLoop:
     fail_fast = FailFastResult(True, "ok")
     state = SimpleNamespace(
@@ -50,10 +52,12 @@ def _decision_loop_for_state(
         stage_trace=("FAIL_FAST", "DUY", "SELECT", "ANLA", "YAP"),
         reason="test decision",
         retry_count=0,
-        lineage=("or_runtime_test",),
+        lineage=(lineage_id,),
         stop_reason="validated",
     )
     loop = DecisionLoop.__new__(DecisionLoop)
+    if memory_db_path is not None:
+        loop.memory = FractalMemory(memory_db_path)
     loop.orchestrator = _FakeOrchestrator(orchestration)
     loop.research_loop = ResearchCognitiveLoop(critic_loop=_ProceedCritic())
     loop._experience_history = ()
@@ -121,6 +125,7 @@ from anne.learning.derived_research_executor import DerivedResearchExecutor
 from anne.learning.evidence import EvidenceItem, EvidenceLedgerEntry
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation_loop import ReEvaluationLoop
+from anne.memory.fractal_memory import FractalMemory
 
 
 class _FakeReevaluationResearcher:
@@ -306,3 +311,54 @@ def test_runtime_does_not_cross_contaminate_experience_between_contexts() -> Non
         isolated.research_state.adaptive_learning.strategy.strategy
         == "research"
     )
+
+
+def test_runtime_persists_exact_context_experience_across_restart(tmp_path) -> None:
+    db_path = str(tmp_path / "anne.db")
+    context = {
+        "key": "web_research",
+        "conditions": {"freshness": "current", "source_count": 2},
+    }
+
+    first_loop = _decision_loop_for_state(
+        verification_status="UNVERIFIED",
+        lineage_id="or_runtime_persist_1",
+        memory_db_path=db_path,
+    )
+    first_loop.orchestrator.result.status = "BOUNDED"
+    first_loop.orchestrator.result.stop_reason = "evidence_gap"
+    first = first_loop.run(
+        "Question", learning_context=context, strategy="research"
+    )
+
+    assert first.research_state is not None
+    assert first.research_state.adaptive_learning is not None
+    assert first.research_state.adaptive_learning.strategy.action == "KEEP"
+
+    # Simulate a process restart: a fresh DecisionLoop has no in-memory
+    # history and can only learn from the persisted exact-context observation.
+    second_loop = _decision_loop_for_state(
+        verification_status="UNVERIFIED",
+        lineage_id="or_runtime_persist_2",
+        memory_db_path=db_path,
+    )
+    second_loop.orchestrator.result.status = "BOUNDED"
+    second_loop.orchestrator.result.stop_reason = "evidence_gap"
+    second = second_loop.run(
+        "Question", learning_context=context, strategy="research"
+    )
+
+    assert second.research_state is not None
+    assert second.research_state.adaptive_learning is not None
+    adaptive = second.research_state.adaptive_learning
+    assert adaptive.strategy.action == "CHANGE"
+    assert adaptive.strategy.strategy == "seek_fresh_independent_evidence"
+
+    persisted = second_loop.memory.get_experience_observations(
+        context_key="web_research",
+        context_conditions=(("freshness", "current"), ("source_count", "2")),
+    )
+    assert {row["source_cycle_id"] for row in persisted} == {
+        "or_runtime_persist_1",
+        "or_runtime_persist_2",
+    }
