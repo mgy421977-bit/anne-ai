@@ -92,6 +92,16 @@ class Metacognition:
         if trace.stop_reason:
             dependencies.append("stop_reason")
 
+        # Language corroboration is an observational process signal only.
+        # It must never alter factual verification status or become authority.
+        language_corroboration = trace.language_corroboration
+        language_status = str(language_corroboration.get("status", "")).lower()
+        if language_status == "corroborated":
+            dependencies.append("language_corroboration_observation")
+        elif language_status == "divergent":
+            dependencies.append("language_corroboration_observation")
+            triggers.append("language_source_divergence")
+
         review_reasons: list[str] = []
         if status in {"UNVERIFIED", "CONFLICTING", "REFUTED"}:
             review_reasons.append("factual_status_requires_reassessment")
@@ -101,6 +111,8 @@ class Metacognition:
             review_reasons.append("intent_is_missing")
         if not reason:
             review_reasons.append("decision_reason_is_missing")
+        if language_status == "divergent":
+            review_reasons.append("language_sources_diverge")
 
         research_required = status in {"UNVERIFIED", "CONFLICTING"}
         if research_required:
