@@ -294,6 +294,8 @@ class ResearchCognitiveLoop:
             tuple(verifications),
             None,
             refreshed.adaptive_learning,
+            refreshed.language_check,
+            refreshed.language_corroboration,
         )
 
     def reassess_after_invalidation(
