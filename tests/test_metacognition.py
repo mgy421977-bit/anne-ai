@@ -62,3 +62,69 @@ def test_metacognition_marks_conflicting_evidence_for_research() -> None:
     assert result.research_reason == (
         "verification_status_does_not_close_the_evidence_loop"
     )
+
+
+def test_metacognition_requires_review_for_verified_without_provenance() -> None:
+    trace = CycleTrace(
+        cycle_id="m5",
+        status="SUCCESS",
+        intent={"intent": "answer"},
+        decision={"reason": "claim reviewed"},
+        verification={"verification_status": "VERIFIED"},
+    )
+    result = Metacognition().assess(trace)
+    assert result.evaluation_status == "PROCESS_REVIEW_REQUIRED"
+    assert result.requires_review is True
+    assert result.research_required is False
+    assert result.research_reason == "provenance_is_incomplete"
+    assert "provenance_completion" in result.recalibration_triggers
+
+
+def test_metacognition_requires_review_without_decision_reason() -> None:
+    trace = CycleTrace(
+        cycle_id="m6",
+        status="SUCCESS",
+        intent={"intent": "answer"},
+        verification={
+            "verification_status": "VERIFIED",
+            "verification_sources": ("source-a",),
+        },
+    )
+    result = Metacognition().assess(trace)
+    assert result.evaluation_status == "PROCESS_REVIEW_REQUIRED"
+    assert result.requires_review is True
+    assert result.research_required is False
+
+
+def test_metacognition_requires_review_without_intent() -> None:
+    trace = CycleTrace(
+        cycle_id="m7",
+        status="SUCCESS",
+        decision={"reason": "claim reviewed"},
+        verification={
+            "verification_status": "VERIFIED",
+            "verification_sources": ("source-a",),
+        },
+    )
+    result = Metacognition().assess(trace)
+    assert result.evaluation_status == "PROCESS_REVIEW_REQUIRED"
+    assert result.requires_review is True
+    assert result.research_required is False
+
+
+def test_metacognition_does_not_force_research_for_refuted_claim() -> None:
+    trace = CycleTrace(
+        cycle_id="m8",
+        status="BOUNDED",
+        intent={"intent": "answer"},
+        decision={"reason": "claim was disproved"},
+        verification={
+            "verification_status": "REFUTED",
+            "verification_sources": ("source-a",),
+        },
+    )
+    result = Metacognition().assess(trace)
+    assert result.evaluation_status == "PROCESS_REVIEW_REQUIRED"
+    assert result.requires_review is True
+    assert result.research_required is False
+    assert result.research_reason == ""
