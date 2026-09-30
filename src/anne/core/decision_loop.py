@@ -14,6 +14,7 @@ from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.core.trace import CycleTrace, trace_from_runtime
 from anne.learning.context_fingerprint import ExplicitContextFingerprint
+from anne.language.service import TurkishLanguageEvidenceService
 from anne.learning.experience_learning import Experience
 from anne.learning.research_cognitive_loop import (
     ResearchCognitiveLoop,
@@ -82,6 +83,7 @@ class DecisionLoop:
         resource_profile: ResourceProfile | None = None,
         memory_db_path: str = "anne.db",
         claim_verifier: ClaimVerifier | None = None,
+        language_service: TurkishLanguageEvidenceService | None = None,
     ) -> None:
         self.memory = memory or FractalMemory(memory_db_path)
         self.pipeline = pipeline or AnnePipeline(
@@ -95,7 +97,7 @@ class DecisionLoop:
             self.pipeline,
             resource_profile=self.resource_profile,
         )
-        self.research_loop = ResearchCognitiveLoop(memory=self.memory)
+        self.research_loop = ResearchCognitiveLoop(memory=self.memory, language_service=language_service)
         self._experience_history: tuple[Experience, ...] = ()
         self._experience_history_limit = 64
 
