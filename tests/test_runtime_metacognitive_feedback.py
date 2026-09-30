@@ -4,6 +4,9 @@ from anne.core.cognitive_orchestrator import OrchestrationResult
 from anne.core.decision_loop import DecisionLoop
 from anne.core.fail_fast import FailFastResult
 from anne.learning.critic_loop import LoopDecision
+from anne.language.corroboration import LanguageCorroborationResult
+from anne.language.policy import LanguageCheckDecision
+from anne.language.verification import LanguageVerificationResult, LanguageVerificationStatus
 from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 
 
@@ -435,3 +438,79 @@ def test_re_evaluation_persists_context_and_lineage(tmp_path) -> None:
         and row["lineage"] == ("or_reeval_parent", experience.source_cycle_id)
         for row in persisted
     )
+
+
+def test_re_evaluation_preserves_language_corroboration_metacognitive_signal() -> None:
+    loop = _decision_loop_for_state(verification_status="UNVERIFIED")
+    loop.orchestrator.result.status = "BOUNDED"
+    loop.orchestrator.result.stop_reason = "evidence_gap"
+    first = loop.run("The answer is supported.")
+    assert first.research_state is not None
+
+    state = first.research_state
+    hypothesis = state.hypotheses[0]
+    old_id = state.evidence_ledger.record(
+        EvidenceLedgerEntry(
+            claim=hypothesis.claim,
+            source="old",
+            provenance="https://old.example/a",
+            confidence=0.9,
+            passage=hypothesis.claim,
+        )
+    )
+    state.evidence_ledger.graph.add_edge(
+        ProvenanceEdge(old_id, hypothesis.id, "supports")
+    )
+    state.evidence_ledger.graph.add_node(
+        ProvenanceNode("A1-language", "answer", hypothesis.claim)
+    )
+    state.evidence_ledger.graph.add_edge(
+        ProvenanceEdge(hypothesis.id, "A1-language", "derived_from")
+    )
+    state = type(state)(
+        state.plan,
+        state.hypotheses,
+        state.critic,
+        state.synthesis,
+        state.decision,
+        state.evidence_ledger,
+        state.joint_inferences,
+        state.derived_hypotheses,
+        state.derived_research_plan,
+        state.derived_research_result,
+        state.derived_verifications,
+        state.re_evaluation,
+        state.adaptive_learning,
+        state.language_check,
+        LanguageCorroborationResult(
+            decision=LanguageCheckDecision(True, "high ambiguity"),
+            verification=LanguageVerificationResult(
+                LanguageVerificationStatus.DIVERGENT,
+                "Bunu yap",
+                source_refs=("bitigci:old", "tdk:old"),
+                independent_sources=("bitigci", "tdk"),
+                matched_meanings=("meaning-a", "meaning-b"),
+                reason="sources diverge",
+            ),
+        ),
+    )
+
+    refreshed = loop.research_loop.reassess_after_invalidation(
+        state,
+        invalidated_evidence_id=old_id,
+        target_node_id="A1-language",
+        research_question="Independently re-test the answer",
+        loop=ReEvaluationLoop(
+            research_executor=DerivedResearchExecutor(
+                researcher=_FakeReevaluationResearcher()
+            )
+        ),
+    )
+
+    assert refreshed.adaptive_learning is not None
+    assessment = refreshed.adaptive_learning.metacognition
+    assert assessment.evaluation_status == "PROCESS_REVIEW_REQUIRED"
+    assert assessment.research_required is False
+    assert "language_source_divergence" in assessment.recalibration_triggers
+    assert refreshed.adaptive_learning.trace.language_corroboration["status"] == "divergent"
+    assert refreshed.adaptive_learning.trace.language_corroboration["authoritative"] is False
