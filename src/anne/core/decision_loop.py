@@ -95,7 +95,7 @@ class DecisionLoop:
             self.pipeline,
             resource_profile=self.resource_profile,
         )
-        self.research_loop = ResearchCognitiveLoop()
+        self.research_loop = ResearchCognitiveLoop(memory=self.memory)
         self._experience_history: tuple[Experience, ...] = ()
         self._experience_history_limit = 64
 
