@@ -19,6 +19,8 @@ class ReEvaluationLearningAdapter:
         *,
         cycle_id: str,
         strategy: str = "research",
+        parent_cycle_id: str | None = None,
+        parent_lineage: tuple[str, ...] = (),
     ) -> CycleTrace:
         verification_status = (
             ""
@@ -60,8 +62,11 @@ class ReEvaluationLearningAdapter:
             if cycle.verification is None
             else cycle.verification.as_dict()
         )
+        lineage = (*parent_lineage, cycle_id) if parent_cycle_id else (cycle_id,)
         return CycleTrace(
             cycle_id=cycle_id,
+            parent_cycle_id=parent_cycle_id,
+            lineage=lineage,
             status=status,
             stage_trace=("INVALIDATION", "RESEARCH", "VERIFICATION"),
             stop_reason=stop_reason,
