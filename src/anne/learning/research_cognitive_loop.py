@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from anne.core.trace import CycleTrace
 from anne.core.verification import BoundedMultiSourceVerifier, VerificationResult
@@ -186,8 +186,23 @@ class ResearchCognitiveLoop:
 
         adaptive_result = None
         if completed_trace is not None:
+            observation_trace = completed_trace
+            if language_corroboration is not None:
+                verification = language_corroboration.verification
+                if verification is not None:
+                    observation_trace = replace(
+                        completed_trace,
+                        language_corroboration={
+                            "status": verification.status.value,
+                            "authoritative": verification.authoritative,
+                            "providers": [
+                                lookup.provider
+                                for lookup in language_corroboration.lookups
+                            ],
+                        },
+                    )
             adaptive_result = self.adaptive_learning.observe(
-                completed_trace,
+                observation_trace,
                 strategy=strategy,
                 prior_experiences=prior_experiences,
             )
