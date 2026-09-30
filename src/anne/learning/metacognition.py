@@ -44,12 +44,16 @@ class Metacognition:
 
         verification = trace.verification
         decision = trace.decision
-        status = str(
-            verification.get(
-                "verification_status",
-                verification.get("status", "UNVERIFIED"),
-            )
-        ).upper()
+        raw_status = verification.get(
+            "verification_status", verification.get("status")
+        )
+        intent_recorded = bool(trace.intent)
+        evidence_required = trace.intent.get("requires_evidence") is True
+        status = (
+            str(raw_status).upper()
+            if raw_status is not None
+            else ("UNVERIFIED" if evidence_required or not intent_recorded else "NOT_REQUIRED")
+        )
 
         sources = verification.get("verification_sources", ())
         if status == "VERIFIED" and sources:
@@ -57,13 +61,15 @@ class Metacognition:
         elif status == "VERIFIED":
             unknown.append("verification status is VERIFIED but provenance is incomplete")
             triggers.append("provenance_completion")
+        elif status == "NOT_REQUIRED":
+            known.append("verification is not required by the recorded intent")
         else:
             unknown.append("factual status is not established as VERIFIED")
             triggers.append("new_independent_evidence")
 
         if sources:
             evidence_basis.append("verification_sources")
-        else:
+        elif status != "NOT_REQUIRED":
             unknown.append("verification source provenance is not recorded")
             if "provenance_completion" not in triggers:
                 triggers.append("provenance_completion")
@@ -114,10 +120,12 @@ class Metacognition:
         if language_status == "divergent":
             review_reasons.append("language_sources_diverge")
 
-        research_required = status in {"UNVERIFIED", "CONFLICTING"}
+        research_required = (
+            status in {"UNVERIFIED", "CONFLICTING"} and evidence_required
+        )
         if research_required:
             research_reason = "verification_status_does_not_close_the_evidence_loop"
-        elif not sources:
+        elif status == "VERIFIED" and not sources:
             research_reason = "provenance_is_incomplete"
         else:
             research_reason = ""
