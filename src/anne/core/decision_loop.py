@@ -14,6 +14,7 @@ from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.core.trace import CycleTrace, trace_from_runtime
 from anne.learning.context_fingerprint import ExplicitContextFingerprint
+from anne.language.corroboration import TurkishLanguageCorroborationService
 from anne.language.service import TurkishLanguageEvidenceService
 from anne.learning.experience_learning import Experience
 from anne.learning.research_cognitive_loop import (
@@ -84,6 +85,7 @@ class DecisionLoop:
         memory_db_path: str = "anne.db",
         claim_verifier: ClaimVerifier | None = None,
         language_service: TurkishLanguageEvidenceService | None = None,
+        language_corroboration_service: TurkishLanguageCorroborationService | None = None,
     ) -> None:
         self.memory = memory or FractalMemory(memory_db_path)
         self.pipeline = pipeline or AnnePipeline(
@@ -97,7 +99,11 @@ class DecisionLoop:
             self.pipeline,
             resource_profile=self.resource_profile,
         )
-        self.research_loop = ResearchCognitiveLoop(memory=self.memory, language_service=language_service)
+        self.research_loop = ResearchCognitiveLoop(
+            memory=self.memory,
+            language_service=language_service,
+            language_corroboration_service=language_corroboration_service,
+        )
         self._experience_history: tuple[Experience, ...] = ()
         self._experience_history_limit = 64
 
@@ -281,6 +287,46 @@ class DecisionLoop:
                 ],
             }
             enriched_trace = replace(enriched_trace, language=language_payload)
+        if research_state.language_corroboration is not None:
+            corroboration = research_state.language_corroboration
+            verification = corroboration.verification
+            corroboration_payload: dict[str, Any] = {
+                "should_lookup": corroboration.decision.should_lookup,
+                "reason": corroboration.decision.reason,
+                "available": corroboration.available,
+                "providers": [lookup.provider for lookup in corroboration.lookups],
+                "queries": [lookup.query for lookup in corroboration.lookups],
+                "warnings": [
+                    warning
+                    for lookup in corroboration.lookups
+                    for warning in lookup.warnings
+                ],
+                "status": (
+                    verification.status.value
+                    if verification is not None
+                    else None
+                ),
+                "independent_sources": (
+                    list(verification.independent_sources)
+                    if verification is not None
+                    else []
+                ),
+                "matched_meanings": (
+                    list(verification.matched_meanings)
+                    if verification is not None
+                    else []
+                ),
+                "authoritative": (
+                    verification.authoritative
+                    if verification is not None
+                    else False
+                ),
+                "reason_detail": verification.reason if verification is not None else "",
+            }
+            enriched_trace = replace(
+                enriched_trace,
+                language_corroboration=corroboration_payload,
+            )
         next_step = research_state.decision.action
         final_status = "ABORTED" if aborted else "EXECUTED"
         final_verdict = str(verdict)
