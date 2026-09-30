@@ -215,7 +215,7 @@ class DecisionLoop:
             self._experience_history = (
                 *current_experience,
                 observed,
-            )[-self._experience_history_limit :]
+            )[-history_limit :]
         enriched_trace = (
             research_state.adaptive_learning.trace
             if research_state.adaptive_learning is not None
