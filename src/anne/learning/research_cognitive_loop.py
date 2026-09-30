@@ -358,6 +358,28 @@ class ResearchCognitiveLoop:
                 if parent_experience is not None
                 else ()
             ),
+            language_corroboration=(
+                {
+                    "status": (
+                        state.language_corroboration.verification.status.value
+                        if state.language_corroboration is not None
+                        and state.language_corroboration.verification is not None
+                        else ""
+                    ),
+                    "authoritative": (
+                        state.language_corroboration.verification.authoritative
+                        if state.language_corroboration is not None
+                        and state.language_corroboration.verification is not None
+                        else False
+                    ),
+                    "providers": [
+                        lookup.provider
+                        for lookup in state.language_corroboration.lookups
+                    ]
+                    if state.language_corroboration is not None
+                    else [],
+                }
+            ),
         )
         history = prior_experiences
         if state.adaptive_learning is not None:
