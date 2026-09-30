@@ -128,3 +128,53 @@ def test_metacognition_does_not_force_research_for_refuted_claim() -> None:
     assert result.requires_review is True
     assert result.research_required is False
     assert result.research_reason == ""
+
+
+def test_metacognition_keeps_language_corroboration_non_authoritative():
+    trace = CycleTrace(
+        cycle_id="m9",
+        status="SUCCESS",
+        intent={"intent": "answer"},
+        decision={"reason": "claim reviewed"},
+        verification={
+            "verification_status": "VERIFIED",
+            "verification_sources": ("source-a", "source-b"),
+        },
+        language_corroboration={
+            "status": "corroborated",
+            "authoritative": False,
+            "providers": ["bitigci", "tdk"],
+        },
+    )
+    result = Metacognition().assess(trace)
+
+    assert "language_corroboration_observation" in result.decision_dependencies
+    assert result.evaluation_status == "PROCESS_COMPLETE"
+    assert result.research_required is False
+    assert result.requires_review is False
+
+
+def test_metacognition_routes_language_divergence_to_review_not_research():
+    trace = CycleTrace(
+        cycle_id="m10",
+        status="SUCCESS",
+        intent={"intent": "answer"},
+        decision={"reason": "claim reviewed"},
+        verification={
+            "verification_status": "VERIFIED",
+            "verification_sources": ("source-a", "source-b"),
+        },
+        language_corroboration={
+            "status": "divergent",
+            "authoritative": False,
+            "providers": ["bitigci", "tdk"],
+        },
+    )
+    result = Metacognition().assess(trace)
+
+    assert "language_source_divergence" in result.recalibration_triggers
+    assert result.evaluation_status == "PROCESS_REVIEW_REQUIRED"
+    assert result.requires_review is True
+    assert result.research_required is False
+    assert result.research_reason == ""
+    assert result.unknown == ()
