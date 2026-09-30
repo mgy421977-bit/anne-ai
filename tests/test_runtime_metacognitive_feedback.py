@@ -59,7 +59,7 @@ def _decision_loop_for_state(
     if memory_db_path is not None:
         loop.memory = FractalMemory(memory_db_path)
     loop.orchestrator = _FakeOrchestrator(orchestration)
-    loop.research_loop = ResearchCognitiveLoop(critic_loop=_ProceedCritic())
+    loop.research_loop = ResearchCognitiveLoop(critic_loop=_ProceedCritic(), memory=getattr(loop, "memory", None))
     loop._experience_history = ()
     loop._experience_history_limit = 64
     return loop
@@ -362,3 +362,76 @@ def test_runtime_persists_exact_context_experience_across_restart(tmp_path) -> N
         "or_runtime_persist_1",
         "or_runtime_persist_2",
     }
+
+
+def test_re_evaluation_persists_context_and_lineage(tmp_path) -> None:
+    db_path = str(tmp_path / "anne.db")
+    loop = _decision_loop_for_state(
+        verification_status="UNVERIFIED",
+        lineage_id="or_reeval_parent",
+        memory_db_path=db_path,
+    )
+    context = {
+        "key": "web_research",
+        "conditions": {"freshness": "current"},
+    }
+    loop.orchestrator.result.status = "BOUNDED"
+    loop.orchestrator.result.stop_reason = "evidence_gap"
+    first = loop.run(
+        "The answer is supported.",
+        learning_context=context,
+        strategy="research",
+    )
+    assert first.research_state is not None
+    assert first.research_state.adaptive_learning is not None
+
+    state = first.research_state
+    hypothesis = state.hypotheses[0]
+    old_id = state.evidence_ledger.record(
+        EvidenceLedgerEntry(
+            claim=hypothesis.claim,
+            source="old",
+            provenance="https://old.example/a",
+            confidence=0.9,
+            passage=hypothesis.claim,
+        )
+    )
+    state.evidence_ledger.graph.add_edge(
+        ProvenanceEdge(old_id, hypothesis.id, "supports")
+    )
+    state.evidence_ledger.graph.add_node(
+        ProvenanceNode("A1", "answer", hypothesis.claim)
+    )
+    state.evidence_ledger.graph.add_edge(
+        ProvenanceEdge(hypothesis.id, "A1", "derived_from")
+    )
+
+    refreshed = loop.research_loop.reassess_after_invalidation(
+        state,
+        invalidated_evidence_id=old_id,
+        target_node_id="A1",
+        research_question="Independently re-test the answer",
+        loop=ReEvaluationLoop(
+            research_executor=DerivedResearchExecutor(
+                researcher=_FakeReevaluationResearcher()
+            )
+        ),
+    )
+
+    assert refreshed.adaptive_learning is not None
+    experience = refreshed.adaptive_learning.experience
+    assert experience.context_key == "web_research"
+    assert experience.context_conditions == (("freshness", "current"),)
+    assert experience.parent_cycle_id == "or_reeval_parent"
+    assert experience.lineage == ("or_reeval_parent", experience.source_cycle_id)
+
+    persisted = loop.memory.get_experience_observations(
+        context_key="web_research",
+        context_conditions=(("freshness", "current"),),
+    )
+    assert any(
+        row["source_cycle_id"] == experience.source_cycle_id
+        and row["parent_cycle_id"] == "or_reeval_parent"
+        and row["lineage"] == ("or_reeval_parent", experience.source_cycle_id)
+        for row in persisted
+    )
