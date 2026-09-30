@@ -93,8 +93,16 @@ class ExperienceLearner:
             max_conditions=self.max_context_conditions,
         )
         language = trace.language_corroboration
-        language_status = str(language.get("status", "")).lower() if isinstance(language, Mapping) else ""
-        language_providers = tuple(str(provider) for provider in language.get("providers", ())) if isinstance(language, Mapping) else ()
+        language_status = (
+            str(language.get("status", "")).lower()
+            if isinstance(language, Mapping)
+            else ""
+        )
+        language_providers = (
+            tuple(str(provider) for provider in language.get("providers", ()))
+            if isinstance(language, Mapping)
+            else ()
+        )
         return Experience(
             source_cycle_id=trace.cycle_id,
             outcome=outcome,
