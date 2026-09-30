@@ -59,6 +59,19 @@ class FractalMemory:
             question TEXT NOT NULL, selected_claim TEXT NOT NULL DEFAULT '',
             status TEXT NOT NULL DEFAULT 'started', stage_reached TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL)""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS experience_observations (
+            source_cycle_id TEXT PRIMARY KEY,
+            outcome TEXT NOT NULL,
+            failure_class TEXT NOT NULL,
+            strategy TEXT NOT NULL,
+            lesson TEXT NOT NULL,
+            safe_to_reuse INTEGER NOT NULL DEFAULT 0,
+            factual_status TEXT NOT NULL,
+            context_key TEXT NOT NULL DEFAULT '',
+            context_conditions TEXT NOT NULL DEFAULT '[]',
+            parent_cycle_id TEXT,
+            lineage TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL)""")
         self._ensure_columns(
             "hypotheses",
             {
@@ -243,6 +256,77 @@ class FractalMemory:
                 ),
             )
         self.conn.commit()
+
+    def save_experience_observation(
+        self,
+        *,
+        source_cycle_id: str,
+        outcome: str,
+        failure_class: str,
+        strategy: str,
+        lesson: str,
+        safe_to_reuse: bool,
+        factual_status: str,
+        context_key: str = "",
+        context_conditions: tuple[tuple[str, str], ...] = (),
+        parent_cycle_id: str | None = None,
+        lineage: tuple[str, ...] = (),
+    ) -> None:
+        """Persist bounded learning evidence as an observation, never as authority."""
+        self.conn.execute(
+            """INSERT OR REPLACE INTO experience_observations
+            (source_cycle_id,outcome,failure_class,strategy,lesson,safe_to_reuse,
+             factual_status,context_key,context_conditions,parent_cycle_id,lineage,created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                source_cycle_id,
+                outcome,
+                failure_class,
+                strategy,
+                lesson,
+                int(safe_to_reuse),
+                factual_status,
+                context_key,
+                json.dumps(list(context_conditions)),
+                parent_cycle_id,
+                json.dumps(list(lineage)),
+                datetime.now().isoformat(),
+            ),
+        )
+        self.conn.commit()
+
+    def get_experience_observations(
+        self,
+        *,
+        context_key: str,
+        context_conditions: tuple[tuple[str, str], ...],
+        limit: int = 64,
+    ) -> list[dict[str, Any]]:
+        """Return only exact-context observations; no semantic recall is used."""
+        rows = self.conn.cursor().execute(
+            """SELECT source_cycle_id,outcome,failure_class,strategy,lesson,safe_to_reuse,
+            factual_status,context_key,context_conditions,parent_cycle_id,lineage
+            FROM experience_observations
+            WHERE context_key=? AND context_conditions=?
+            ORDER BY created_at DESC, rowid DESC LIMIT ?""",
+            (context_key, json.dumps(list(context_conditions)), limit),
+        ).fetchall()
+        return [
+            {
+                "source_cycle_id": row[0],
+                "outcome": row[1],
+                "failure_class": row[2],
+                "strategy": row[3],
+                "lesson": row[4],
+                "safe_to_reuse": bool(row[5]),
+                "factual_status": row[6],
+                "context_key": row[7],
+                "context_conditions": tuple(tuple(item) for item in json.loads(row[8])),
+                "parent_cycle_id": row[9],
+                "lineage": tuple(json.loads(row[10])),
+            }
+            for row in rows
+        ]
 
     def get_similar_decisions(self, topic: str, limit: int = 3) -> list[tuple[Any,...]]:
         cur = self.conn.cursor()
