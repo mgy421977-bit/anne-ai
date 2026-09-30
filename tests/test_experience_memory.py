@@ -58,3 +58,28 @@ def test_experience_observation_does_not_cross_context(tmp_path: Path) -> None:
     )
 
     assert rows == []
+
+
+def test_experience_observation_preserves_language_corroboration_metadata(tmp_path: Path) -> None:
+    memory = FractalMemory(str(tmp_path / "anne.db"))
+    memory.save_experience_observation(
+        source_cycle_id="cycle-language",
+        outcome="FAILURE",
+        failure_class="evidence_gap",
+        strategy="research",
+        lesson="language divergence is an observation only",
+        safe_to_reuse=False,
+        factual_status="UNVERIFIED",
+        context_key="web_research",
+        context_conditions=(("freshness", "current"),),
+        language_corroboration_status="divergent",
+        language_corroboration_providers=("bitigci", "tdk"),
+    )
+
+    rows = memory.get_experience_observations(
+        context_key="web_research",
+        context_conditions=(("freshness", "current"),),
+    )
+
+    assert rows[0]["language_corroboration_status"] == "divergent"
+    assert rows[0]["language_corroboration_providers"] == ("bitigci", "tdk")
