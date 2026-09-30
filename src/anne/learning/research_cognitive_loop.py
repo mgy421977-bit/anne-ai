@@ -384,6 +384,8 @@ class ResearchCognitiveLoop:
                 state.derived_verifications,
                 cycle,
                 adaptive_result,
+                state.language_check,
+                state.language_corroboration,
             )
 
         fresh_evidence = cycle.research_result.evidence
@@ -451,6 +453,8 @@ class ResearchCognitiveLoop:
             state.derived_verifications,
             cycle,
             adaptive_result,
+            refreshed.language_check,
+            refreshed.language_corroboration,
         )
 
     def continue_from_re_evaluation(
