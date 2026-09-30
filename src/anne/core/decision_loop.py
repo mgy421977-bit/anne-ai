@@ -192,14 +192,15 @@ class DecisionLoop:
             if isinstance(trace.learning, dict)
             else {}
         )
-        current_experience = self._experience_history
+        current_experience = getattr(self, "_experience_history", ())
+        history_limit = getattr(self, "_experience_history_limit", 64)
         if explicit_context.key or explicit_context.conditions:
             prior_experiences = tuple(
                 item
                 for item in current_experience
                 if item.context_key == explicit_context.key
                 and item.context_conditions == explicit_context.conditions
-            )[-self._experience_history_limit :]
+            )[-history_limit :]
         else:
             prior_experiences = ()
 
@@ -212,7 +213,7 @@ class DecisionLoop:
         if research_state.adaptive_learning is not None:
             observed = research_state.adaptive_learning.experience
             self._experience_history = (
-                *self._experience_history,
+                *current_experience,
                 observed,
             )[-self._experience_history_limit :]
         enriched_trace = (
