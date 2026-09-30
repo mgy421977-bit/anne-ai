@@ -23,6 +23,7 @@ class ReEvaluationLearningAdapter:
         parent_lineage: tuple[str, ...] = (),
         context_key: str = "",
         context_conditions: tuple[tuple[str, str], ...] = (),
+        language_corroboration: dict[str, object] | None = None,
     ) -> CycleTrace:
         verification_status = (
             ""
@@ -86,6 +87,7 @@ class ReEvaluationLearningAdapter:
             },
             re_evaluation=cycle.as_dict(),
             learning=learning,
+            language_corroboration=dict(language_corroboration or {}),
         )
 
 
