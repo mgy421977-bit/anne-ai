@@ -5,6 +5,11 @@ from .evidence import LanguageEvidence, LanguageEvidenceProvider, LanguageLookup
 from .learning import to_evidence_items
 from .policy import LanguageCheckDecision, TurkishLanguageCheckPolicy
 from .service import LanguageCheckResult, TurkishLanguageEvidenceService
+from .verification import (
+    LanguageEvidenceVerifier,
+    LanguageVerificationResult,
+    LanguageVerificationStatus,
+)
 
 __all__ = [
     "BitigciProvider",
@@ -12,7 +17,10 @@ __all__ = [
     "LanguageCheckResult",
     "LanguageEvidence",
     "LanguageEvidenceProvider",
+    "LanguageEvidenceVerifier",
     "LanguageLookupResult",
+    "LanguageVerificationResult",
+    "LanguageVerificationStatus",
     "TurkishLanguageCheckPolicy",
     "TurkishLanguageEvidenceService",
     "to_evidence_items",
