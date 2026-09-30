@@ -12,6 +12,8 @@ from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesi
 from anne.learning.derived_hypothesis import DerivedHypothesis, DerivedHypothesisGenerator
 from anne.learning.derived_research_executor import DerivedResearchExecutor, DerivedResearchResult
 from anne.learning.derived_research_planner import DerivedResearchPlanner
+from anne.core.intent import IntentClassifier
+from anne.language.service import LanguageCheckResult, TurkishLanguageEvidenceService
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.experience_learning import Experience
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
@@ -40,6 +42,7 @@ class ResearchCognitiveState:
     derived_verifications: tuple[VerificationResult, ...] = ()
     re_evaluation: ReEvaluationCycleResult | None = None
     adaptive_learning: AdaptiveLearningResult | None = None
+    language_check: LanguageCheckResult | None = None
 
 
 class ResearchCognitiveLoop:
@@ -54,6 +57,7 @@ class ResearchCognitiveLoop:
         adaptive_learning: AdaptiveLearningCoordinator | None = None,
         derived_research_planner: DerivedResearchPlanner | None = None,
         memory: FractalMemory | None = None,
+        language_service: TurkishLanguageEvidenceService | None = None,
     ) -> None:
         self.planner = planner or ResearchPlanner()
         self.hypothesis_engine = hypothesis_engine or HypothesisEngine()
@@ -63,6 +67,7 @@ class ResearchCognitiveLoop:
         self.metacognitive_controller = MetacognitiveController()
         self.derived_research_planner = derived_research_planner or DerivedResearchPlanner()
         self.memory = memory
+        self.language_service = language_service
 
     def initialize(
         self,
@@ -76,11 +81,18 @@ class ResearchCognitiveLoop:
         strategy: str = "research",
         prior_experiences: tuple[Experience, ...] = (),
     ) -> ResearchCognitiveState:
+        language_check = None
+        language_evidence: tuple[EvidenceItem, ...] = ()
+        if self.language_service is not None:
+            intent = IntentClassifier().classify(question)
+            language_check = self.language_service.check(question, intent)
+            language_evidence = language_check.evidence
+
         plan = self.planner.create_plan(question)
         hypotheses = self.hypothesis_engine.generate(
             plan.main_question, max_hypotheses=max_hypotheses
         )
-        evidence_items = tuple(evidence)
+        evidence_items = (*language_evidence, *tuple(evidence))
         critic = EvidenceHypothesisBridge().assess(hypotheses, evidence_items)
         synthesis = self.decision_synthesizer.synthesize(critic)
         evidence_ledger = EvidenceLedger()
@@ -193,6 +205,7 @@ class ResearchCognitiveLoop:
             (),
             None,
             adaptive_result,
+            language_check,
         )
 
     def execute_derived_research(
