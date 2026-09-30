@@ -28,6 +28,8 @@ class Experience:
     context_conditions: tuple[tuple[str, str], ...] = ()
     parent_cycle_id: str | None = None
     lineage: tuple[str, ...] = ()
+    language_corroboration_status: str = ""
+    language_corroboration_providers: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         normalized = ExplicitContextFingerprint(
@@ -90,6 +92,9 @@ class ExperienceLearner:
             context if isinstance(context, Mapping) else {},
             max_conditions=self.max_context_conditions,
         )
+        language = trace.language_corroboration
+        language_status = str(language.get("status", "")).lower() if isinstance(language, Mapping) else ""
+        language_providers = tuple(str(provider) for provider in language.get("providers", ())) if isinstance(language, Mapping) else ()
         return Experience(
             source_cycle_id=trace.cycle_id,
             outcome=outcome,
@@ -102,6 +107,8 @@ class ExperienceLearner:
             context_conditions=explicit.conditions,
             parent_cycle_id=trace.parent_cycle_id,
             lineage=trace.lineage,
+            language_corroboration_status=language_status,
+            language_corroboration_providers=language_providers,
         )
 
 
