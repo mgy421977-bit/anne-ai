@@ -5,7 +5,7 @@ from anne.core.decision_loop import DecisionLoop
 from anne.core.fail_fast import FailFastResult
 from anne.language.bitigci import BitigciProvider
 from anne.language.corroboration import TurkishLanguageCorroborationService
-from anne.language.research_cognitive_loop import ResearchCognitiveLoop
+from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 from anne.language.tdk import TdkProvider
 from anne.learning.critic_loop import LoopDecision
 
