@@ -13,6 +13,8 @@ from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinking
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.core.trace import CycleTrace, trace_from_runtime
+from anne.learning.context_fingerprint import ExplicitContextFingerprint
+from anne.learning.experience_learning import Experience
 from anne.learning.research_cognitive_loop import (
     ResearchCognitiveLoop,
     ResearchCognitiveState,
@@ -94,6 +96,8 @@ class DecisionLoop:
             resource_profile=self.resource_profile,
         )
         self.research_loop = ResearchCognitiveLoop()
+        self._experience_history: tuple[Experience, ...] = ()
+        self._experience_history_limit = 64
 
     def run(
         self,
@@ -180,11 +184,37 @@ class DecisionLoop:
             learning_context=learning_context,
             strategy=strategy,
         )
+        # Historical experience is observational only. Reuse is explicitly
+        # scoped to the exact runtime context recorded for this cycle; an
+        # empty context never imports history from another task.
+        explicit_context = ExplicitContextFingerprint.from_context(
+            trace.learning.get("context", {})
+            if isinstance(trace.learning, dict)
+            else {}
+        )
+        current_experience = self._experience_history
+        if explicit_context.key or explicit_context.conditions:
+            prior_experiences = tuple(
+                item
+                for item in current_experience
+                if item.context_key == explicit_context.key
+                and item.context_conditions == explicit_context.conditions
+            )[-self._experience_history_limit :]
+        else:
+            prior_experiences = ()
+
         research_state = self.research_loop.initialize(
             raw_input,
             completed_trace=trace,
             strategy=strategy or "research",
+            prior_experiences=prior_experiences,
         )
+        if research_state.adaptive_learning is not None:
+            observed = research_state.adaptive_learning.experience
+            self._experience_history = (
+                *self._experience_history,
+                observed,
+            )[-self._experience_history_limit :]
         enriched_trace = (
             research_state.adaptive_learning.trace
             if research_state.adaptive_learning is not None
