@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 from uuid import uuid4
 
@@ -258,6 +258,29 @@ class DecisionLoop:
             if research_state.adaptive_learning is not None
             else trace
         )
+        if research_state.language_check is not None:
+            language_check = research_state.language_check
+            lookup = language_check.lookup
+            language_payload: dict[str, Any] = {
+                "should_lookup": language_check.decision.should_lookup,
+                "reason": language_check.decision.reason,
+                "available": language_check.available,
+                "provider": lookup.provider if lookup is not None else None,
+                "query": lookup.query if lookup is not None else raw_input,
+                "warnings": list(lookup.warnings) if lookup is not None else [],
+                "evidence": [
+                    {
+                        "source": item.source,
+                        "claim": item.claim,
+                        "kind": item.kind,
+                        "provenance": item.provenance,
+                        "confidence": item.confidence,
+                        "support": item.support,
+                    }
+                    for item in language_check.evidence
+                ],
+            }
+            enriched_trace = replace(enriched_trace, language=language_payload)
         next_step = research_state.decision.action
         final_status = "ABORTED" if aborted else "EXECUTED"
         final_verdict = str(verdict)
