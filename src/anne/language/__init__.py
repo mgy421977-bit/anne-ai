@@ -1,6 +1,10 @@
 """Language evidence adapters for ANNE."""
 
 from .bitigci import BitigciProvider
+from .corroboration import (
+    LanguageCorroborationResult,
+    TurkishLanguageCorroborationService,
+)
 from .evidence import LanguageEvidence, LanguageEvidenceProvider, LanguageLookupResult
 from .learning import to_evidence_items
 from .policy import LanguageCheckDecision, TurkishLanguageCheckPolicy
@@ -16,6 +20,7 @@ __all__ = [
     "BitigciProvider",
     "LanguageCheckDecision",
     "LanguageCheckResult",
+    "LanguageCorroborationResult",
     "LanguageEvidence",
     "LanguageEvidenceProvider",
     "LanguageEvidenceVerifier",
@@ -24,6 +29,7 @@ __all__ = [
     "LanguageVerificationStatus",
     "TdkProvider",
     "TurkishLanguageCheckPolicy",
+    "TurkishLanguageCorroborationService",
     "TurkishLanguageEvidenceService",
     "to_evidence_items",
 ]
