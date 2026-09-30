@@ -209,9 +209,11 @@ class DecisionLoop:
                 if item.context_key == explicit_context.key
                 and item.context_conditions == explicit_context.conditions
             )
-            prior_experiences = (
-                persisted_experiences + in_process
-            )[-history_limit:]
+            combined = persisted_experiences + in_process
+            deduped: dict[str, Experience] = {}
+            for item in combined:
+                deduped[item.source_cycle_id] = item
+            prior_experiences = tuple(deduped.values())[-history_limit:]
         else:
             prior_experiences = ()
 
