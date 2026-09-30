@@ -178,3 +178,36 @@ def test_metacognition_routes_language_divergence_to_review_not_research():
     assert result.research_required is False
     assert result.research_reason == ""
     assert result.unknown == ()
+
+
+def test_metacognition_controller_routes_language_divergence_to_review():
+    from anne.learning.critic_loop import LoopDecision
+    from anne.learning.metacognitive_controller import MetacognitiveController
+
+    trace = CycleTrace(
+        cycle_id="runtime-language-divergence",
+        status="SUCCESS",
+        intent={"intent": "answer"},
+        decision={"reason": "claim reviewed"},
+        verification={
+            "verification_status": "VERIFIED",
+            "verification_sources": ("source-a", "source-b"),
+        },
+        language_corroboration={
+            "status": "divergent",
+            "authoritative": False,
+            "providers": ["bitigci", "tdk"],
+        },
+    )
+    assessment = Metacognition().assess(trace)
+    decision = MetacognitiveController().apply(
+        assessment,
+        LoopDecision(
+            action="PROCEED",
+            reason="continue",
+            research_allowed=True,
+        ),
+    )
+
+    assert decision.action == "REVIEW"
+    assert decision.research_allowed is False
