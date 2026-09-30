@@ -32,6 +32,7 @@ class CycleTrace:
     agency: Mapping[str, Any] = field(default_factory=dict)
     provenance: Mapping[str, Any] = field(default_factory=dict)
     learning: Mapping[str, Any] = field(default_factory=dict)
+    language: Mapping[str, Any] = field(default_factory=dict)
     metrics: Mapping[str, Any] = field(default_factory=dict)
     errors: tuple[Mapping[str, Any], ...] = ()
 
@@ -83,6 +84,7 @@ def trace_from_runtime(
     context: Mapping[str, Any] | None = None,
     learning_context: Mapping[str, Any] | None = None,
     strategy: str | None = None,
+    language: Mapping[str, Any] | None = None,
 ) -> CycleTrace:
     """Copy explicit runtime observations without inferring truth or authority."""
     output = dict(output or {})
@@ -134,6 +136,7 @@ def trace_from_runtime(
         decision=decision,
         agency=agency,
         learning=learning,
+        language=dict(language or {}),
     )
 
 
