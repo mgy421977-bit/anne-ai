@@ -57,3 +57,39 @@ def test_retry_authorization_is_bounded_and_non_authoritative() -> None:
     assert decision.allowed is True
     assert decision.next_attempt == 2
     assert decision.reason == "retry_authorized"
+
+def test_explicit_selected_strategy_can_shape_bounded_reframe() -> None:
+    failure = FailureSignal(
+        kind=FailureKind.EVIDENCE_GAP,
+        reason="insufficient evidence",
+        stage="YAP",
+        cycle_id="cycle-selected",
+        depth=0,
+    )
+    plan = FailureRecoveryController.plan(
+        failure,
+        "Claim X",
+        attempt=1,
+        preferred_strategy="recheck_independent_evidence",
+    )
+
+    assert plan.strategy == "recheck_independent_evidence"
+    assert plan.question.startswith("Recheck the claim against independent evidence:")
+
+
+def test_unknown_selected_strategy_falls_back_to_failure_kind() -> None:
+    failure = FailureSignal(
+        kind=FailureKind.EVIDENCE_GAP,
+        reason="missing evidence",
+        stage="YAP",
+        cycle_id="cycle-fallback",
+        depth=0,
+    )
+    plan = FailureRecoveryController.plan(
+        failure,
+        "Claim Y",
+        attempt=1,
+        preferred_strategy="unknown",
+    )
+
+    assert plan.strategy == "seek_missing_evidence"

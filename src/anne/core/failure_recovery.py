@@ -89,6 +89,21 @@ class FailureRecoveryController:
             return FailureKind.BUDGET
         return FailureKind.UNKNOWN
 
+    _EXPLICIT_STRATEGY_PREFIXES = {
+        "seek_missing_evidence": "Identify the missing evidence: ",
+        "seek_fresh_independent_evidence": "Seek fresh independent evidence for: ",
+        "recheck_independent_evidence": "Recheck the claim against independent evidence: ",
+        "clarify_claim": "Clarify the claim: ",
+        "clarify_and_reframe": "Clarify and reframe the problem: ",
+        "restate_assumptions": "Restate the assumptions: ",
+        "rebuild_reasoning_from_constraints": "Rebuild the reasoning from constraints: ",
+        "reduce_scope": "Reduce the problem scope: ",
+        "narrow_claim_and_expose_uncertainty": "Narrow the claim and expose uncertainty: ",
+        "reorder_and_verify_steps": "Reorder and verify the steps: ",
+        "narrow_scope": "Narrow the problem scope: ",
+        "restate_problem": "Restate the problem: ",
+    }
+
     @classmethod
     def plan(
         cls,
@@ -96,16 +111,10 @@ class FailureRecoveryController:
         question: str,
         *,
         attempt: int,
+        preferred_strategy: str | None = None,
     ) -> ReframePlan:
-        strategy = cls._STRATEGIES[failure.kind]
-        prefix = {
-            "narrow_scope": "Narrow the problem scope: ",
-            "clarify_claim": "Clarify the claim: ",
-            "restate_assumptions": "Restate the assumptions: ",
-            "seek_missing_evidence": "Identify the missing evidence: ",
-            "reduce_scope": "Reduce the problem scope: ",
-            "restate_problem": "Restate the problem: ",
-        }[strategy]
+            "recheck_independent_evidence": "Recheck the claim against independent evidence: ",
+        prefix = cls._EXPLICIT_STRATEGY_PREFIXES[strategy]
         return ReframePlan(
             strategy=strategy,
             question=prefix + question.strip(),

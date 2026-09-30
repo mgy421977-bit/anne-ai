@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-TRACE_SCHEMA_VERSION = "1.0"
+TRACE_SCHEMA_VERSION = "1.2"
 
 
 @dataclass(frozen=True)
@@ -24,11 +24,16 @@ class CycleTrace:
     intent: Mapping[str, Any] = field(default_factory=dict)
     hypotheses: tuple[Mapping[str, Any], ...] = ()
     evidence: tuple[Mapping[str, Any], ...] = ()
+    joint_inferences: tuple[Mapping[str, Any], ...] = ()
+    derived_hypotheses: tuple[Mapping[str, Any], ...] = ()
+    re_evaluation: Mapping[str, Any] = field(default_factory=dict)
     verification: Mapping[str, Any] = field(default_factory=dict)
     decision: Mapping[str, Any] = field(default_factory=dict)
     agency: Mapping[str, Any] = field(default_factory=dict)
     provenance: Mapping[str, Any] = field(default_factory=dict)
     learning: Mapping[str, Any] = field(default_factory=dict)
+    language: Mapping[str, Any] = field(default_factory=dict)
+    language_corroboration: Mapping[str, Any] = field(default_factory=dict)
     metrics: Mapping[str, Any] = field(default_factory=dict)
     errors: tuple[Mapping[str, Any], ...] = ()
 
@@ -55,7 +60,15 @@ class CycleTrace:
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> CycleTrace:
         data = dict(payload)
-        for key in ("stage_trace", "lineage", "hypotheses", "evidence", "errors"):
+        for key in (
+            "stage_trace",
+            "lineage",
+            "hypotheses",
+            "evidence",
+            "joint_inferences",
+            "derived_hypotheses",
+            "errors",
+        ):
             data[key] = tuple(data.get(key, ()))
         return cls(**data)
 
@@ -70,6 +83,9 @@ def trace_from_runtime(
     lineage: tuple[str, ...],
     output: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
+    learning_context: Mapping[str, Any] | None = None,
+    strategy: str | None = None,
+    language: Mapping[str, Any] | None = None,
 ) -> CycleTrace:
     """Copy explicit runtime observations without inferring truth or authority."""
     output = dict(output or {})
@@ -100,6 +116,11 @@ def trace_from_runtime(
         for key in ("intent", "intent_confidence", "ambiguity", "requires_evidence")
         if key in context
     }
+    learning: dict[str, Any] = {}
+    if learning_context is not None:
+        learning["context"] = dict(learning_context)
+    if strategy is not None and strategy.strip():
+        learning["strategy"] = strategy
     return CycleTrace(
         cycle_id=cycle_id,
         parent_cycle_id=lineage[-2] if len(lineage) > 1 else None,
@@ -109,9 +130,14 @@ def trace_from_runtime(
         retry_count=retry_count,
         lineage=lineage,
         intent=intent,
+        joint_inferences=tuple(context.get("joint_inferences", ())),
+        derived_hypotheses=tuple(context.get("derived_hypotheses", ())),
+        re_evaluation=dict(context.get("re_evaluation", {})),
         verification=verification,
         decision=decision,
         agency=agency,
+        learning=learning,
+        language=dict(language or {}),
     )
 
 

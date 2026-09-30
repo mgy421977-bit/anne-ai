@@ -8,6 +8,7 @@ import weakref
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from datetime import UTC, datetime
 from typing import Any, cast
 
 from anne.agent.github_memory import GitHubMemory
@@ -26,6 +27,7 @@ from anne.core.verification import (
     verify_claim,
 )
 from anne.learning.evidence import EvidenceLedger, EvidenceLedgerEntry, EvidenceStatus
+from anne.learning.freshness import EvidenceFreshness, FreshnessPolicy
 from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 from anne.learning.web_reevaluation import BoundedWebReEvaluator
@@ -227,10 +229,12 @@ omit only when no semantic extraction is useful.
         response_verifier: ClaimVerifier | None = None,
         require_verified_response: bool = False,
         decision_loop: DecisionLoop | None = None,
+        freshness_policy: FreshnessPolicy | None = None,
     ) -> None:
         self.model = model
         self.response_verifier = response_verifier
         self.require_verified_response = require_verified_response
+        self.freshness_policy = freshness_policy
         self.agency_gate = AgencyGate()
         self.memory = memory
         self.local_tools = LocalFilesTool(workspace or Path.cwd())
@@ -375,6 +379,7 @@ omit only when no semantic extraction is useful.
                 status=EvidenceStatus.UNVERIFIED,
                 passage=item.passage,
                 support=item.support,
+                retrieved_at=item.retrieved_at,
             )
 
             if isinstance(response_verifier, BoundedMultiSourceVerifier):
@@ -404,6 +409,7 @@ omit only when no semantic extraction is useful.
                     "passage": entry.passage,
                     "support": entry.support,
                     "retrieved_at": entry.retrieved_at,
+                    "freshness": (EvidenceFreshness.assess(entry.retrieved_at, reference_time=datetime.now(UTC).isoformat(), policy=self.freshness_policy).as_dict() if self.freshness_policy is not None and entry.retrieved_at else None),
                     "verification_sources": list(verification.sources),
                     "verification_reason": verification.reason,
                 }

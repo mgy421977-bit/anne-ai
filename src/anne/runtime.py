@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from collections.abc import Mapping
 
 from anne.core.cognitive_state import Consciousness
 from anne.core.decision_loop import DecisionLoop, DecisionResult
@@ -16,6 +17,8 @@ class AnneRequest:
 
     text: str
     parties: tuple[Consciousness, ...] = ()
+    learning_context: Mapping[str, Any] | None = None
+    strategy: str | None = None
 
 
 class AnneRuntime:
@@ -34,18 +37,27 @@ class AnneRuntime:
         text = request.text.strip()
         if not text:
             raise ValueError("request text is required")
-        return self.run(text, parties=request.parties)
+        return self.run(
+            text,
+            parties=request.parties,
+            learning_context=request.learning_context,
+            strategy=request.strategy,
+        )
 
     def run(
         self,
         text: str,
         *,
         parties: tuple[Consciousness, ...] | None = None,
+        learning_context: Mapping[str, Any] | None = None,
+        strategy: str | None = None,
     ) -> DecisionResult:
         return self.decision_loop.run(
             text,
             parties=parties,
             verifier=self.verifier,
+            learning_context=dict(learning_context) if learning_context is not None else None,
+            strategy=strategy,
         )
 
     def run_cognitive(

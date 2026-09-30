@@ -17,7 +17,3 @@ env/
 build/
 dist/
 *.egg-info/
-
-*.db
-*.sqlite
-*.sqlite3

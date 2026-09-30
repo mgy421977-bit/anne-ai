@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 from uuid import uuid4
 
@@ -12,6 +12,15 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
+from anne.core.trace import CycleTrace, trace_from_runtime
+from anne.learning.context_fingerprint import ExplicitContextFingerprint
+from anne.language.corroboration import TurkishLanguageCorroborationService
+from anne.language.service import TurkishLanguageEvidenceService
+from anne.learning.experience_learning import Experience
+from anne.learning.research_cognitive_loop import (
+    ResearchCognitiveLoop,
+    ResearchCognitiveState,
+)
 from anne.core.verification import ClaimVerifier
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
@@ -28,6 +37,8 @@ class DecisionResult:
     ethic_total: float | None = None
     state: CognitiveState | None = None
     reason: str = ""
+    trace: CycleTrace | None = None
+    research_state: ResearchCognitiveState | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -40,6 +51,19 @@ class DecisionResult:
             "ethic_total": self.ethic_total,
             "reason": self.reason,
             "factual_status": self.output.get("factual_status", "unverified"),
+            "trace": self.trace.as_dict() if self.trace is not None else None,
+            "research": (
+                {
+                    "action": self.research_state.decision.action,
+                    "reason": self.research_state.decision.reason,
+                    "research_allowed": self.research_state.decision.research_allowed,
+                    "questions": ResearchCognitiveLoop.next_research_questions(
+                        self.research_state
+                    ),
+                }
+                if self.research_state is not None
+                else None
+            ),
         }
 
 
@@ -60,6 +84,8 @@ class DecisionLoop:
         resource_profile: ResourceProfile | None = None,
         memory_db_path: str = "anne.db",
         claim_verifier: ClaimVerifier | None = None,
+        language_service: TurkishLanguageEvidenceService | None = None,
+        language_corroboration_service: TurkishLanguageCorroborationService | None = None,
     ) -> None:
         self.memory = memory or FractalMemory(memory_db_path)
         self.pipeline = pipeline or AnnePipeline(
@@ -73,6 +99,13 @@ class DecisionLoop:
             self.pipeline,
             resource_profile=self.resource_profile,
         )
+        self.research_loop = ResearchCognitiveLoop(
+            memory=self.memory,
+            language_service=language_service,
+            language_corroboration_service=language_corroboration_service,
+        )
+        self._experience_history: tuple[Experience, ...] = ()
+        self._experience_history_limit = 64
 
     def run(
         self,
@@ -84,6 +117,8 @@ class DecisionLoop:
         verifier: ClaimVerifier | None = None,
         group_a: Sequence[Consciousness] | None = None,
         group_b: Sequence[Consciousness] | None = None,
+        learning_context: dict[str, Any] | None = None,
+        strategy: str | None = None,
     ) -> DecisionResult:
         """Run one request through the canonical orchestrator path."""
         people = list(parties) if parties else [Consciousness(id="user")]
@@ -102,20 +137,34 @@ class DecisionLoop:
             verifier=verifier,
             group_a=group_a,
             group_b=group_b,
+            preferred_strategy=strategy,
         )
         if not result.fail_fast.passed:
+            fail_output = {
+                "verdict": "FAIL_FAST",
+                "action": "HALT",
+                "reason": result.fail_fast.reason,
+                "rule_id": result.fail_fast.rule_id,
+            }
+            trace = trace_from_runtime(
+                cycle_id=result.lineage[-1] if result.lineage else f"or_{uuid4().hex[:12]}",
+                status="ABORTED",
+                stage_trace=result.stage_trace,
+                stop_reason=result.stop_reason or "fail_fast",
+                retry_count=result.retry_count,
+                lineage=result.lineage or (),
+                output=fail_output,
+                learning_context=learning_context,
+                strategy=strategy,
+            )
             return DecisionResult(
                 "ABORTED",
                 "FAIL_FAST",
                 "HALT",
-                {
-                    "verdict": "FAIL_FAST",
-                    "action": "HALT",
-                    "reason": result.fail_fast.reason,
-                    "rule_id": result.fail_fast.rule_id,
-                },
+                fail_output,
                 fail_fast=result.fail_fast.as_dict(),
                 reason=result.fail_fast.reason,
+                trace=trace,
             )
 
         state = result.state
@@ -131,16 +180,194 @@ class DecisionLoop:
             aborted = False
         ethic_total = state.ethic_score.total if state and state.ethic_score else None
         anla_score = state.context_map.get("anla_score") if state else None
+        trace = trace_from_runtime(
+            cycle_id=result.lineage[-1] if result.lineage else f"or_{uuid4().hex[:12]}",
+            status=result.status,
+            stage_trace=result.stage_trace,
+            stop_reason=result.stop_reason,
+            retry_count=result.retry_count,
+            lineage=result.lineage or (),
+            output=out,
+            context=state.context_map if state is not None else None,
+            learning_context=learning_context,
+            strategy=strategy,
+        )
+        # Historical experience is observational only. Reuse is explicitly
+        # scoped to the exact runtime context recorded for this cycle; an
+        # empty context never imports history from another task.
+        explicit_context = ExplicitContextFingerprint.from_context(
+            trace.learning.get("context", {})
+            if isinstance(trace.learning, dict)
+            else {}
+        )
+        current_experience = getattr(self, "_experience_history", ())
+        history_limit = getattr(self, "_experience_history_limit", 64)
+        if explicit_context.key or explicit_context.conditions:
+            memory = getattr(self, "memory", None)
+            persisted = (
+                memory.get_experience_observations(
+                    context_key=explicit_context.key,
+                    context_conditions=explicit_context.conditions,
+                    limit=history_limit,
+                )
+                if memory is not None
+                else ()
+            )
+            persisted_experiences = tuple(
+                Experience(**item) for item in reversed(persisted)
+            )
+            in_process = tuple(
+                item
+                for item in current_experience
+                if item.context_key == explicit_context.key
+                and item.context_conditions == explicit_context.conditions
+            )
+            combined = persisted_experiences + in_process
+            deduped: dict[str, Experience] = {}
+            for item in combined:
+                deduped[item.source_cycle_id] = item
+            prior_experiences = tuple(deduped.values())[-history_limit:]
+        else:
+            prior_experiences = ()
+
+        research_state = self.research_loop.initialize(
+            raw_input,
+            completed_trace=trace,
+            strategy=strategy or "research",
+            prior_experiences=prior_experiences,
+        )
+        if research_state.adaptive_learning is not None:
+            observed = research_state.adaptive_learning.experience
+            self._experience_history = (
+                *current_experience,
+                observed,
+            )[-history_limit :]
+            memory = getattr(self, "memory", None)
+            if memory is not None and (
+                observed.context_key or observed.context_conditions
+            ):
+                memory.save_experience_observation(
+                    source_cycle_id=observed.source_cycle_id,
+                    outcome=observed.outcome,
+                    failure_class=observed.failure_class,
+                    strategy=observed.strategy,
+                    lesson=observed.lesson,
+                    safe_to_reuse=observed.safe_to_reuse,
+                    factual_status=observed.factual_status,
+                    context_key=observed.context_key,
+                    context_conditions=observed.context_conditions,
+                    parent_cycle_id=observed.parent_cycle_id,
+                    lineage=observed.lineage,
+                    language_corroboration_status=observed.language_corroboration_status,
+                    language_corroboration_providers=observed.language_corroboration_providers,
+                )
+        enriched_trace = (
+            research_state.adaptive_learning.trace
+            if research_state.adaptive_learning is not None
+            else trace
+        )
+        if research_state.language_check is not None:
+            language_check = research_state.language_check
+            lookup = language_check.lookup
+            language_payload: dict[str, Any] = {
+                "should_lookup": language_check.decision.should_lookup,
+                "reason": language_check.decision.reason,
+                "available": language_check.available,
+                "provider": lookup.provider if lookup is not None else None,
+                "query": lookup.query if lookup is not None else raw_input,
+                "warnings": list(lookup.warnings) if lookup is not None else [],
+                "evidence": [
+                    {
+                        "source": item.source,
+                        "claim": item.claim,
+                        "kind": item.kind,
+                        "provenance": item.provenance,
+                        "confidence": item.confidence,
+                        "support": item.support,
+                    }
+                    for item in language_check.evidence
+                ],
+            }
+            enriched_trace = replace(enriched_trace, language=language_payload)
+        if research_state.language_corroboration is not None:
+            corroboration = research_state.language_corroboration
+            verification = corroboration.verification
+            corroboration_payload: dict[str, Any] = {
+                "should_lookup": corroboration.decision.should_lookup,
+                "reason": corroboration.decision.reason,
+                "available": corroboration.available,
+                "providers": [lookup.provider for lookup in corroboration.lookups],
+                "queries": [lookup.query for lookup in corroboration.lookups],
+                "warnings": [
+                    warning
+                    for lookup in corroboration.lookups
+                    for warning in lookup.warnings
+                ],
+                "status": (
+                    verification.status.value
+                    if verification is not None
+                    else None
+                ),
+                "independent_sources": (
+                    list(verification.independent_sources)
+                    if verification is not None
+                    else []
+                ),
+                "matched_meanings": (
+                    list(verification.matched_meanings)
+                    if verification is not None
+                    else []
+                ),
+                "authoritative": (
+                    verification.authoritative
+                    if verification is not None
+                    else False
+                ),
+                "reason_detail": verification.reason if verification is not None else "",
+            }
+            enriched_trace = replace(
+                enriched_trace,
+                language_corroboration=corroboration_payload,
+            )
+        next_step = research_state.decision.action
+        final_status = "ABORTED" if aborted else "EXECUTED"
+        final_verdict = str(verdict)
+        final_action = str(action)
+        final_reason = str(out.get("reason") or out.get("note") or "")
+
+        # Metacognitive guidance is a bounded post-cycle control signal.
+        # It may stop a result from being treated as final, but it never
+        # grants execution authority and it never executes research itself.
+        if not aborted and next_step in {"RESEARCH", "REVIEW"}:
+            original_output = dict(out)
+            out = {
+                **original_output,
+                "original_output": original_output,
+                "verdict": next_step,
+                "action": next_step,
+                "reason": research_state.decision.reason,
+                "metacognitive_next_step": next_step,
+                "research_questions": ResearchCognitiveLoop.next_research_questions(
+                    research_state
+                ),
+            }
+            final_status = "BOUNDED"
+            final_verdict = next_step
+            final_action = next_step
+            final_reason = research_state.decision.reason
+
         return DecisionResult(
-            "ABORTED" if aborted else "EXECUTED",
-            str(verdict),
-            str(action),
+            final_status,
+            final_verdict,
+            final_action,
             out,
             result.fail_fast.as_dict(),
             anla_score if isinstance(anla_score, (int, float)) else None,
             ethic_total,
             state,
-            str(out.get("reason") or out.get("note") or ""),
+            final_reason,
+            enriched_trace,
+            research_state,
         )
 
     def run_cognitive(

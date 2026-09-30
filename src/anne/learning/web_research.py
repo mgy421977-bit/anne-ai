@@ -16,6 +16,7 @@ from html.parser import HTMLParser
 from typing import Any, cast
 
 from .evidence import EvidenceItem
+from .web_research_transport import WebResearchTransport
 
 
 class _DuckDuckGoParser(HTMLParser):
@@ -122,21 +123,17 @@ class WebResearcher:
         "how", "why", "about", "is", "are", "a", "an", "of", "to", "in",
     }
 
-    @staticmethod
-    def _get_text(url: str) -> str:
-        request = urllib.request.Request(
-            url,
-            headers={"User-Agent": "ANNE-AI/0.3 (+generic-public-web-research)"},
-        )
-        with urllib.request.urlopen(request, timeout=WebResearcher.timeout) as response:
-            raw = response.read()
-            if not isinstance(raw, bytes):
-                raise TypeError("web response body must be bytes")
-            return raw.decode("utf-8", errors="replace")
+    def __init__(self, transport: WebResearchTransport | None = None) -> None:
+        self.transport = transport or WebResearchTransport(timeout_seconds=self.timeout)
+        self._last_retrieved_at = ""
 
-    @classmethod
-    def _get_json(cls, url: str) -> dict[str, Any]:
-        return cast(dict[str, Any], json.loads(cls._get_text(url)))
+    def _get_text(self, url: str) -> str:
+        result = self.transport.fetch(url)
+        self._last_retrieved_at = result.retrieved_at
+        return result.content
+
+    def _get_json(self, url: str) -> dict[str, Any]:
+        return cast(dict[str, Any], json.loads(self._get_text(url)))
 
     @classmethod
     def _extract_passage(cls, html: str, query: str, max_chars: int = 1200) -> str:
@@ -321,6 +318,7 @@ class WebResearcher:
                     kind="web",
                     provenance=url,
                     confidence=min(0.90, 0.50 + score * 0.40),
+                    retrieved_at=self._last_retrieved_at,
                 )
             )
         return items
@@ -340,6 +338,7 @@ class WebResearcher:
             provenance=url,
             confidence=min(0.95, 0.62 + score * 0.33),
             passage=extract[:1200],
+            retrieved_at=self._last_retrieved_at,
         )
 
     def _duckduckgo_instant(self, query: str) -> EvidenceItem | None:
@@ -356,6 +355,7 @@ class WebResearcher:
             kind="web",
             provenance=url,
             confidence=min(0.86, 0.46 + score * 0.40),
+            retrieved_at=self._last_retrieved_at,
         )
 
     def _duckduckgo_search(self, query: str) -> list[EvidenceItem]:
@@ -383,6 +383,7 @@ class WebResearcher:
                     provenance=href or url,
                     confidence=min(0.84, 0.44 + score * 0.40),
                     passage=passage[:1200],
+                    retrieved_at=self._last_retrieved_at,
                 )
             )
         return items
@@ -434,6 +435,7 @@ class WebResearcher:
                     provenance=destination or href or url,
                     confidence=min(0.84, 0.44 + score * 0.40),
                     passage=passage[:1200],
+                    retrieved_at=self._last_retrieved_at,
                 )
             )
         return items
