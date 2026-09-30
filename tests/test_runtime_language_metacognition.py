@@ -6,6 +6,8 @@ from anne.core.fail_fast import FailFastResult
 from anne.language.bitigci import BitigciProvider
 from anne.language.corroboration import TurkishLanguageCorroborationService
 from anne.language.tdk import TdkProvider
+from anne.learning.critic_loop import LoopDecision
+from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 
 
 class _FakeOrchestrator:
@@ -40,6 +42,15 @@ class _FakeOrchestrator:
         return self.result
 
 
+class _ProceedCritic:
+    def decide(self, *args, **kwargs) -> LoopDecision:
+        return LoopDecision(
+            action="PROCEED",
+            reason="test bounded loop permits continuation",
+            research_allowed=True,
+        )
+
+
 def _language_loop(*, divergent: bool) -> DecisionLoop:
     meaning_a = "bağlama göre kullanılan anlam"
     meaning_b = "aynı sözcüğün farklı bağlamdaki anlamı" if divergent else meaning_a
@@ -64,14 +75,8 @@ def _language_loop(*, divergent: bool) -> DecisionLoop:
     loop = DecisionLoop.__new__(DecisionLoop)
     loop.memory = None
     loop.orchestrator = _FakeOrchestrator()
-    loop.research_loop = __import__(
-        "anne.learning.research_cognitive_loop",
-        fromlist=["ResearchCognitiveLoop"],
-    ).ResearchCognitiveLoop(
-        critic_loop=__import__(
-            "anne.learning.critic_loop",
-            fromlist=["CriticLoopController"],
-        ).CriticLoopController(),
+    loop.research_loop = ResearchCognitiveLoop(
+        critic_loop=_ProceedCritic(),
         memory=None,
         language_corroboration_service=corroboration,
     )
