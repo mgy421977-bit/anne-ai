@@ -23,7 +23,8 @@ class LanguageCorroborationResult:
 
     @property
     def available(self) -> bool:
-        return bool(self.lookups)
+        """Return whether at least one provider returned usable evidence."""
+        return any(lookup.available for lookup in self.lookups)
 
     @property
     def corroborated(self) -> bool:
