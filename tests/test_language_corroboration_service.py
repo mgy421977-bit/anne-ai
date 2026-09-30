@@ -64,3 +64,22 @@ def test_low_ambiguity_does_not_call_language_providers():
 
     assert result.verification is None
     assert calls == {"bitigci": 0, "tdk": 0}
+
+
+def test_provider_failures_do_not_report_language_evidence_as_available():
+    def failing(_):
+        raise RuntimeError("unavailable")
+
+    result = TurkishLanguageCorroborationService(
+        providers=(
+            BitigciProvider(failing),
+            TdkProvider(failing),
+        )
+    ).check(
+        "Bunu yap",
+        IntentClassifier().classify("Bunu yap"),
+    )
+
+    assert result.available is False
+    assert result.verification is not None
+    assert result.verification.status is LanguageVerificationStatus.INSUFFICIENT
