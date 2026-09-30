@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from urllib.parse import urlparse
-
 from anne.language.evidence import LanguageEvidence, LanguageLookupResult
 
 
@@ -117,18 +115,11 @@ class LanguageEvidenceVerifier:
             "Independent language sources provide different lexical observations; no contradiction is inferred.",
         )
 
-    @classmethod
-    def _source_identity(cls, provider: str, item: LanguageEvidence) -> str:
-        provider_name = " ".join(str(provider).split()).casefold()
-        source_ref = str(item.source_ref).strip()
-        parsed = urlparse(source_ref)
-        host = (parsed.netloc or parsed.path.split("/", 1)[0]).casefold()
-        host = host.split(":", 1)[0]
-        if host:
-            if host.startswith("www."):
-                host = host[4:]
-            return host
-        return provider_name
+    @staticmethod
+    def _source_identity(provider: str, item: LanguageEvidence) -> str:
+        """Use the provider's explicit identity, never URL diversity, for independence."""
+        identity = " ".join(str(provider).split()).casefold()
+        return identity
 
     @staticmethod
     def _normalize_meaning(value: str) -> str:
