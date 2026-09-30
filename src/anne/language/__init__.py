@@ -5,6 +5,7 @@ from .evidence import LanguageEvidence, LanguageEvidenceProvider, LanguageLookup
 from .learning import to_evidence_items
 from .policy import LanguageCheckDecision, TurkishLanguageCheckPolicy
 from .service import LanguageCheckResult, TurkishLanguageEvidenceService
+from .tdk import TdkProvider
 from .verification import (
     LanguageEvidenceVerifier,
     LanguageVerificationResult,
@@ -21,6 +22,7 @@ __all__ = [
     "LanguageLookupResult",
     "LanguageVerificationResult",
     "LanguageVerificationStatus",
+    "TdkProvider",
     "TurkishLanguageCheckPolicy",
     "TurkishLanguageEvidenceService",
     "to_evidence_items",
