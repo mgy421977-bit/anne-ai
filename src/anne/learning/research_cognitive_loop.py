@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from uuid import uuid4
 from dataclasses import dataclass, replace
+from uuid import uuid4
 
 from anne.core.trace import CycleTrace
 from anne.core.verification import BoundedMultiSourceVerifier, VerificationResult
