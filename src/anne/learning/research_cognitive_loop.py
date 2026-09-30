@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from uuid import uuid4
 from dataclasses import dataclass, replace
 
 from anne.core.trace import CycleTrace
@@ -336,7 +337,7 @@ class ResearchCognitiveLoop:
             if state.adaptive_learning is not None
             else None
         )
-        cycle_id = f"reeval:{invalidated_evidence_id}:{target_node_id}"
+        cycle_id = f"reeval:{invalidated_evidence_id}:{target_node_id}:{uuid4().hex[:12]}"
         context_key = ""
         context_conditions: tuple[tuple[str, str], ...] = ()
         if parent_experience is not None:
@@ -406,6 +407,8 @@ class ResearchCognitiveLoop:
                 context_conditions=observed.context_conditions,
                 parent_cycle_id=observed.parent_cycle_id,
                 lineage=observed.lineage,
+                language_corroboration_status=observed.language_corroboration_status,
+                language_corroboration_providers=observed.language_corroboration_providers,
             )
 
         if cycle.research_result is None:
