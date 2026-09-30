@@ -514,3 +514,5 @@ def test_re_evaluation_preserves_language_corroboration_metacognitive_signal() -
     assert "language_source_divergence" in assessment.recalibration_triggers
     assert refreshed.adaptive_learning.trace.language_corroboration["status"] == "divergent"
     assert refreshed.adaptive_learning.trace.language_corroboration["authoritative"] is False
+    assert refreshed.adaptive_learning.experience.language_corroboration_status == "divergent"
+    assert refreshed.adaptive_learning.experience.language_corroboration_providers == ("bitigci", "tdk")
