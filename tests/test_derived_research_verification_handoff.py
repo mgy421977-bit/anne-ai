@@ -42,14 +42,13 @@ def _state_with_derived_hypothesis() -> tuple[ResearchCognitiveLoop, ResearchCog
     ), claim
 
 
-def _evidence(claim: str, provenance: str, support: str) -> EvidenceItem:
-    return EvidenceItem(
+def _evidence(\n    claim: str, provenance: str, support: str, passage: str | None = None\n) -> EvidenceItem:\n    return EvidenceItem(
         source=provenance,
         claim=claim,
         kind="web",
         provenance=provenance,
         confidence=0.9,
-        passage=claim,
+        passage=passage or claim,
         support=support,
     )
 
@@ -81,7 +80,7 @@ def test_research_execution_preserves_conflict_as_unverified_decision_state() ->
     loop, state, claim = _state_with_derived_hypothesis()
     evidence = (
         _evidence(claim, "https://primary.example/source", "supports"),
-        _evidence(claim, "https://independent.example/source", "contradicts"),
+        _evidence(\n            claim,\n            "https://independent.example/source",\n            "contradicts",\n            passage=f"{claim} is not true",\n        ),
     )
 
     refreshed = loop.reassess_after_derived_research(
