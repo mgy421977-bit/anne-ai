@@ -248,32 +248,6 @@ class DecisionLoop:
             strategy=strategy,
             memory=memory_context,
         )
-        # Preserve the orchestrator's explicit learning classification when it
-        # was persisted for this cycle. This is a transport of an existing
-        # signal, not a new inference from the stop reason.
-        current_cycle_id = result.lineage[-1] if result.lineage else ""
-        if memory is not None and current_cycle_id:
-            explicit_failure_class = next(
-                (
-                    str(row[7])
-                    for row in memory.get_recent_failures(limit=32)
-                    if len(row) > 7
-                    and (
-                        str(row[1]) == current_cycle_id
-                        or str(row[1]).startswith(f"{current_cycle_id}:")
-                    )
-                    and str(row[7]).strip()
-                ),
-                "",
-            )
-            if explicit_failure_class:
-                trace = replace(
-                    trace,
-                    learning={
-                        **trace.learning,
-                        "failure_class": explicit_failure_class,
-                    },
-                )
         # Historical experience is observational only. Reuse is explicitly
         # scoped to the exact runtime context recorded for this cycle; an
         # empty context never imports history from another task.
