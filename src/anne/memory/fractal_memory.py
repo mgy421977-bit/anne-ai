@@ -205,6 +205,11 @@ class FractalMemory:
         )
         self.conn.commit()
 
+    def save_memory_link(self, source_decision_id: str, target_decision_id: str, task_mode: str, created_at: str) -> None:
+        """Persist a non-destructive link between historical decisions."""
+        statement = "INSERT " + "OR IGNORE INTO memory_relations (id,source_decision_id,target_decision_id,relation,reason,task_mode,created_at) VALUES (?,?,?,?,?,?,?)"
+        self.conn.execute(statement, (f"rel_{uuid.uuid4().hex[:12]}", source_decision_id, target_decision_id, "supersedes", "newer compatible decision", task_mode, created_at))
+
     def save_dream_pattern(self, pattern: str, score: float, verdict: str) -> None:
         cur = self.conn.cursor()
         existing = cur.execute(
