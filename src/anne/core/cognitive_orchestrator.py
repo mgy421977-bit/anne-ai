@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TypedDict
 from uuid import uuid4
 
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
@@ -18,11 +19,20 @@ from anne.core.fail_fast import FailFastResult
 from anne.core.failure_recovery import FailureRecoveryController, FailureSignal
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
+from anne.core.self_correction import SelfCorrectionPlanner
 from anne.core.verification import ClaimVerifier
 from anne.mythos.candidate import SelectionResult, TaskMode
 from anne.mythos.engine import ExplorationMode, HypothesisCandidate
 from anne.mythos.generate import generate_candidates
 from anne.mythos.selection import CandidateSelector
+
+
+class LearningSignalFields(TypedDict):
+    learning_failure_class: str
+    learning_strategy: str
+    learning_lesson: str
+    learning_confidence: float
+    learning_safe_to_reuse: bool
 
 
 @dataclass(frozen=True)
@@ -158,6 +168,31 @@ class CognitiveOrchestrator:
     @staticmethod
     def _base_trace() -> list[str]:
         return ["FAIL_FAST", "DUY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"]
+
+    @staticmethod
+    def _learning_signal(
+        failure: FailureSignal,
+        question: str,
+        *,
+        retry_index: int,
+    ) -> LearningSignalFields:
+        """Translate a failure into bounded learning metadata for persistence."""
+        plan = SelfCorrectionPlanner().plan(
+            question,
+            meta_tag=failure.kind.value,
+            reason=failure.reason,
+            retry_index=retry_index,
+            max_retries=FailureRecoveryController.MAX_RETRIES
+            if hasattr(FailureRecoveryController, "MAX_RETRIES")
+            else 2,
+        )
+        return {
+            "learning_failure_class": plan.signal.failure_class.value,
+            "learning_strategy": plan.signal.strategy,
+            "learning_lesson": plan.signal.lesson,
+            "learning_confidence": plan.signal.confidence,
+            "learning_safe_to_reuse": plan.signal.safe_to_reuse,
+        }
 
     def run(
         self,
@@ -337,6 +372,9 @@ class CognitiveOrchestrator:
                     depth=retry_count,
                     task_mode=task_mode.value,
                     scale_role="frame",
+                    **self._learning_signal(
+                        failure, current_question, retry_index=retry_count
+                    ),
                 )
                 last_reason = reason
                 if retry_count == 0:
@@ -406,6 +444,19 @@ class CognitiveOrchestrator:
                                 depth=retry_count,
                                 task_mode=task_mode.value,
                                 scale_role="frame",
+                                **self._learning_signal(
+                                    FailureSignal(
+                                        FailureRecoveryController.classify(
+                                            last_reason, "POST_RETRY_EVALUATION"
+                                        ),
+                                        last_reason,
+                                        "POST_RETRY_EVALUATION",
+                                        cycle_id,
+                                        retry_count,
+                                    ),
+                                    current_question,
+                                    retry_index=retry_count,
+                                ),
                             )
                             return OrchestrationResult(
                                 "BOUNDED",
@@ -460,6 +511,9 @@ class CognitiveOrchestrator:
                     depth=retry_count,
                     task_mode=task_mode.value,
                     scale_role="frame",
+                    **self._learning_signal(
+                        failure, current_question, retry_index=retry_count
+                    ),
                 )
                 previous_confidence = confidence
 
@@ -499,6 +553,17 @@ class CognitiveOrchestrator:
                     depth=retry_count,
                     task_mode=task_mode.value,
                     scale_role="frame",
+                    **self._learning_signal(
+                        FailureSignal(
+                            FailureRecoveryController.classify(retry.reason, "RETRY_GATE"),
+                            retry.reason,
+                            "RETRY_GATE",
+                            cycle_id,
+                            retry_count,
+                        ),
+                        current_question,
+                        retry_index=retry_count,
+                    ),
                 )
                 return OrchestrationResult(
                     "BOUNDED",

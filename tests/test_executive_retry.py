@@ -77,3 +77,54 @@ def test_selector_result_contract_matches_candidate() -> None:
 
 def test_task_mode_contract_remains_available() -> None:
     assert TaskMode.TECHNICAL.value == "technical"
+
+def test_failure_trace_persists_structured_learning_signal(tmp_path) -> None:
+    memory = FractalMemory(tmp_path / "anne.db")
+    trace_id = memory.save_failure_trace(
+        cycle_id="cycle-learning",
+        stage="YAP",
+        raw_input="test question",
+        reason="insufficient evidence",
+        meta_tag="executive_retry",
+        learning_failure_class="evidence_gap",
+        learning_strategy="seek_missing_evidence_or_abstain",
+        learning_lesson="Previous attempt failed; do not treat it as validated knowledge.",
+        learning_confidence=0.5,
+        learning_safe_to_reuse=False,
+    )
+
+    row = memory.get_recent_failures(limit=1)[0]
+    assert row[0] == trace_id
+    assert row[7] == "evidence_gap"
+    assert row[8] == "seek_missing_evidence_or_abstain"
+    assert row[9].startswith("Previous attempt failed")
+    assert row[10] == 0.5
+    assert row[11] == 0
+
+
+def test_orchestrator_persists_learning_signal_for_selection_failure(tmp_path) -> None:
+    memory = FractalMemory(tmp_path / "anne.db")
+    pipeline = AnnePipeline(memory=memory)
+
+    class RejectingSelector:
+        def select(self, candidates, *, task_mode):
+            del candidates, task_mode
+            return SelectionResult(
+                candidate=None,
+                accepted=False,
+                score=0.0,
+                reason="insufficient evidence",
+                considered=0,
+            )
+
+    result = CognitiveOrchestrator(
+        pipeline,
+        selector=RejectingSelector(),
+        max_retries=0,
+    ).run("test question", seed=1)
+
+    assert result.stop_reason == "selection_rejected"
+    row = memory.get_recent_failures(limit=1)[0]
+    assert row[7] == "evidence_gap"
+    assert row[8] == "seek_missing_evidence_or_abstain"
+    assert row[11] == 0
