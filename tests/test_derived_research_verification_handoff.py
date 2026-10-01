@@ -181,3 +181,43 @@ def test_derived_research_learning_persists_exact_parent_context(tmp_path) -> No
         and row["factual_status"] == "VERIFIED"
         for row in persisted
     )
+
+def test_derived_verified_learning_is_not_safe_to_reuse() -> None:
+    loop, state, claim = _state_with_derived_hypothesis()
+    evidence = (
+        _evidence(claim, "https://primary.example/source", "supports"),
+        _evidence(claim, "https://independent.example/source", "supports"),
+    )
+
+    refreshed = loop.reassess_after_derived_research(
+        state,
+        executor=_StubExecutor(evidence),
+    )
+
+    assert refreshed.adaptive_learning is not None
+    experience = refreshed.adaptive_learning.experience
+    assert experience.factual_status == "VERIFIED"
+    assert experience.safe_to_reuse is False
+
+
+def test_derived_conflict_learning_is_not_safe_to_reuse() -> None:
+    loop, state, claim = _state_with_derived_hypothesis()
+    evidence = (
+        _evidence(claim, "https://primary.example/source", "supports"),
+        _evidence(
+            claim,
+            "https://independent.example/source",
+            "contradicts",
+            passage=f"{claim} is not true",
+        ),
+    )
+
+    refreshed = loop.reassess_after_derived_research(
+        state,
+        executor=_StubExecutor(evidence),
+    )
+
+    assert refreshed.adaptive_learning is not None
+    experience = refreshed.adaptive_learning.experience
+    assert experience.factual_status == "CONFLICTING"
+    assert experience.safe_to_reuse is False
