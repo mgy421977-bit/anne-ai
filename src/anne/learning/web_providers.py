@@ -205,8 +205,8 @@ class ScraplingProvider:
             return ()
 
         try:
-            page = Fetcher.get(query, timeout=int(self.limits.timeout_seconds))
-            text = page.text(separator=" ", strip=True)
+            page = Fetcher.get(query)
+            text = str(page.text)
         except Exception:
             return ()
 
