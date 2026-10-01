@@ -26,7 +26,10 @@ class InformationGapDetector:
             verification.get("status", verification.get("verification_status", ""))
         ).upper()
         intent_recorded = bool(trace.intent)
-        evidence_required = intent_recorded and trace.intent.get("requires_evidence", True) is not False
+        evidence_required = (
+            intent_recorded
+            and trace.intent.get("requires_evidence", True) is not False
+        )
         decision_status = str(
             decision.get("status", decision.get("verdict", ""))
         ).upper()
