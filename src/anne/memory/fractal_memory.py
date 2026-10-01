@@ -104,6 +104,11 @@ class FractalMemory:
                 "parent_cycle_id": "TEXT",
                 "task_mode": "TEXT NOT NULL DEFAULT 'general'",
                 "scale_role": "TEXT NOT NULL DEFAULT 'frame'",
+                "learning_failure_class": "TEXT NOT NULL DEFAULT ''",
+                "learning_strategy": "TEXT NOT NULL DEFAULT ''",
+                "learning_lesson": "TEXT NOT NULL DEFAULT ''",
+                "learning_confidence": "REAL NOT NULL DEFAULT 0.0",
+                "learning_safe_to_reuse": "INTEGER NOT NULL DEFAULT 0",
             },
         )
         self.conn.commit()
@@ -385,19 +390,32 @@ class FractalMemory:
     def save_failure_trace(self, cycle_id: str, stage: str, raw_input: str, reason: str,
                            meta_tag: str = "", hypothesis_id: str = "", ethic_total: float = 0.0,
                            *, depth: int = 0, parent_cycle_id: str | None = None,
-                           task_mode: str = "general", scale_role: str = "frame") -> str:
+                           task_mode: str = "general", scale_role: str = "frame",
+                           learning_failure_class: str = "",
+                           learning_strategy: str = "",
+                           learning_lesson: str = "",
+                           learning_confidence: float = 0.0,
+                           learning_safe_to_reuse: bool = False) -> str:
+        """Persist a failure plus its bounded, non-authoritative learning signal."""
         trace_id = f"ft_{uuid.uuid4().hex}"
+        confidence = max(0.0, min(1.0, float(learning_confidence)))
         self.conn.execute("""INSERT INTO failure_traces
             (id,cycle_id,stage,raw_input,reason,meta_tag,hypothesis_id,ethic_total,created_at,
-             depth,parent_cycle_id,task_mode,scale_role) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+             depth,parent_cycle_id,task_mode,scale_role,learning_failure_class,
+             learning_strategy,learning_lesson,learning_confidence,learning_safe_to_reuse)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (trace_id,cycle_id,stage,raw_input,reason,meta_tag,hypothesis_id,ethic_total,
-             datetime.now().isoformat(),depth,parent_cycle_id,task_mode,scale_role))
+             datetime.now().isoformat(),depth,parent_cycle_id,task_mode,scale_role,
+             learning_failure_class,learning_strategy,learning_lesson,confidence,
+             int(learning_safe_to_reuse)))
         self.conn.commit()
         return trace_id
 
     def get_recent_failures(self, limit: int = 5) -> list[tuple[Any, ...]]:
         rows = self.conn.cursor().execute(
-            """SELECT id,cycle_id,stage,reason,meta_tag,ethic_total,created_at
+            """SELECT id,cycle_id,stage,reason,meta_tag,ethic_total,created_at,
+            learning_failure_class,learning_strategy,learning_lesson,
+            learning_confidence,learning_safe_to_reuse
             FROM failure_traces ORDER BY created_at DESC,rowid DESC LIMIT ?""",
             (limit,),
         ).fetchall()
