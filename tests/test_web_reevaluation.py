@@ -97,7 +97,6 @@ def test_re_evaluation_does_not_research_when_no_downstream_result():
 
     assert result.plan.action == "STOP"
     assert result.fresh_evidence == ()
-    assert result.researcher.calls if False else True
     assert researcher.calls == []
 
 
