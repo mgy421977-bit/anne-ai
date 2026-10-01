@@ -49,6 +49,8 @@ def test_decision_loop_reuses_learning_in_same_explicit_context(tmp_path) -> Non
     assert adaptation is not None
     assert adaptation.strategy.action == "CHANGE"
     assert adaptation.strategy.strategy == "seek_fresh_independent_evidence"
+    assert second.research_state.decision.action == "RESEARCH"
+    assert second.research_state.decision.research_allowed is True
 
 
 def test_decision_loop_does_not_transfer_learning_across_context(tmp_path) -> None:
@@ -71,3 +73,4 @@ def test_decision_loop_does_not_transfer_learning_across_context(tmp_path) -> No
     assert adaptation is not None
     assert adaptation.strategy.action == "KEEP"
     assert adaptation.strategy.strategy == "research"
+    assert isolated.research_state.decision.action != "RESEARCH"
