@@ -60,6 +60,14 @@ class SemanticSupportEvaluator:
             return SupportStatus.UNCLEAR
         if any(marker in normalized_passage for marker in self.INJECTION_MARKERS):
             return SupportStatus.UNCLEAR
+        explicit_negations = (
+            f"{normalized_claim} is not true",
+            f"{normalized_claim} is false",
+            f"false: {normalized_claim}",
+            f"false that {normalized_claim}",
+        )
+        if any(candidate in normalized_passage for candidate in explicit_negations):
+            return SupportStatus.CONTRADICTS
         if normalized_claim in normalized_passage:
             return SupportStatus.SUPPORTS
         capital = re.fullmatch(r"(.+?) is the capital of (.+?)\.?", normalized_claim)
