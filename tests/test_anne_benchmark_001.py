@@ -33,6 +33,15 @@ def test_benchmark_001_evidence_change_rebuilds_decision_trace():
         passage=question,
         support="contradicts",
     )
+    fresh_independent = EvidenceItem(
+        source="source-c",
+        claim=question,
+        kind="web",
+        provenance="https://c.example/source",
+        confidence=0.9,
+        passage=question,
+        support="contradicts",
+    )
 
     state = ResearchCognitiveLoop().initialize(
         question,
@@ -50,7 +59,7 @@ def test_benchmark_001_evidence_change_rebuilds_decision_trace():
     assert state.decision.action == "PROCEED"
 
     result = BoundedWebReEvaluator(
-        ScenarioResearcher((fresh,))
+        ScenarioResearcher((fresh, fresh_independent))
     ).reevaluate(
         question=question,
         ledger=state.evidence_ledger,
