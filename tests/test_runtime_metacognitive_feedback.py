@@ -44,8 +44,7 @@ def _decision_loop_for_state(
         context_map={
             "verification_status": verification_status,
             "verification_sources": verification_sources,
-            "requires_evidence": requires_evidence,
-            **({"intent": "answer"} if include_intent else {}),
+            **({"requires_evidence": requires_evidence, "intent": "answer"} if include_intent else {}),
         },
         ethic_score=None,
     )
