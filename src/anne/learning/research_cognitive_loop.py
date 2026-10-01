@@ -24,10 +24,10 @@ from anne.learning.derived_research_executor import DerivedResearchExecutor, Der
 from anne.learning.derived_research_planner import DerivedResearchPlanner
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.experience_learning import Experience
-from anne.learning.metacognitive_controller import MetacognitiveController
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.joint_inference import JointInference, JointInferenceEngine
+from anne.learning.metacognitive_controller import MetacognitiveController
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation import ReEvaluationPlan
 from anne.learning.reevaluation_learning import ReEvaluationLearningAdapter
