@@ -10,7 +10,7 @@ import urllib.request
 from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 
 
@@ -146,7 +146,7 @@ class WebResearchTransport:
         self.fetcher = fetcher or self._default_fetcher
         self.cache_policy = cache_policy or CachePolicy()
         self.retry_policy = retry_policy or RetryPolicy()
-        self.clock = clock or (lambda: datetime.now(timezone.utc))
+        self.clock = clock or (lambda: datetime.now(UTC))
         if timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be positive")
         self.sleeper = sleeper or time.sleep
