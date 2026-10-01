@@ -52,6 +52,11 @@ class Evidence:
     provenance: Provenance
     confidence: float = 0.5
 
+    @property
+    def content_hash(self) -> str:
+        """Compatibility accessor for provenance content hashes."""
+        return self.provenance.content_hash
+
 
 @dataclass
 class SemanticFrame:
