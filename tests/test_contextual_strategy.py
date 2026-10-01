@@ -176,7 +176,7 @@ def test_selector_bounds_candidates_and_history() -> None:
         max_experiences=2,
         max_candidates=1,
     ).select(
-        StrategyContext("evidence_gap"),
+        StrategyContext("evidence_gap", "test_context", (("mode", "test"),)),
         experiences,
         ("research", "alternative"),
     )
