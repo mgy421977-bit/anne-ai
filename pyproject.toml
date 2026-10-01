@@ -28,8 +28,7 @@ dependencies = [
 [project.optional-dependencies]
 gemini = ["google-genai>=1.0.0"]
 research = [
-    "scrapling>=0.4.15",
-    "patchright>=1.62.1",
+    "scrapling[fetchers]>=0.4.15",
 ]
 
 anthropic = ["anthropic>=0.40.0"]
