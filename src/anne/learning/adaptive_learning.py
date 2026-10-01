@@ -5,15 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from anne.core.trace import CycleTrace
-from anne.learning.experience_learning import Experience, ExperienceLearner
-from anne.learning.information_gap import InformationGap, InformationGapDetector
-from anne.learning.metacognition import Metacognition, MetacognitiveAssessment
-from anne.learning.strategy_adaptation import StrategyAdapter, StrategyDecision
 from anne.learning.contextual_strategy import (
     ContextualStrategyChoice,
     ContextualStrategySelector,
     StrategyContext,
 )
+from anne.learning.experience_learning import Experience, ExperienceLearner
+from anne.learning.information_gap import InformationGap, InformationGapDetector
+from anne.learning.metacognition import Metacognition, MetacognitiveAssessment
+from anne.learning.strategy_adaptation import StrategyAdapter, StrategyDecision
 from anne.learning.strategy_outcome import StrategyOutcome, StrategyOutcomeEvaluator
 from anne.learning.strategy_recovery import StrategyRecovery, StrategyRecoveryEvaluator
 
