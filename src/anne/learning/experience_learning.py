@@ -80,7 +80,7 @@ class ExperienceLearner:
             "verification_status",
             trace.verification.get("status"),
         )
-        intent_recorded = bool(trace.intent)
+        intent_recorded = "intent" in trace.intent
         evidence_required = (
             intent_recorded
             and trace.intent.get("requires_evidence", True) is not False
