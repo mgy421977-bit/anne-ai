@@ -36,7 +36,7 @@ class ExplicitContextFingerprint:
         context: Mapping[str, object] | None,
         *,
         max_conditions: int = 16,
-    ) -> "ExplicitContextFingerprint":
+    ) -> ExplicitContextFingerprint:
         if max_conditions < 1:
             raise ValueError("max_conditions must be positive")
         data = dict(context or {})
