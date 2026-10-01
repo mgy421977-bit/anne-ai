@@ -41,13 +41,17 @@ def mitos_record(hypothesis_id: str, context: dict[str, str]) -> ExperienceRecor
     )
 
 
-def run_case(case_id: str, context: dict[str, str]) -> dict:
+def run_case(
+    case_id: str,
+    runtime_context: dict[str, str],
+    mitos_context: dict[str, str],
+) -> dict:
     result = AdaptiveLearningCoordinator().observe(
-        failed_trace(context),
+        failed_trace(runtime_context),
         strategy="bounded_test",
         mitos_outcomes=(
-            mitos_record("m1", {"mode": context["mode"]}),
-            mitos_record("m2", {"mode": context["mode"]}),
+            mitos_record("m1", mitos_context),
+            mitos_record("m2", mitos_context),
         ),
         mitos_failure_classes={"m1": "evidence_gap", "m2": "evidence_gap"},
     )
@@ -62,8 +66,16 @@ def run_case(case_id: str, context: dict[str, str]) -> dict:
 def main() -> int:
     dataset = json.loads(FIXTURE.read_text(encoding="utf-8"))
     rows = [
-        run_case("repeated_same_context", {"mode": "research"}),
-        run_case("repeated_cross_context", {"mode": "production"}),
+        run_case(
+            "repeated_same_context",
+            {"mode": "research"},
+            {"mode": "research"},
+        ),
+        run_case(
+            "repeated_cross_context",
+            {"mode": "research"},
+            {"mode": "production"},
+        ),
     ]
     expected = {item["id"]: item["expected"] for item in dataset["scenarios"]}
     mismatches = []
