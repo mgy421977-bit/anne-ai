@@ -269,6 +269,7 @@ def test_runtime_hands_off_experience_only_with_exact_explicit_context() -> None
         learning_context=context,
         strategy="research",
     )
+    loop.orchestrator.result = replace(loop.orchestrator.result, lineage=("or_runtime_context_2",))
     second = loop.run(
         "Question",
         learning_context=context,
