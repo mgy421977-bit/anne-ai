@@ -1,0 +1,63 @@
+{
+  "schema_version": "1",
+  "split": "synthetic_deterministic",
+  "description": "Bounded regression fixture for context-scoped strategy adaptation.",
+  "cases": [
+    {
+      "id": "no_history",
+      "current_strategy": "research",
+      "experiences": [],
+      "expected_action": "KEEP",
+      "expected_strategy": "research"
+    },
+    {
+      "id": "single_failure",
+      "current_strategy": "research",
+      "experiences": [
+        {"outcome": "FAILURE", "failure_class": "evidence_gap", "strategy": "research", "source_cycle_id": "c1"}
+      ],
+      "expected_action": "KEEP",
+      "expected_strategy": "research"
+    },
+    {
+      "id": "repeated_same_failure",
+      "current_strategy": "research",
+      "experiences": [
+        {"outcome": "FAILURE", "failure_class": "evidence_gap", "strategy": "research", "source_cycle_id": "c1"},
+        {"outcome": "FAILURE", "failure_class": "evidence_gap", "strategy": "research", "source_cycle_id": "c2"}
+      ],
+      "expected_action": "CHANGE",
+      "expected_strategy": "seek_fresh_independent_evidence"
+    },
+    {
+      "id": "mixed_causes",
+      "current_strategy": "research",
+      "experiences": [
+        {"outcome": "FAILURE", "failure_class": "evidence_gap", "strategy": "research", "source_cycle_id": "c1"},
+        {"outcome": "FAILURE", "failure_class": "semantic", "strategy": "research", "source_cycle_id": "c2"}
+      ],
+      "expected_action": "ABSTAIN",
+      "expected_strategy": "reassess_without_assuming_cause"
+    },
+    {
+      "id": "safety_failure",
+      "current_strategy": "execute",
+      "experiences": [
+        {"outcome": "FAILURE", "failure_class": "execution_risk", "strategy": "execute", "source_cycle_id": "c1"},
+        {"outcome": "FAILURE", "failure_class": "execution_risk", "strategy": "execute", "source_cycle_id": "c2"}
+      ],
+      "expected_action": "ABSTAIN",
+      "expected_strategy": "require_authority_review"
+    },
+    {
+      "id": "other_strategy_is_ignored",
+      "current_strategy": "research",
+      "experiences": [
+        {"outcome": "FAILURE", "failure_class": "evidence_gap", "strategy": "analysis", "source_cycle_id": "c1"},
+        {"outcome": "FAILURE", "failure_class": "evidence_gap", "strategy": "analysis", "source_cycle_id": "c2"}
+      ],
+      "expected_action": "KEEP",
+      "expected_strategy": "research"
+    }
+  ]
+}
