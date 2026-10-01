@@ -32,7 +32,10 @@ class TurkishLanguageCheckPolicy:
         if intent.ambiguity >= self.ambiguity_threshold:
             return LanguageCheckDecision(
                 True,
-                "Explicit intent framing reports high ambiguity; language evidence may clarify context.",
+                (
+                    "Explicit intent framing reports high ambiguity; "
+                    "language evidence may clarify context."
+                ),
             )
 
         return LanguageCheckDecision(
