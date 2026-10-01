@@ -20,6 +20,7 @@ def _trace(
         status=status,
         stage_trace=("FAIL_FAST", "DUY", "BAK"),
         stop_reason=stop_reason,
+        intent={"intent": "answer"},
         verification=verification or {},
         decision=decision or {},
         errors=errors,
