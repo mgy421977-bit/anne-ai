@@ -17,6 +17,7 @@ from typing import Any, cast
 
 from .evidence import EvidenceItem
 from .web_research_transport import WebResearchTransport
+from .web_providers import ResearchProviderRegistry, default_external_registry
 
 
 class _DuckDuckGoParser(HTMLParser):
@@ -123,8 +124,14 @@ class WebResearcher:
         "how", "why", "about", "is", "are", "a", "an", "of", "to", "in",
     }
 
-    def __init__(self, transport: WebResearchTransport | None = None) -> None:
+    def __init__(
+        self,
+        transport: WebResearchTransport | None = None,
+        *,
+        external_registry: ResearchProviderRegistry | None = None,
+    ) -> None:
         self.transport = transport or WebResearchTransport(timeout_seconds=self.timeout)
+        self.external_registry = external_registry or default_external_registry()
         self._last_retrieved_at = ""
 
     def _get_text(self, url: str) -> str:
@@ -445,6 +452,14 @@ class WebResearcher:
         if not query:
             return []
         evidence: list[EvidenceItem] = []
+        # External providers are bounded retrieval adapters. Their observations
+        # enter the same evidence path as ordinary web results; they never
+        # verify claims or grant authority.
+        for item in self.external_registry.research(query):
+            self._add_unique(evidence, item)
+            if len(evidence) >= self.max_evidence:
+                return evidence[: self.max_evidence]
+
         variants = self._query_variants(query)
         for search_query in variants:
             try:
