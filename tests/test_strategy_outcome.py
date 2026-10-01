@@ -66,12 +66,14 @@ def test_changed_strategy_followed_by_failure_is_not_improved() -> None:
             strategy="research",
             outcome="FAILURE",
             failure_class="evidence_gap",
+            lineage=("c1",),
         ),
         _experience(
             "c2",
             strategy="recheck_independent_evidence",
             outcome="FAILURE",
             failure_class="evidence_gap",
+            lineage=("c1", "c2"),
         ),
     )
     decision = StrategyDecision(
