@@ -19,7 +19,7 @@ import json
 import os
 import shlex
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol
@@ -192,21 +192,42 @@ class ScraplingProvider:
 
     name = "scrapling"
 
-    def __init__(self, *, limits: ProviderLimits | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        limits: ProviderLimits | None = None,
+        fetch_page: Callable[..., object] | None = None,
+    ) -> None:
         self.limits = limits or ProviderLimits()
+        self._fetch_page = fetch_page
 
     def research(self, query: str) -> Sequence[EvidenceItem]:
         parsed = urlparse(query.strip())
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             return ()
-        try:
-            from scrapling.fetchers import Fetcher  # type: ignore[import-not-found]
-        except ImportError:
-            return ()
+
+        fetch_page = self._fetch_page
+        if fetch_page is None:
+            try:
+                from scrapling.fetchers import Fetcher  # type: ignore[import-not-found]
+            except ImportError:
+                return ()
+            fetch_page = Fetcher.get
 
         try:
-            page = Fetcher.get(query)
-            text = str(page.text)
+            page = fetch_page(
+                query,
+                timeout=self.limits.timeout_seconds,
+                retries=0,
+                follow_redirects="safe",
+            )
+            status = getattr(page, "status", 200)
+            if isinstance(status, int) and status >= 400:
+                return ()
+            if hasattr(page, "get_all_text"):
+                text = str(page.get_all_text(ignore_tags=("script", "style")))
+            else:
+                text = str(getattr(page, "text", ""))
         except Exception:
             return ()
 
