@@ -16,8 +16,8 @@ from html.parser import HTMLParser
 from typing import Any, cast
 
 from .evidence import EvidenceItem
-from .web_research_transport import WebResearchTransport
 from .web_providers import ResearchProviderRegistry, default_external_registry
+from .web_research_transport import WebResearchTransport
 
 
 class _DuckDuckGoParser(HTMLParser):
