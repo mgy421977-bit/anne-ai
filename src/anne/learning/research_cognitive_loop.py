@@ -4,19 +4,25 @@ from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from uuid import uuid4
 
+from anne.core.intent import IntentClassifier
 from anne.core.trace import CycleTrace
 from anne.core.verification import BoundedMultiSourceVerifier, VerificationResult
-from anne.learning.adaptive_learning import AdaptiveLearningCoordinator, AdaptiveLearningResult
-from anne.learning.metacognitive_controller import MetacognitiveController
+from anne.language.corroboration import (
+    LanguageCorroborationResult,
+    TurkishLanguageCorroborationService,
+)
+from anne.language.learning import to_evidence_items
+from anne.language.service import LanguageCheckResult, TurkishLanguageEvidenceService
+from anne.learning.adaptive_learning import (
+    AdaptiveLearningCoordinator,
+    AdaptiveLearningResult,
+)
 from anne.learning.critic_loop import CriticLoopController, LoopDecision
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
 from anne.learning.derived_hypothesis import DerivedHypothesis, DerivedHypothesisGenerator
 from anne.learning.derived_research_executor import DerivedResearchExecutor, DerivedResearchResult
 from anne.learning.derived_research_planner import DerivedResearchPlanner
-from anne.core.intent import IntentClassifier
-from anne.language.corroboration import LanguageCorroborationResult, TurkishLanguageCorroborationService
-from anne.language.service import LanguageCheckResult, TurkishLanguageEvidenceService
-from anne.language.learning import to_evidence_items
+from anne.learning.metacognitive_controller import MetacognitiveController
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.experience_learning import Experience
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
