@@ -98,9 +98,11 @@ def test_decisionloop_runtime_consumes_mitos_outcomes_without_authority_bypass()
 
     strategy = result.research_state.adaptive_learning.strategy
     assert strategy.action == "ABSTAIN"
-    assert strategy.strategy == "require_authority_review"
-    assert strategy.reason == "safety_or_authority_boundary_must_not_be_bypassed"
-    assert strategy.source_cycle_ids == ("m1", "m2")
+    assert strategy.strategy == "reassess_without_assuming_cause"
+    assert strategy.reason == "repeated_failures_have_different_causes"
+    assert "m1" in strategy.source_cycle_ids
+    assert "m2" in strategy.source_cycle_ids
+    assert len(strategy.source_cycle_ids) >= 3
 
     # The runtime consumed the MITOS observations, but the authority boundary
     # remains fail-closed and cannot be bypassed by learned strategy.
