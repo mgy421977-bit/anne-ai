@@ -5,7 +5,7 @@ from anne.learning.derived_hypothesis import DerivedHypothesis
 from anne.learning.derived_research_executor import DerivedResearchResult
 from anne.learning.derived_research_planner import DerivedResearchPlanner
 from anne.learning.evidence import EvidenceItem
-from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
+from anne.learning.research_cognitive_loop import ResearchCognitiveLoop, ResearchCognitiveState
 
 
 class _StubExecutor:
@@ -22,7 +22,7 @@ class _StubExecutor:
         )
 
 
-def _state_with_derived_hypothesis() -> tuple[ResearchCognitiveLoop, object, str]:
+def _state_with_derived_hypothesis() -> tuple[ResearchCognitiveLoop, ResearchCognitiveState, str]:
     loop = ResearchCognitiveLoop()
     state = loop.initialize("Question")
     claim = "A derived claim"
