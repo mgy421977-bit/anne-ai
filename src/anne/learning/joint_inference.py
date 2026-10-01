@@ -81,15 +81,22 @@ class JointInferenceEngine:
 
         if conflicting:
             status = JointInferenceStatus.CONFLICTING_PREMISES
-            reason = "At least one premise is explicitly conflicting; the derived claim remains unresolved."
+            reason = (
+                "At least one premise is explicitly conflicting; "
+                "the derived claim remains unresolved."
+            )
         elif unverified:
             status = JointInferenceStatus.UNVERIFIED_PREMISES
-            reason = "The premises are not all verified; combining them does not establish factual truth."
+            reason = (
+                "The premises are not all verified; "
+                "combining them does not establish factual truth."
+            )
         else:
             status = JointInferenceStatus.DERIVED
             reason = (
                 "The claim is derived from explicit premises. "
-                "Logical derivation and source-family diversity do not by themselves establish truth or authority."
+                "Logical derivation and source-family diversity do not by "
+                "themselves establish truth or authority."
             )
 
         return JointInference(
