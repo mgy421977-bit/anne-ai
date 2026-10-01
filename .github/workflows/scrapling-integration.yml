@@ -2,6 +2,12 @@ name: Scrapling Integration Proof
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/anne/learning/web_providers.py"
+      - "tests/integration/test_scrapling_e2e.py"
+      - ".github/workflows/scrapling-integration.yml"
+      - "pyproject.toml"
 
 permissions:
   contents: read
