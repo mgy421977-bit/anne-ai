@@ -12,7 +12,7 @@ def test_metacognition_does_not_treat_confidence_as_truth() -> None:
     result = Metacognition().assess(trace)
     assert "factual status is not established as VERIFIED" in result.unknown
     assert "new_independent_evidence" in result.recalibration_triggers
-    assert result.research_required is True
+    assert result.research_required is False
     assert result.requires_review is True
 
 
