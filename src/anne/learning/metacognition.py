@@ -50,7 +50,10 @@ class Metacognition:
         intent_recorded = bool(trace.intent)
         # An explicit intent normally implies an evidence-bearing task unless
         # it records the opt-out explicitly. Missing intent remains unknown.
-        evidence_required = intent_recorded and trace.intent.get("requires_evidence", True) is not False
+        evidence_required = (
+            intent_recorded
+            and trace.intent.get("requires_evidence", True) is not False
+        )
         status = (
             str(raw_status).upper()
             if raw_status is not None
