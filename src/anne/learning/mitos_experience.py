@@ -26,6 +26,7 @@ class MitosExperienceAdapter:
         cycle_id: str | None = None,
         strategy: str = "",
         failure_class: str = "unknown",
+        context_key: str = "mitos",
     ) -> Experience | None:
         if record.status not in self._COMPLETED:
             return None
@@ -59,7 +60,7 @@ class MitosExperienceAdapter:
             ),
             safe_to_reuse=False,
             factual_status=factual_status,
-            context_key="mitos",
+            context_key=context_key,
             context_conditions=conditions,
             parent_cycle_id=None,
             lineage=(source_cycle_id,),

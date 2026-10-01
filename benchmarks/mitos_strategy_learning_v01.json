@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "split": "test",
+  "definition": "Deterministic evaluation of the MITOS completed-outcome handoff into bounded strategy adaptation.",
+  "non_claims": [
+    "not an LLM benchmark",
+    "not a generalization benchmark",
+    "not a production reliability or security certification",
+    "does not establish AGI, consciousness, or autonomous authority"
+  ],
+  "scenarios": [
+    {
+      "id": "repeated_same_context",
+      "expected": {
+        "action": "CHANGE",
+        "strategy": "seek_fresh_independent_evidence"
+      }
+    },
+    {
+      "id": "repeated_cross_context",
+      "expected": {
+        "action": "KEEP",
+        "strategy": "bounded_test"
+      }
+    }
+  ]
+}

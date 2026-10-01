@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 
 from anne.core.trace import CycleTrace
@@ -13,9 +14,11 @@ from anne.learning.contextual_strategy import (
 from anne.learning.experience_learning import Experience, ExperienceLearner
 from anne.learning.information_gap import InformationGap, InformationGapDetector
 from anne.learning.metacognition import Metacognition, MetacognitiveAssessment
+from anne.learning.mitos_experience import MitosExperienceAdapter
 from anne.learning.strategy_adaptation import StrategyAdapter, StrategyDecision
 from anne.learning.strategy_outcome import StrategyOutcome, StrategyOutcomeEvaluator
 from anne.learning.strategy_recovery import StrategyRecovery, StrategyRecoveryEvaluator
+from anne.mythos.experience import ExperienceRecord
 
 
 @dataclass(frozen=True)
@@ -60,13 +63,38 @@ class AdaptiveLearningCoordinator:
         *,
         strategy: str,
         prior_experiences: tuple[Experience, ...] = (),
+        mitos_outcomes: Sequence[ExperienceRecord] = (),
+        mitos_failure_classes: Mapping[str, str] | None = None,
     ) -> AdaptiveLearningResult:
         metacognition = Metacognition().assess(trace)
         gap = self.gap_detector.detect(trace)
         experience = self.experience_learner.from_trace(trace, strategy=strategy)
-        experiences = (*prior_experiences, experience)
 
-        decision = self.strategy_adapter.adapt(strategy, experiences)
+        mitos_experiences: list[Experience] = []
+        if mitos_outcomes and (experience.context_key or experience.context_conditions):
+            failure_classes = mitos_failure_classes or {}
+            adapter = MitosExperienceAdapter()
+            for record in mitos_outcomes:
+                observed = adapter.to_experience(
+                    record,
+                    strategy=strategy,
+                    failure_class=failure_classes.get(record.hypothesis_id, "unknown"),
+                    context_key=experience.context_key,
+                )
+                if (
+                    observed is not None
+                    and observed.context_conditions == experience.context_conditions
+                ):
+                    mitos_experiences.append(observed)
+
+        experiences = (*prior_experiences, *mitos_experiences, experience)
+
+        decision = self.strategy_adapter.adapt(
+            strategy,
+            experiences,
+            context_key=experience.context_key or None,
+            context_conditions=experience.context_conditions,
+        )
         contextual_choice = self.contextual_selector.select(
             StrategyContext(
                 experience.failure_class,

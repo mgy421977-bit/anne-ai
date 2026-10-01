@@ -35,6 +35,7 @@ from anne.learning.reevaluation_learning import ReEvaluationLearningAdapter
 from anne.learning.reevaluation_loop import ReEvaluationCycleResult, ReEvaluationLoop
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 from anne.memory.fractal_memory import FractalMemory
+from anne.mythos.experience import ExperienceRecord
 
 
 @dataclass(frozen=True)
@@ -93,6 +94,8 @@ class ResearchCognitiveLoop:
         completed_trace: CycleTrace | None = None,
         strategy: str = "research",
         prior_experiences: tuple[Experience, ...] = (),
+        mitos_outcomes: tuple[ExperienceRecord, ...] = (),
+        mitos_failure_classes: dict[str, str] | None = None,
     ) -> ResearchCognitiveState:
         language_check = None
         language_corroboration = None
@@ -213,6 +216,8 @@ class ResearchCognitiveLoop:
                 observation_trace,
                 strategy=strategy,
                 prior_experiences=prior_experiences,
+                mitos_outcomes=mitos_outcomes,
+                mitos_failure_classes=mitos_failure_classes,
             )
             if (
                 adaptive_result.strategy.action == "CHANGE"
