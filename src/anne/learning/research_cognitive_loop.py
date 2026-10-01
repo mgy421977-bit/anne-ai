@@ -29,13 +29,13 @@ from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.joint_inference import JointInference, JointInferenceEngine
 from anne.learning.metacognitive_controller import MetacognitiveController
-from anne.mythos.experience import ExperienceRecord
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation import ReEvaluationPlan
 from anne.learning.reevaluation_learning import ReEvaluationLearningAdapter
 from anne.learning.reevaluation_loop import ReEvaluationCycleResult, ReEvaluationLoop
 from anne.learning.research_planner import ResearchPlan, ResearchPlanner
 from anne.memory.fractal_memory import FractalMemory
+from anne.mythos.experience import ExperienceRecord
 
 
 @dataclass(frozen=True)
