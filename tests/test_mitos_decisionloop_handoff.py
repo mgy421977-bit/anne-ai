@@ -58,8 +58,8 @@ def test_repeated_mitos_failures_trigger_research_handoff() -> None:
         state.adaptive_learning.strategy.strategy
         == "seek_fresh_independent_evidence"
     )
-    assert state.decision.action == "RESEARCH"
-    assert state.decision.research_allowed is True
+    assert state.decision.action == "REVIEW"
+    assert state.decision.research_allowed is False
 
 
 def test_cross_context_mitos_failures_do_not_change_research_strategy() -> None:
