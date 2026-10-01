@@ -18,6 +18,7 @@ from anne.learning.mitos_experience import MitosExperienceAdapter
 from anne.learning.strategy_adaptation import StrategyAdapter, StrategyDecision
 from anne.learning.strategy_outcome import StrategyOutcome, StrategyOutcomeEvaluator
 from anne.learning.strategy_recovery import StrategyRecovery, StrategyRecoveryEvaluator
+from anne.mythos.experience import ExperienceRecord
 
 
 @dataclass(frozen=True)
