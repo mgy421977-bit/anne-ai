@@ -1,3 +1,4 @@
+from dataclasses import replace
 from types import SimpleNamespace
 
 from anne.core.cognitive_orchestrator import OrchestrationResult
@@ -259,8 +260,7 @@ def test_runtime_hands_off_experience_only_with_exact_explicit_context() -> None
 
     # Force the runtime observation itself to be a bounded failure so that
     # repeated same-context observations can exercise strategy adaptation.
-    loop.orchestrator.result.status = "BOUNDED"
-    loop.orchestrator.result.stop_reason = "evidence_gap"
+    loop.orchestrator.result = replace(loop.orchestrator.result, status="BOUNDED", stop_reason="evidence_gap")
 
     first = loop.run(
         "Question",
@@ -328,8 +328,7 @@ def test_runtime_persists_exact_context_experience_across_restart(tmp_path) -> N
         lineage_id="or_runtime_persist_1",
         memory_db_path=db_path,
     )
-    first_loop.orchestrator.result.status = "BOUNDED"
-    first_loop.orchestrator.result.stop_reason = "evidence_gap"
+    first_loop.orchestrator.result = replace(first_loop.orchestrator.result, status="BOUNDED", stop_reason="evidence_gap")
     first = first_loop.run(
         "Question", learning_context=context, strategy="research"
     )
@@ -345,8 +344,7 @@ def test_runtime_persists_exact_context_experience_across_restart(tmp_path) -> N
         lineage_id="or_runtime_persist_2",
         memory_db_path=db_path,
     )
-    second_loop.orchestrator.result.status = "BOUNDED"
-    second_loop.orchestrator.result.stop_reason = "evidence_gap"
+    second_loop.orchestrator.result = replace(second_loop.orchestrator.result, status="BOUNDED", stop_reason="evidence_gap")
     second = second_loop.run(
         "Question", learning_context=context, strategy="research"
     )
