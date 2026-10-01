@@ -334,6 +334,12 @@ class DecisionLoop:
                 language_corroboration=corroboration_payload,
             )
         next_step = research_state.decision.action
+        if research_state.adaptive_learning is not None:
+            assessment = research_state.adaptive_learning.metacognition
+            if assessment.requires_review and not assessment.research_required:
+                next_step = "REVIEW"
+            elif assessment.research_required:
+                next_step = "RESEARCH"
         final_status = "ABORTED" if aborted else "EXECUTED"
         final_verdict = str(verdict)
         final_action = str(action)
