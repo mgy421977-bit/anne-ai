@@ -11,8 +11,8 @@ def _experience(
     strategy: str,
     outcome: str,
     failure_class: str,
-    context_key: str = "",
-    conditions: tuple[tuple[str, str], ...] = (),
+    context_key: str = "test_context",
+    conditions: tuple[tuple[str, str], ...] = (("mode", "test"),),
 ) -> Experience:
     return Experience(
         source_cycle_id=cycle_id,
