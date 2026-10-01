@@ -32,9 +32,23 @@ class StrategyAdapter:
         self,
         current_strategy: str,
         experiences: Sequence[Experience],
+        *,
+        context_key: str | None = None,
+        context_conditions: tuple[tuple[str, str], ...] = (),
     ) -> StrategyDecision:
+        scoped_experiences = tuple(
+            item
+            for item in experiences
+            if (
+                context_key is None
+                or (
+                    item.context_key == context_key
+                    and item.context_conditions == context_conditions
+                )
+            )
+        )
         failures = tuple(
-            item for item in experiences
+            item for item in scoped_experiences
             if item.outcome == "FAILURE" and item.strategy == current_strategy
         )
         if not failures:
