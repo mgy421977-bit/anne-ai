@@ -384,7 +384,13 @@ class ResearchCognitiveLoop:
                         for lookup in state.language_corroboration.lookups
                     ]
                     if state.language_corroboration is not None
-                    else [],
+                    and state.language_corroboration.lookups
+                    else (
+                        list(state.language_corroboration.verification.independent_sources)
+                        if state.language_corroboration is not None
+                        and state.language_corroboration.verification is not None
+                        else []
+                    ),
                 }
             ),
         )
