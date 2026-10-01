@@ -95,3 +95,29 @@ def test_decision_loop_does_not_transfer_learning_across_context(tmp_path) -> No
     assert adaptation.strategy.action == "KEEP"
     assert adaptation.strategy.strategy == "research"
     assert isolated.research_state.decision.action == "REVIEW"
+
+
+def test_decision_loop_exposes_learned_research_handoff_contract(tmp_path) -> None:
+    loop = _loop(tmp_path)
+
+    loop.run(
+        "research question",
+        learning_context={"key": "task-a", "conditions": {"mode": "research"}},
+        strategy="research",
+    )
+    second = loop.run(
+        "research question",
+        learning_context={"key": "task-a", "conditions": {"mode": "research"}},
+        strategy="research",
+    )
+
+    assert second.research_state is not None
+    adaptive = second.research_state.adaptive_learning
+    assert adaptive is not None
+    assert adaptive.strategy.action == "CHANGE"
+    assert adaptive.strategy.strategy == "seek_fresh_independent_evidence"
+
+    questions = second.research_state.next_research_questions if hasattr(
+        second.research_state, "next_research_questions"
+    ) else ()
+    assert questions == ()
