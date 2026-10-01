@@ -193,6 +193,22 @@ Evidence required for a decision must carry explicit provenance and pass the app
 
 Memory, model confidence, search results, or accumulated observations do not become authoritative merely because they exist.
 
+### External web research providers
+
+ANNE now exposes a bounded provider registry for optional external web-retrieval tools. The adapters are retrieval-only: their output enters the existing EvidenceItem/provenance path and is **not** treated as verified truth or execution authority.
+
+Supported adapters:
+
+- **Agent Reach** — external capability/router adapter. Set `ANNE_AGENT_REACH_COMMAND` to an approved local JSONL research wrapper.
+- **Scrapling** — optional direct URL retrieval adapter. Enable with `ANNE_SCRAPLING_ENABLED=1` and install the `research` extra.
+- **Patchright Enhanced** — external browser-worker adapter. Set `ANNE_PATCHRIGHT_COMMAND` to an approved local JSONL worker.
+
+The command adapters use argument lists, no shell execution, bounded time/output, and fail closed. Credentials/cookies are intentionally kept outside ANNE's evidence objects.
+
+The external provider layer is integrated with `WebResearcher`, `DerivedResearchExecutor`, and bounded re-evaluation through the existing research-provider contract. It does not bypass verification, corroboration, metacognition, or the human/agency boundary.
+
+> **Important:** Agent Reach's upstream project is primarily an installer/router around upstream tools, while Patchright Enhanced is a browser-automation layer. ANNE therefore integrates both through explicit adapters rather than embedding their unstable command surface into the cognitive core.
+
 ### Bounded research
 
 The Research Cognitive Loop provides:
