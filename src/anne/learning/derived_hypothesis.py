@@ -26,7 +26,12 @@ class DerivedHypothesis:
 class DerivedHypothesisGenerator:
     """Create a bounded set of testable follow-up hypotheses."""
 
-    def generate(self, inferences: tuple[JointInference, ...], *, max_hypotheses: int = 2) -> tuple[DerivedHypothesis, ...]:
+    def generate(
+        self,
+        inferences: tuple[JointInference, ...],
+        *,
+        max_hypotheses: int = 2,
+    ) -> tuple[DerivedHypothesis, ...]:
         if max_hypotheses < 1:
             raise ValueError("max_hypotheses must be >= 1")
         result: list[DerivedHypothesis] = []
