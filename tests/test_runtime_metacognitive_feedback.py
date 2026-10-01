@@ -440,8 +440,7 @@ def test_re_evaluation_persists_context_and_lineage(tmp_path) -> None:
 
 def test_re_evaluation_preserves_language_corroboration_metacognitive_signal() -> None:
     loop = _decision_loop_for_state(verification_status="UNVERIFIED")
-    loop.orchestrator.result.status = "BOUNDED"
-    loop.orchestrator.result.stop_reason = "evidence_gap"
+    loop.orchestrator.result = replace(loop.orchestrator.result, status="BOUNDED", stop_reason="evidence_gap")
     first = loop.run("The answer is supported.")
     assert first.research_state is not None
 
