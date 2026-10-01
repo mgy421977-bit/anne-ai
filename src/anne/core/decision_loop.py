@@ -203,7 +203,7 @@ class DecisionLoop:
             "used_for_fact_verification": False,
         }
         trace = trace_from_runtime(
-            cycle_id=result.lineage[-1] if result.lineage else f"or_{uuid4().hex[:12]}
+            cycle_id=result.lineage[-1] if result.lineage else f"or_{uuid4().hex[:12]}",
             status=result.status,
             stage_trace=result.stage_trace,
             stop_reason=result.stop_reason,
