@@ -22,6 +22,7 @@ from anne.learning.research_cognitive_loop import (
     ResearchCognitiveLoop,
     ResearchCognitiveState,
 )
+from anne.memory.context_weighting import weight_historical_decisions
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
 
@@ -190,6 +191,19 @@ class DecisionLoop:
             "used_for_fact_verification": False,
         }
         if memory is not None:
+            task_mode = "general"
+            if isinstance(learning_context, dict):
+                task_mode = str(learning_context.get("task_mode") or "general")
+            candidates = weight_historical_decisions(
+                memory.get_weighted_decision_candidates(
+                    text_claim,
+                    task_mode=task_mode,
+                    limit=12,
+                ),
+                topic=text_claim,
+                task_mode=task_mode,
+                limit=5,
+            )
             memory_context["decision_matches"] = [
                 {
                     "verdict": row[0],
@@ -199,6 +213,17 @@ class DecisionLoop:
                 }
                 for row in memory.get_similar_decisions(text_claim, limit=3)
             ]
+            memory_context["weighted_candidates"] = [
+                candidate.as_dict() for candidate in candidates
+            ]
+            memory_context["memory_weighting"] = {
+                "task_mode": task_mode,
+                "method": "relevance_55_recency_25_compatibility_20",
+                "contradictions_preserved": True,
+                "superseded_preserved": True,
+                "used_for_authority": False,
+                "used_for_fact_verification": False,
+            }
             memory_context["strong_rules"] = [
                 {
                     "rule": row[0],

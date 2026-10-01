@@ -366,6 +366,38 @@ class FractalMemory:
                 deduped.append(row)
         return deduped[:limit]
 
+    def get_weighted_decision_candidates(
+        self,
+        topic: str,
+        *,
+        task_mode: str = "general",
+        limit: int = 12,
+    ) -> list[tuple[Any, ...]]:
+        """Return inspectable decision history for bounded memory weighting."""
+        cur = self.conn.cursor()
+        terms = self._normalized_terms(topic)
+        if not terms:
+            return []
+        rows: list[tuple[Any, ...]] = []
+        for term in terms:
+            for variant in self._recall_variants(term):
+                rows.extend(
+                    cur.execute(
+                        """SELECT d.verdict,d.total,d.reasoning,h.topic,d.created_at,d.task_mode
+                        FROM decisions d JOIN hypotheses h ON d.hypothesis_id=h.id
+                        WHERE h.topic LIKE ? AND d.task_mode=?
+                        ORDER BY d.created_at DESC LIMIT ?""",
+                        (f"%{variant}%", task_mode, limit),
+                    ).fetchall()
+                )
+        deduped: list[tuple[Any, ...]] = []
+        seen: set[tuple[Any, ...]] = set()
+        for row in rows:
+            if row not in seen:
+                seen.add(row)
+                deduped.append(row)
+        return deduped[:limit]
+
     def get_top_patterns(self, limit: int = 5) -> list[tuple[Any,...]]:
         rows = self.conn.cursor().execute(
             "SELECT pattern,frequency,avg_score,last_verdict FROM dream_patterns "
