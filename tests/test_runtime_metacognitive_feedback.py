@@ -377,8 +377,7 @@ def test_re_evaluation_persists_context_and_lineage(tmp_path) -> None:
         "key": "web_research",
         "conditions": {"freshness": "current"},
     }
-    loop.orchestrator.result.status = "BOUNDED"
-    loop.orchestrator.result.stop_reason = "evidence_gap"
+    loop.orchestrator.result = replace(loop.orchestrator.result, status="BOUNDED", stop_reason="evidence_gap")
     first = loop.run(
         "The answer is supported.",
         learning_context=context,
