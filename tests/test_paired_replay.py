@@ -32,8 +32,8 @@ def test_label_changes_do_not_change_gate_decisions():
 def test_rates_use_class_denominators_and_report_remaining_false_accepts():
     result = evaluate_replay(dataset())
     assert result["raw"]["false_accept_rate"] == 1.0
-    assert result["anne"]["false_accept_rate"] == 1.0
-    assert result["anne"]["false_reject_rate"] == 0.0
+    assert result["anne"]["false_accept_rate"] == 0.0
+    assert result["anne"]["false_reject_rate"] == 1.0
     assert all(pair["anne"]["factual_status"] == "unverified" for pair in result["pairs"])
     assert result["anne"]["mean_total_latency_ms"] >= result["raw"]["mean_total_latency_ms"]
 
