@@ -123,7 +123,7 @@ def test_orchestrator_persists_learning_signal_for_selection_failure(tmp_path) -
         max_retries=0,
     ).run("test question", seed=1)
 
-    assert result.stop_reason == "retry_budget_exhausted"
+    assert result.stop_reason == "selection_rejected"
     row = memory.get_recent_failures(limit=1)[0]
     assert row[7] == "evidence_gap"
     assert row[8] == "seek_missing_evidence_or_abstain"
