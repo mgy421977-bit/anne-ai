@@ -82,7 +82,7 @@ def test_research_execution_verifies_fresh_independent_evidence() -> None:
     }
 
 
-def test_research_execution_preserves_conflict_as_unverified_decision_state() -> None:
+def test_research_execution_preserves_conflict_as_research_state() -> None:
     loop, state, claim = _state_with_derived_hypothesis()
     evidence = (
         _evidence(claim, "https://primary.example/source", "supports"),
