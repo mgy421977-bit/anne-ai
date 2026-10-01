@@ -53,6 +53,12 @@ class FractalMemory:
             id TEXT PRIMARY KEY, cycle_id TEXT, stage TEXT, raw_input TEXT,
             reason TEXT, meta_tag TEXT, hypothesis_id TEXT, ethic_total REAL,
             created_at TEXT)""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS memory_relations (
+            id TEXT PRIMARY KEY, source_decision_id TEXT NOT NULL,
+            target_decision_id TEXT NOT NULL, relation TEXT NOT NULL,
+            reason TEXT NOT NULL, task_mode TEXT NOT NULL DEFAULT 'general',
+            created_at TEXT NOT NULL,
+            UNIQUE(source_decision_id,target_decision_id,relation))""")
         cur.execute("""CREATE TABLE IF NOT EXISTS scale_events (
             cycle_id TEXT PRIMARY KEY, parent_cycle_id TEXT, depth INTEGER NOT NULL DEFAULT 0,
             scale_role TEXT NOT NULL, task_mode TEXT NOT NULL DEFAULT 'general',
@@ -112,6 +118,34 @@ class FractalMemory:
             },
         )
         self.conn.commit()
+
+    def get_memory_links(
+        self, decision_id: str | None = None, limit: int = 64
+    ) -> list[dict[str, Any]]:
+        """Return explicit links between historical decision records."""
+        query = (
+            "SELECT id,source_decision_id,target_decision_id,relation,reason,"
+            "task_mode,created_at FROM memory_relations"
+        )
+        params: tuple[Any, ...] = ()
+        if decision_id is not None:
+            query += " WHERE source_decision_id=? OR target_decision_id=?"
+            params = (decision_id, decision_id)
+        rows = self.conn.execute(
+            query + " ORDER BY created_at DESC LIMIT ?", (*params, limit)
+        ).fetchall()
+        return [
+            {
+                "id": row[0],
+                "source_decision_id": row[1],
+                "target_decision_id": row[2],
+                "relation": row[3],
+                "reason": row[4],
+                "task_mode": row[5],
+                "created_at": row[6],
+            }
+            for row in rows
+        ]
 
     @staticmethod
     def _normalize_token(token: str) -> str:
@@ -186,6 +220,32 @@ class FractalMemory:
             ),
         )
         self.conn.commit()
+
+    def save_memory_link(
+        self,
+        source_decision_id: str,
+        target_decision_id: str,
+        task_mode: str,
+        created_at: str,
+    ) -> None:
+        """Persist a non-destructive link between historical decisions."""
+        statement = (
+            "INSERT " + "OR IGNORE INTO memory_relations "
+            "(id,source_decision_id,target_decision_id,relation,reason,task_mode,created_at) "
+            "VALUES (?,?,?,?,?,?,?)"
+        )
+        self.conn.execute(
+            statement,
+            (
+                f"rel_{uuid.uuid4().hex[:12]}",
+                source_decision_id,
+                target_decision_id,
+                "supersedes",
+                "newer compatible decision",
+                task_mode,
+                created_at,
+            ),
+        )
 
     def save_dream_pattern(self, pattern: str, score: float, verdict: str) -> None:
         cur = self.conn.cursor()
