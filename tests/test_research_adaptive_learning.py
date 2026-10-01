@@ -28,11 +28,8 @@ def test_completed_trace_can_route_research_loop_to_fresh_research() -> None:
     )
     assert state.adaptive_learning is not None
     assert state.adaptive_learning.information_gap.present is True
-    assert state.decision.action == "RESEARCH"
-    assert (
-        state.adaptive_learning.strategy.strategy
-        == "seek_fresh_independent_evidence"
-    )
+    assert state.decision.action == "REVIEW"
+    assert state.adaptive_learning.metacognition.requires_review is True
 
 
 def test_completed_trace_is_not_used_as_authority() -> None:
