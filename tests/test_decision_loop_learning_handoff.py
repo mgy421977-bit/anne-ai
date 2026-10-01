@@ -9,7 +9,13 @@ class _StubOrchestrator:
         state = CognitiveState(
             raw_input=raw_input,
             intent="answer",
-            context_map={},
+            requires_evidence=True,
+            context_map={
+                "intent": "answer",
+                "requires_evidence": True,
+                "verification_status": "VERIFIED",
+                "verification_sources": ("synthetic-source",),
+            },
             action="REVIEW",
             output={
                 "verdict": "REVIEW",
@@ -18,7 +24,7 @@ class _StubOrchestrator:
             },
         )
         return OrchestrationResult(
-            status="BOUNDED",
+            status="EXECUTED",
             fail_fast=FailFastResult(True, "ok"),
             state=state,
             selection=None,
