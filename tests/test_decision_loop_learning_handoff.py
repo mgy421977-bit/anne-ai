@@ -122,5 +122,6 @@ def test_decision_loop_exposes_learned_research_handoff_contract(tmp_path) -> No
     assert questions
     assert second.trace is not None
     assert second.trace.learning["strategy_adaptation"]["strategy"] == "seek_fresh_independent_evidence"
-    assert second.output["action"] == "RESEARCH"
+    assert second.research_state.decision.action == "RESEARCH"
+    assert second.research_state.decision.research_allowed is True
     assert second.output["research_questions"] == list(questions)
