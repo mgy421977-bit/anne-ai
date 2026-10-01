@@ -406,8 +406,8 @@ class DecisionLoop:
         if research_state.decision.action == "RESEARCH":
             out = {
                 **out,
-                "research_questions": ResearchCognitiveLoop.next_research_questions(
-                    research_state
+                "research_questions": list(
+                    ResearchCognitiveLoop.next_research_questions(research_state)
                 ),
             }
 
