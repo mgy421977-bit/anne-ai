@@ -70,3 +70,17 @@ def test_persistent_memory_is_used_by_bak_and_gor_on_next_cycle(tmp_path) -> Non
 
 
 __all__ = ["FractalMemory"]
+
+def test_decision_trace_exposes_historical_memory_context(tmp_path) -> None:
+    db_path = tmp_path / "anne.db"
+    memory = FractalMemory(db_path)
+    memory.save_learned_rule("verify first", 0.8)
+
+    loop = DecisionLoop(memory=memory)
+    result = loop.run("Explore a bounded technical option")
+
+    assert result.trace is not None
+    assert result.trace.memory["status"] == "historical_context_only"
+    assert result.trace.memory["used_for_authority"] is False
+    assert result.trace.memory["used_for_fact_verification"] is False
+    assert result.trace.memory["strong_rules"][0]["rule"] == "verify first"

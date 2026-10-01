@@ -180,6 +180,33 @@ class DecisionLoop:
             aborted = False
         ethic_total = state.ethic_score.total if state and state.ethic_score else None
         anla_score = state.context_map.get("anla_score") if state else None
+        pipeline = getattr(self, "pipeline", None)
+        memory = getattr(self, "memory", None) or getattr(pipeline, "memory", None)
+        memory_context: dict[str, Any] = {
+            "status": "historical_context_only",
+            "decision_matches": [],
+            "strong_rules": [],
+            "used_for_authority": False,
+            "used_for_fact_verification": False,
+        }
+        if memory is not None:
+            memory_context["decision_matches"] = [
+                {
+                    "verdict": row[0],
+                    "total": row[1],
+                    "reasoning": row[2],
+                    "topic": row[3],
+                }
+                for row in memory.get_similar_decisions(text_claim, limit=3)
+            ]
+            memory_context["strong_rules"] = [
+                {
+                    "rule": row[0],
+                    "confidence": row[1],
+                    "support_count": row[2],
+                }
+                for row in memory.get_strong_rules(limit=3)
+            ]
         trace = trace_from_runtime(
             cycle_id=result.lineage[-1] if result.lineage else f"or_{uuid4().hex[:12]}",
             status=result.status,
@@ -191,6 +218,7 @@ class DecisionLoop:
             context=state.context_map if state is not None else None,
             learning_context=learning_context,
             strategy=strategy,
+            memory=memory_context,
         )
         # Historical experience is observational only. Reuse is explicitly
         # scoped to the exact runtime context recorded for this cycle; an

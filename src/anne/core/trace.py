@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-TRACE_SCHEMA_VERSION = "1.2"
+TRACE_SCHEMA_VERSION = "1.3"
 
 
 @dataclass(frozen=True)
@@ -31,6 +31,7 @@ class CycleTrace:
     decision: Mapping[str, Any] = field(default_factory=dict)
     agency: Mapping[str, Any] = field(default_factory=dict)
     provenance: Mapping[str, Any] = field(default_factory=dict)
+    memory: Mapping[str, Any] = field(default_factory=dict)
     learning: Mapping[str, Any] = field(default_factory=dict)
     language: Mapping[str, Any] = field(default_factory=dict)
     language_corroboration: Mapping[str, Any] = field(default_factory=dict)
@@ -86,6 +87,7 @@ def trace_from_runtime(
     learning_context: Mapping[str, Any] | None = None,
     strategy: str | None = None,
     language: Mapping[str, Any] | None = None,
+    memory: Mapping[str, Any] | None = None,
 ) -> CycleTrace:
     """Copy explicit runtime observations without inferring truth or authority."""
     output = dict(output or {})
@@ -136,6 +138,7 @@ def trace_from_runtime(
         verification=verification,
         decision=decision,
         agency=agency,
+        memory=dict(memory or {}),
         learning=learning,
         language=dict(language or {}),
     )
