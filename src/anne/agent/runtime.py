@@ -7,8 +7,8 @@ import re
 import weakref
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from pathlib import Path
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, cast
 
 from anne.agent.github_memory import GitHubMemory
@@ -409,7 +409,15 @@ omit only when no semantic extraction is useful.
                     "passage": entry.passage,
                     "support": entry.support,
                     "retrieved_at": entry.retrieved_at,
-                    "freshness": (EvidenceFreshness.assess(entry.retrieved_at, reference_time=datetime.now(UTC).isoformat(), policy=self.freshness_policy).as_dict() if self.freshness_policy is not None and entry.retrieved_at else None),
+                    "freshness": (
+                        EvidenceFreshness.assess(
+                            entry.retrieved_at,
+                            reference_time=datetime.now(UTC).isoformat(),
+                            policy=self.freshness_policy,
+                        ).as_dict()
+                        if self.freshness_policy is not None and entry.retrieved_at
+                        else None
+                    ),
                     "verification_sources": list(verification.sources),
                     "verification_reason": verification.reason,
                 }
