@@ -46,7 +46,7 @@ def test_repeated_mitos_failures_change_strategy_in_exact_context() -> None:
 
     assert result.strategy.action == "CHANGE"
     assert result.strategy.strategy == "seek_fresh_independent_evidence"
-    assert result.strategy.source_cycle_ids == ("m1", "m2")
+    assert result.strategy.source_cycle_ids == ("m1", "m2", "current-cycle")
 
 
 def test_repeated_mitos_failures_in_other_context_do_not_change_strategy() -> None:
