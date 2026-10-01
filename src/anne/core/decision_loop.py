@@ -180,7 +180,8 @@ class DecisionLoop:
             aborted = False
         ethic_total = state.ethic_score.total if state and state.ethic_score else None
         anla_score = state.context_map.get("anla_score") if state else None
-        memory = getattr(self, "memory", None) or getattr(self.pipeline, "memory", None)
+        pipeline = getattr(self, "pipeline", None)
+        memory = getattr(self, "memory", None) or getattr(pipeline, "memory", None)
         memory_context: dict[str, Any] = {
             "status": "historical_context_only",
             "decision_matches": [],
