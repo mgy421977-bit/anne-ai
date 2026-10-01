@@ -13,15 +13,15 @@ from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinking
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.core.trace import CycleTrace, trace_from_runtime
-from anne.learning.context_fingerprint import ExplicitContextFingerprint
+from anne.core.verification import ClaimVerifier
 from anne.language.corroboration import TurkishLanguageCorroborationService
 from anne.language.service import TurkishLanguageEvidenceService
+from anne.learning.context_fingerprint import ExplicitContextFingerprint
 from anne.learning.experience_learning import Experience
 from anne.learning.research_cognitive_loop import (
     ResearchCognitiveLoop,
     ResearchCognitiveState,
 )
-from anne.core.verification import ClaimVerifier
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
 
