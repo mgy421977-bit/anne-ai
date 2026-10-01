@@ -64,7 +64,7 @@ def test_selector_does_not_transfer_results_across_failure_contexts() -> None:
     )
 
     result = ContextualStrategySelector().select(
-        StrategyContext("evidence_gap"),
+        StrategyContext("evidence_gap", "test_context", (("mode", "test"),)),
         experiences,
         ("research", "recheck_independent_evidence"),
     )
