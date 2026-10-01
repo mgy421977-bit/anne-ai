@@ -1,9 +1,9 @@
 # ANNE Development Roadmap
 
 **Policy:** Milestones are engineering deliverables, not product promises.  
-**Rule:** No public claim of “hallucination solved” or “AGI” until the matching benchmark row is green and published under `benchmarks/results/`.
+**Rule:** No public claim of “hallucination solved” or “AGI” until the matching benchmark row is green and published under benchmarks/results/.
 
-Last updated: 2026-09-27
+Last updated: 2026-10-01
 
 ---
 
@@ -17,7 +17,7 @@ Success is **evidence**, not slogans.
 
 ## Current baseline — v0.1.0 Research Preview
 
-> **Current engineering note (2026-09-27):** The repository has progressed beyond the original v0.1.0 baseline with bounded evidence/provenance, research planning and cognitive follow-up, hypothesis/critique, Decision Synthesis, and provenance-driven re-evaluation. These are implemented research capabilities; the roadmap remains the authority for future empirical milestones.
+> **Current engineering note (2026-10-01):** The repository has progressed beyond the original v0.1.0 baseline with bounded evidence/provenance, research planning and cognitive follow-up, hypothesis/critique, Decision Synthesis, provenance-driven re-evaluation, and MITOS runtime handoff coverage. MITOS observations are now covered at the DecisionLoop boundary: same-context repeated bounded failures can drive a strategy change in the direct research loop, while mixed-cause runtime failures trigger a guarded ABSTAIN/reassessment path. The authority boundary remains fail-closed. These are implemented research capabilities; the roadmap remains the authority for future empirical milestones.
 
 | Deliverable | Status |
 |-------------|--------|
@@ -29,6 +29,7 @@ Success is **evidence**, not slogans.
 | Ablation scaffold | Done (no published numbers) |
 | Independent review response | Done |
 | MITOS architecture specification | Experimental proposal |
+| MITOS → AdaptiveLearning → DecisionLoop runtime handoff regression coverage | Done (PR #130, commit ced5f718e65962fc69782598b6fbac043055f1e7) |
 
 ---
 
@@ -38,8 +39,8 @@ Success is **evidence**, not slogans.
 
 | ID | Milestone | Exit criteria |
 |----|-----------|---------------|
-| A1 | Expand ablation fixture (≥30 prompts, coherent/incoherent/conflict) | `datasets/` versioned JSON |
-| A2 | Run ANLA ON vs OFF; save raw JSON under `benchmarks/results/` | Commit SHA + counts published |
+| A1 | Expand ablation fixture (≥30 prompts, coherent/incoherent/conflict) | datasets/ versioned JSON |
+| A2 | Run ANLA ON vs OFF; save raw JSON under benchmarks/results/ | Commit SHA + counts published |
 | A3 | Implement heuristic $S_{ANLA}$ (overlap + contradiction + SFT penalty) in pipeline path | Unit tests + one integration test |
 | A4 | Retry-loop bound (max N returns to DUY) | No unbounded veto in tests |
 | A5 | CI: pytest must pass; ruff clean on main | Green Actions |
@@ -56,7 +57,7 @@ Success is **evidence**, not slogans.
 |----|-----------|---------------|
 | B1 | Optional embedding / NLI backend for $C_{ctx}$, $C_{log}$ | Pluggable; default remains heuristic |
 | B2 | Micro-suite inspired by contradiction & factual error patterns | Documented limitation vs full TruthfulQA |
-| B3 | Report false-accept / false-reject / latency | `benchmarks/results/` + short note in `docs/` |
+| B3 | Report false-accept / false-reject / latency | benchmarks/results/ + short note in docs/ |
 | B4 | Vector or hybrid retrieval experiment (optional) behind flag | Feature flag; SQLite remains default |
 | B5 | Pipeline integration tests (full HEAR→ACT + SFT path) | Coverage of reject and approve paths |
 
@@ -85,10 +86,10 @@ Success is **evidence**, not slogans.
 | ID | Milestone | Exit criteria |
 |----|-----------|---------------|
 | C1 | Multi-seed ablation + confidence intervals | Repro script + fixed seeds |
-| C2 | Comparison protocol: base model vs base+ANNE orchestration | Written protocol in `benchmarks/` |
-| C3 | Preprint / technical report draft | `papers/` with honest limitations |
+| C2 | Comparison protocol: base model vs base+ANNE orchestration | Written protocol in benchmarks/ |
+| C3 | Preprint / technical report draft | papers/ with honest limitations |
 | C4 | Optional multi-agent experiment (Mythos proposals × Core veto) | Logged SFTs across agents |
-| C5 | API surface freeze candidate | Versioned `anne` package API docs |
+| C5 | API surface freeze candidate | Versioned anne package API docs |
 
 ---
 
@@ -102,7 +103,7 @@ Only after A–C evidence exists. Parked by independent review until then:
 - Neuromorphic / edge targets
 - BCI / bio-coupling **research only** — never a v0.x claim
 
-These may live under `papers/whitepaper/` and `research/open_questions/` without implying implementation.
+These may live under papers/whitepaper/ and research/open_questions/ without implying implementation.
 
 ---
 
@@ -131,7 +132,7 @@ These may live under `papers/whitepaper/` and `research/open_questions/` without
 
 ## How to update this file
 
-1. Move a row to Done only with a linked commit or `benchmarks/results/` artifact.  
-2. Log scope changes under `research/decision_logs/`.  
+1. Move a row to Done only with a linked commit or benchmarks/results/ artifact.  
+2. Log scope changes under research/decision_logs/.  
 3. Keep README status table in sync with this roadmap.  
 4. Keep MITOS research claims separate from implemented capabilities until the corresponding experiment is reproducible.
