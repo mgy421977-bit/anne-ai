@@ -181,7 +181,7 @@ def test_web_research_applies_caller_defined_freshness_policy() -> None:
     agent.workspace = None
     agent.freshness_policy = FreshnessPolicy(
         aging_after=timedelta(hours=1),
-        stale_after=timedelta(hours=3),
+        stale_after=timedelta(days=5),
     )
     agent.research_planner = ResearchPlanner()
     agent.web_researcher.research = FakeResearcher().research
