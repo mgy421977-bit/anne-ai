@@ -82,6 +82,8 @@ class SemanticSupportEvaluator:
                 return SupportStatus.SUPPORTS
         negated = [
             f"not {normalized_claim}",
+            f"{normalized_claim} is not true",
+            f"{normalized_claim} is false",
             f"no {normalized_claim}",
             f"false: {normalized_claim}",
             f"false that {normalized_claim}",
