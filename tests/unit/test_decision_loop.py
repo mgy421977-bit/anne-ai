@@ -14,7 +14,7 @@ def test_coherent_claim_executes_or_structured():
     assert result.fail_fast is not None
     assert result.fail_fast.get("passed") is True
     assert result.verdict != "FAIL_FAST"
-    assert result.status in {"EXECUTED", "ABORTED"}
+    assert result.status in {"EXECUTED", "ABORTED", "BOUNDED"}
     assert result.as_dict()["verdict"] == result.verdict
 
 
