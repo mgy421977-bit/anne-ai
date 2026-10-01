@@ -119,17 +119,33 @@ class FractalMemory:
         )
         self.conn.commit()
 
-    def get_memory_links(self, decision_id: str | None = None, limit: int = 64) -> list[dict[str, Any]]:
+    def get_memory_links(
+        self, decision_id: str | None = None, limit: int = 64
+    ) -> list[dict[str, Any]]:
         """Return explicit links between historical decision records."""
-        query = "SELECT id,source_decision_id,target_decision_id,relation,reason,task_mode,created_at FROM memory_relations"
+        query = (
+            "SELECT id,source_decision_id,target_decision_id,relation,reason,"
+            "task_mode,created_at FROM memory_relations"
+        )
         params: tuple[Any, ...] = ()
         if decision_id is not None:
             query += " WHERE source_decision_id=? OR target_decision_id=?"
             params = (decision_id, decision_id)
-        rows = self.conn.execute(query + " ORDER BY created_at DESC LIMIT ?", (*params, limit)).fetchall()
-        return [{"id": row[0], "source_decision_id": row[1], "target_decision_id": row[2],
-                 "relation": row[3], "reason": row[4], "task_mode": row[5], "created_at": row[6]}
-                for row in rows]
+        rows = self.conn.execute(
+            query + " ORDER BY created_at DESC LIMIT ?", (*params, limit)
+        ).fetchall()
+        return [
+            {
+                "id": row[0],
+                "source_decision_id": row[1],
+                "target_decision_id": row[2],
+                "relation": row[3],
+                "reason": row[4],
+                "task_mode": row[5],
+                "created_at": row[6],
+            }
+            for row in rows
+        ]
 
     @staticmethod
     def _normalize_token(token: str) -> str:
@@ -205,10 +221,31 @@ class FractalMemory:
         )
         self.conn.commit()
 
-    def save_memory_link(self, source_decision_id: str, target_decision_id: str, task_mode: str, created_at: str) -> None:
+    def save_memory_link(
+        self,
+        source_decision_id: str,
+        target_decision_id: str,
+        task_mode: str,
+        created_at: str,
+    ) -> None:
         """Persist a non-destructive link between historical decisions."""
-        statement = "INSERT " + "OR IGNORE INTO memory_relations (id,source_decision_id,target_decision_id,relation,reason,task_mode,created_at) VALUES (?,?,?,?,?,?,?)"
-        self.conn.execute(statement, (f"rel_{uuid.uuid4().hex[:12]}", source_decision_id, target_decision_id, "supersedes", "newer compatible decision", task_mode, created_at))
+        statement = (
+            "INSERT " + "OR IGNORE INTO memory_relations "
+            "(id,source_decision_id,target_decision_id,relation,reason,task_mode,created_at) "
+            "VALUES (?,?,?,?,?,?,?)"
+        )
+        self.conn.execute(
+            statement,
+            (
+                f"rel_{uuid.uuid4().hex[:12]}",
+                source_decision_id,
+                target_decision_id,
+                "supersedes",
+                "newer compatible decision",
+                task_mode,
+                created_at,
+            ),
+        )
 
     def save_dream_pattern(self, pattern: str, score: float, verdict: str) -> None:
         cur = self.conn.cursor()
