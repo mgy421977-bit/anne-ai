@@ -33,6 +33,7 @@ def _decision_loop_for_state(
     verification_status: str,
     verification_sources: tuple[str, ...] = (),
     requires_evidence: bool = True,
+    include_intent: bool = True,
     lineage_id: str = "or_runtime_test",
     memory_db_path: str | None = None,
 ) -> DecisionLoop:
@@ -44,7 +45,7 @@ def _decision_loop_for_state(
             "verification_status": verification_status,
             "verification_sources": verification_sources,
             "requires_evidence": requires_evidence,
-            "intent": "answer",
+            **({"intent": "answer"} if include_intent else {}),
         },
         ethic_score=None,
     )
@@ -73,6 +74,7 @@ def test_runtime_routes_verified_trace_with_missing_intent_to_review() -> None:
     loop = _decision_loop_for_state(
         verification_status="VERIFIED",
         verification_sources=("source-a",),
+        include_intent=False,
     )
 
     result = loop.run("Question")
