@@ -79,6 +79,37 @@ def test_cross_context_mitos_failures_do_not_change_research_strategy() -> None:
     assert state.adaptive_learning.strategy.strategy == "bounded_test"
 
 
+def test_decisionloop_runtime_consumes_mitos_outcomes_without_authority_bypass() -> None:
+    loop = DecisionLoop(memory_db_path=":memory:")
+
+    result = loop.run(
+        "Bu işlem güvenli mi?",
+        learning_context={"key": "mitos", "conditions": {"mode": "research"}},
+        strategy="bounded_test",
+        mitos_outcomes=_outcomes({"mode": "research"}),
+        mitos_failure_classes={
+            "m1": "evidence_gap",
+            "m2": "evidence_gap",
+        },
+    )
+
+    assert result.research_state is not None
+    assert result.research_state.adaptive_learning is not None
+
+    strategy = result.research_state.adaptive_learning.strategy
+    assert strategy.action == "ABSTAIN"
+    assert strategy.strategy == "reassess_without_assuming_cause"
+    assert strategy.reason == "repeated_failures_have_different_causes"
+    assert "m1" in strategy.source_cycle_ids
+    assert "m2" in strategy.source_cycle_ids
+    assert len(strategy.source_cycle_ids) >= 3
+
+    # The runtime consumed the MITOS observations, but the authority boundary
+    # remains fail-closed and cannot be bypassed by learned strategy.
+    assert result.action == "HALT"
+    assert result.output.get("authority_check_required") is True
+
+
 def test_decisionloop_authority_boundary_remains_halt() -> None:
     loop = DecisionLoop(memory_db_path=":memory:")
 
