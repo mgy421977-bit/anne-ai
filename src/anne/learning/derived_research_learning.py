@@ -60,7 +60,9 @@ class DerivedResearchLearningAdapter:
         verification = {
             "verification_status": decision_status,
             "verification_sources": sources,
-            "verification_reason": "Derived research independently verified before learning handoff.",
+            "verification_reason": (
+                "Derived research independently verified before learning handoff."
+            ),
         }
 
         learning: dict[str, object] = {"strategy": strategy}
