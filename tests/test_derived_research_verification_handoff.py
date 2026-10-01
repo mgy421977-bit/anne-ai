@@ -7,6 +7,7 @@ from anne.learning.derived_research_executor import DerivedResearchResult
 from anne.learning.derived_research_planner import DerivedResearchPlanner
 from anne.learning.evidence import EvidenceItem
 from anne.learning.research_cognitive_loop import ResearchCognitiveLoop, ResearchCognitiveState
+from anne.memory.fractal_memory import FractalMemory
 
 
 class _StubExecutor:
@@ -107,8 +108,6 @@ def test_research_execution_preserves_conflict_as_research_state() -> None:
 
 def test_derived_research_learning_persists_exact_parent_context(tmp_path) -> None:
     db_path = str(tmp_path / "anne.db")
-    from anne.memory.fractal_memory import FractalMemory
-
     loop = ResearchCognitiveLoop(memory=FractalMemory(db_path))
     parent_trace = CycleTrace(
         cycle_id="parent-derived-cycle",
