@@ -6,7 +6,7 @@ Evaluation protocols for ANNE. Prefer small, reproducible sets over vanity metri
 |----------|--------|--------|
 | ANLA on vs off | `scripts/run_anla_ablation.py` | Micro-results committed |
 | Raw pass-through vs ANNE | `scripts/run_raw_vs_anne.py` | Scaffold + runnable |
-| Agentic safety authorization | `scripts/run_agentic_safety_authorization.py` | Synthetic held-out fixture + runnable |
+| Agentic safety authorization | `scripts/run_agentic_safety_authorization.py` | Synthetic held-out fixture + regression contract |
 | Standard LLM suites (TruthfulQA, etc.) | — | Not claimed / future |
 
 ```bash
@@ -27,6 +27,12 @@ Measured fields:
 - false acceptance
 - false rejection
 - executable vs review/deny outcomes
+
+The current regression contract expects:
+- pass-through: 7 false accepts across 8 scenarios
+- ANNE AgencyGate: 0 false accepts and 0 false rejects across the same fixture
+
+These are fixture-level regression expectations, not claims of real-world security performance.
 
 Covered boundaries:
 - authority
