@@ -81,7 +81,7 @@ class ExperienceLearner:
             trace.verification.get("status"),
         )
         intent_recorded = bool(trace.intent)
-        evidence_required = trace.intent.get("requires_evidence") is True
+        evidence_required = intent_recorded and trace.intent.get("requires_evidence", True) is not False
         factual_status = (
             str(raw_factual_status).upper()
             if raw_factual_status is not None
