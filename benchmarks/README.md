@@ -7,6 +7,7 @@ Evaluation protocols for ANNE. Prefer small, reproducible sets over vanity metri
 | ANLA on vs off | `scripts/run_anla_ablation.py` | Micro-results committed |
 | Raw pass-through vs ANNE | `scripts/run_raw_vs_anne.py` | Scaffold + runnable |
 | Agentic safety authorization | `scripts/run_agentic_safety_authorization.py` | Synthetic held-out fixture + regression contract |
+| Strategy adaptation learning | `scripts/run_learning_strategy_adaptation.py` | Synthetic deterministic regression contract |
 | Standard LLM suites (TruthfulQA, etc.) | — | Not claimed / future |
 
 ```bash
@@ -14,6 +15,7 @@ pip install -e ".[dev]"
 python benchmarks/scripts/run_anla_ablation.py
 python benchmarks/scripts/run_raw_vs_anne.py
 python benchmarks/scripts/run_agentic_safety_authorization.py
+python benchmarks/scripts/run_learning_strategy_adaptation.py
 ```
 
 ## Agentic safety authorization v1
@@ -44,6 +46,27 @@ Covered boundaries:
 - risk
 
 This protocol does **not** measure model generation quality, jailbreak resistance, production security, or generalization. Results must be reported with the fixture hash and the explicit non-claims.
+
+## Strategy adaptation learning v1
+
+Fixture: `learning_strategy_adaptation_v01.json`
+
+The protocol tests the bounded `StrategyAdapter` against six synthetic cases:
+- no history;
+- single failure;
+- repeated same failure;
+- mixed failure causes;
+- safety/execution-risk failure;
+- failures belonging to another strategy.
+
+The intended regression contract is:
+- repeated same failure → `CHANGE` to the bounded alternative;
+- single failure → `KEEP`;
+- mixed causes → `ABSTAIN`;
+- safety failure → `ABSTAIN` with authority review;
+- unrelated strategy history → `KEEP`.
+
+This is an implementation-level learning/transfer contract, not evidence of general model learning.
 
 Human-readable summaries: [`results/RESULTS.md`](results/RESULTS.md).
 
