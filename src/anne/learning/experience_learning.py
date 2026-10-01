@@ -66,14 +66,7 @@ class ExperienceLearner:
                 str(error.get("reason", "")) for error in trace.errors
             )
 
-        explicit_failure_class = ""
-        if isinstance(trace.learning, Mapping):
-            explicit_failure_class = str(trace.learning.get("failure_class") or "").strip()
-        failure_class = (
-            FailureClass(explicit_failure_class)
-            if explicit_failure_class in {item.value for item in FailureClass}
-            else self.planner.classify(trace.stop_reason, reason)
-        )
+        failure_class = self.planner.classify(trace.stop_reason, reason)
         outcome = (
             "SUCCESS"
             if trace.status.upper() in {"EXECUTED", "SUCCESS"} and not trace.errors
