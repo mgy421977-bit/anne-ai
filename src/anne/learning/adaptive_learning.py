@@ -74,7 +74,11 @@ class AdaptiveLearningCoordinator:
                 experience.context_conditions,
             ),
             experiences,
-            (strategy, decision.strategy),
+            tuple(
+                dict.fromkeys(
+                    (strategy, decision.strategy, *(item.strategy for item in experiences))
+                )
+            ),
         )
         if (
             decision.action != "ABSTAIN"
