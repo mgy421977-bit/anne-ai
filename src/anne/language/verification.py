@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+
 from anne.language.evidence import LanguageEvidence, LanguageLookupResult
 
 
@@ -112,7 +113,10 @@ class LanguageEvidenceVerifier:
             source_refs,
             independent,
             meanings,
-            "Independent language sources provide different lexical observations; no contradiction is inferred.",
+            (
+                "Independent language sources provide different lexical observations; "
+                "no contradiction is inferred."
+            ),
         )
 
     @staticmethod
