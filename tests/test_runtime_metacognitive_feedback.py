@@ -254,7 +254,7 @@ def test_runtime_research_reassessment_learning_second_cycle() -> None:
 
 
 def test_runtime_hands_off_experience_only_with_exact_explicit_context() -> None:
-    loop = _decision_loop_for_state(verification_status="UNVERIFIED")
+    loop = _decision_loop_for_state(verification_status="UNVERIFIED", lineage_id="or_runtime_context")
     context = {
         "key": "web_research",
         "conditions": {"freshness": "current", "source_count": 2},
