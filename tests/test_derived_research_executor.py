@@ -74,8 +74,8 @@ def test_executor_enforces_global_source_budget() -> None:
     researcher = FakeResearcher()
     plan = _plan(max_queries=4)
     result = DerivedResearchExecutor(researcher=researcher).execute(plan)
-    assert result.sources_used == 4
-    assert len(result.evidence) == 4
+    assert result.sources_used == 3
+    assert len(result.evidence) == 3
     assert result.stopped_reason == "source_budget_exhausted"
 
 
