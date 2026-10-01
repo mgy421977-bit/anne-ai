@@ -91,3 +91,27 @@ def test_registry_enforces_total_bound() -> None:
 
     registry = ResearchProviderRegistry((Provider(),), max_total_items=2)
     assert len(registry.research("q")) == 2
+
+def test_web_researcher_consumes_external_registry(monkeypatch) -> None:
+    from anne.learning.web_providers import ResearchProviderRegistry
+    from anne.learning.web_research import WebResearcher
+    from anne.learning.evidence import EvidenceItem
+
+    class Provider:
+        name = "fixture"
+
+        def research(self, query):
+            return (
+                EvidenceItem(
+                    source="fixture",
+                    claim="external observation",
+                    kind="web_external",
+                    provenance="https://example.com/fixture",
+                    confidence=0.5,
+                ),
+            )
+
+    researcher = WebResearcher(
+        external_registry=ResearchProviderRegistry((Provider(),), max_total_items=1)
+    )
+    assert researcher.research("external observation")[0].claim == "external observation"
