@@ -127,7 +127,7 @@ def weight_historical_decisions(
             replace(item, superseded=is_superseded)
         )
 
-    verdicts = {item.verdict for item in superseded if not item.superseded}
+    verdicts = {item.verdict for item in superseded}
     conflict = len(verdicts) > 1
     conflict_group = "contradictory_historical_decisions" if conflict else ""
     final = [
