@@ -334,6 +334,8 @@ class DecisionLoop:
                 language_corroboration=corroboration_payload,
             )
         next_step = research_state.decision.action
+        if not trace.intent:
+            next_step = "REVIEW"
         if research_state.adaptive_learning is not None:
             assessment = research_state.adaptive_learning.metacognition
             if assessment.requires_review and not assessment.research_required:
