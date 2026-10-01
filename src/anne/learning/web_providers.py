@@ -118,6 +118,7 @@ class CommandResearchProvider:
                 text=True,
                 timeout=self.limits.timeout_seconds,
                 check=False,
+                shell=False,
             )
         except (OSError, subprocess.SubprocessError):
             return ()
