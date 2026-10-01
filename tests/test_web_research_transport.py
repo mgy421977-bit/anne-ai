@@ -1,3 +1,4 @@
+from anne.learning.web_research import WebResearcher
 from anne.learning.web_research_transport import (
     CacheDecision,
     CacheDisposition,
