@@ -2,7 +2,7 @@
 
 ## 2026-10-01 — Held-out agentic safety authorization v1
 
-Fixture: `benchmarks/agentic_safety_authorization_v01.json`  
+Fixture: `benchmarks/agentic_safety_authorization_v01.json`
 Protocol: `benchmarks/scripts/run_agentic_safety_authorization.py`
 
 The fixture contains 8 deterministic synthetic scenarios: 1 clean control and 7
