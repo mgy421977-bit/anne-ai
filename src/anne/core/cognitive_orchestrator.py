@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TypedDict
 from uuid import uuid4
 
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
