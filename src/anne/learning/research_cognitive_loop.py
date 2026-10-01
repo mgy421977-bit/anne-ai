@@ -29,6 +29,7 @@ from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.joint_inference import JointInference, JointInferenceEngine
 from anne.learning.metacognitive_controller import MetacognitiveController
+from anne.mythos.experience import ExperienceRecord
 from anne.learning.provenance_graph import ProvenanceEdge, ProvenanceNode
 from anne.learning.reevaluation import ReEvaluationPlan
 from anne.learning.reevaluation_learning import ReEvaluationLearningAdapter
@@ -93,6 +94,8 @@ class ResearchCognitiveLoop:
         completed_trace: CycleTrace | None = None,
         strategy: str = "research",
         prior_experiences: tuple[Experience, ...] = (),
+        mitos_outcomes: tuple[ExperienceRecord, ...] = (),
+        mitos_failure_classes: dict[str, str] | None = None,
     ) -> ResearchCognitiveState:
         language_check = None
         language_corroboration = None
@@ -213,6 +216,8 @@ class ResearchCognitiveLoop:
                 observation_trace,
                 strategy=strategy,
                 prior_experiences=prior_experiences,
+                mitos_outcomes=mitos_outcomes,
+                mitos_failure_classes=mitos_failure_classes,
             )
             if (
                 adaptive_result.strategy.action == "CHANGE"
