@@ -13,7 +13,7 @@ from anne.learning.evidence import EvidenceItem, SupportStatus
 def to_evidence_items(result: LanguageLookupResult) -> tuple[EvidenceItem, ...]:
     """Convert a bounded language lookup into ledger-compatible observations."""
     items: list[EvidenceItem] = []
-    for index, item in enumerate(result.evidence):
+    for item in result.evidence:
         passage = item.meaning
         if item.examples:
             passage += " Examples: " + " | ".join(item.examples)
