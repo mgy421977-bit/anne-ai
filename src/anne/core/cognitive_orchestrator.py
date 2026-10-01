@@ -17,6 +17,7 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fail_fast import FailFastResult
 from anne.core.failure_recovery import FailureRecoveryController, FailureSignal
 from anne.core.pipeline import AnnePipeline
+from anne.core.self_correction import SelfCorrectionPlanner
 from anne.core.resource_profile import ResourceProfile
 from anne.core.verification import ClaimVerifier
 from anne.mythos.candidate import SelectionResult, TaskMode
@@ -158,6 +159,31 @@ class CognitiveOrchestrator:
     @staticmethod
     def _base_trace() -> list[str]:
         return ["FAIL_FAST", "DUY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"]
+
+    @staticmethod
+    def _learning_signal(
+        failure: FailureSignal,
+        question: str,
+        *,
+        retry_index: int,
+    ) -> dict[str, object]:
+        """Translate a failure into bounded learning metadata for persistence."""
+        plan = SelfCorrectionPlanner().plan(
+            question,
+            meta_tag=failure.kind.value,
+            reason=failure.reason,
+            retry_index=retry_index,
+            max_retries=FailureRecoveryController.MAX_RETRIES
+            if hasattr(FailureRecoveryController, "MAX_RETRIES")
+            else 2,
+        )
+        return {
+            "learning_failure_class": plan.signal.failure_class.value,
+            "learning_strategy": plan.signal.strategy,
+            "learning_lesson": plan.signal.lesson,
+            "learning_confidence": plan.signal.confidence,
+            "learning_safe_to_reuse": plan.signal.safe_to_reuse,
+        }
 
     def run(
         self,
