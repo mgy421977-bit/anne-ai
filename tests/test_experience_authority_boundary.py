@@ -18,7 +18,7 @@ def _proposal(*, authority_required: bool = False, evidence_required: bool = Tru
         provenance=("current-source",),
         authority_required=authority_required,
         evidence_required=evidence_required,
-        side_effect=False,
+        side_effect=authority_required,
     )
 
 
