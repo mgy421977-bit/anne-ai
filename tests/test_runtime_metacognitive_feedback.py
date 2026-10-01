@@ -289,8 +289,7 @@ def test_runtime_hands_off_experience_only_with_exact_explicit_context() -> None
 
 def test_runtime_does_not_cross_contaminate_experience_between_contexts() -> None:
     loop = _decision_loop_for_state(verification_status="UNVERIFIED")
-    loop.orchestrator.result.status = "BOUNDED"
-    loop.orchestrator.result.stop_reason = "evidence_gap"
+    loop.orchestrator.result = replace(loop.orchestrator.result, status="BOUNDED", stop_reason="evidence_gap")
 
     loop.run(
         "Question A",
