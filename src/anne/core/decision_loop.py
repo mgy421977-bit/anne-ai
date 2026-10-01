@@ -400,6 +400,17 @@ class DecisionLoop:
         final_action = str(action)
         final_reason = str(out.get("reason") or out.get("note") or "")
 
+        # A learned research decision is a bounded handoff signal. Expose its
+        # questions even when the enclosing cycle is already BOUNDED/aborted;
+        # this never grants execution authority or executes research.
+        if research_state.decision.action == "RESEARCH":
+            out = {
+                **out,
+                "research_questions": list(
+                    ResearchCognitiveLoop.next_research_questions(research_state)
+                ),
+            }
+
         # Metacognitive guidance is a bounded post-cycle control signal.
         # It may stop a result from being treated as final, but it never
         # grants execution authority and it never executes research itself.

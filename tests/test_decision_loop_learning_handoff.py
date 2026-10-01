@@ -3,6 +3,7 @@ from anne.core.cognitive_state import CognitiveState
 from anne.core.decision_loop import DecisionLoop
 from anne.core.fail_fast import FailFastResult
 from anne.learning.critic_loop import LoopDecision
+from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 
 
 class _StubOrchestrator:
@@ -95,3 +96,32 @@ def test_decision_loop_does_not_transfer_learning_across_context(tmp_path) -> No
     assert adaptation.strategy.action == "KEEP"
     assert adaptation.strategy.strategy == "research"
     assert isolated.research_state.decision.action == "REVIEW"
+
+
+def test_decision_loop_exposes_learned_research_handoff_contract(tmp_path) -> None:
+    loop = _loop(tmp_path)
+
+    loop.run(
+        "research question",
+        learning_context={"key": "task-a", "conditions": {"mode": "research"}},
+        strategy="research",
+    )
+    second = loop.run(
+        "research question",
+        learning_context={"key": "task-a", "conditions": {"mode": "research"}},
+        strategy="research",
+    )
+
+    assert second.research_state is not None
+    adaptive = second.research_state.adaptive_learning
+    assert adaptive is not None
+    assert adaptive.strategy.action == "CHANGE"
+    assert adaptive.strategy.strategy == "seek_fresh_independent_evidence"
+
+    questions = ResearchCognitiveLoop.next_research_questions(second.research_state)
+    assert questions
+    assert second.trace is not None
+    assert second.trace.learning["strategy_adaptation"]["strategy"] == "seek_fresh_independent_evidence"
+    assert second.research_state.decision.action == "RESEARCH"
+    assert second.research_state.decision.research_allowed is True
+    assert second.output["research_questions"] == list(questions)
