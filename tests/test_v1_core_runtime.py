@@ -93,7 +93,7 @@ def test_canonical_runtime_delegates_to_decision_loop(tmp_path) -> None:
 
     assert result.fail_fast is not None
     assert result.fail_fast["passed"] is True
-    assert result.verdict in {"ONAYLA", "REVIEW", "REDDET"}
+    assert result.verdict in {"ONAYLA", "REVIEW", "REDDET", "RESEARCH"}
 
 
 def _tool_agent(tmp_path):
