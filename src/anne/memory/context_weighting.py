@@ -6,7 +6,7 @@ authority, or a replacement for fresh evidence.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 
@@ -124,21 +124,14 @@ def weight_historical_decisions(
     for item in scored:
         is_superseded = item.created_at < latest_by_topic[item.topic.casefold()]
         superseded.append(
-            MemoryContextCandidate(
-                **{**item.__dict__, "superseded": is_superseded}
-            )
+            replace(item, superseded=is_superseded)
         )
 
     verdicts = {item.verdict for item in superseded if not item.superseded}
     conflict = len(verdicts) > 1
     conflict_group = "contradictory_historical_decisions" if conflict else ""
     final = [
-        MemoryContextCandidate(
-            **{
-                **item.__dict__,
-                "conflict_group": conflict_group,
-            }
-        )
+        replace(item, conflict_group=conflict_group)
         for item in superseded
     ]
     return final[:limit]
