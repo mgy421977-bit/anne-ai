@@ -369,6 +369,7 @@ omit only when no semantic extraction is useful.
         verification_records = []
         serialized = []
         workspace = getattr(self, "workspace", None)
+        freshness_policy = getattr(self, "freshness_policy", None)
 
         for item in classified_evidence:
             entry = EvidenceLedgerEntry(
@@ -413,9 +414,9 @@ omit only when no semantic extraction is useful.
                         EvidenceFreshness.assess(
                             entry.retrieved_at,
                             reference_time=datetime.now(UTC).isoformat(),
-                            policy=self.freshness_policy,
+                            policy=freshness_policy,
                         ).as_dict()
-                        if self.freshness_policy is not None and entry.retrieved_at
+                        if freshness_policy is not None and entry.retrieved_at
                         else None
                     ),
                     "verification_sources": list(verification.sources),
