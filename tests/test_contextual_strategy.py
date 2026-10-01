@@ -46,7 +46,7 @@ def test_selector_prefers_observed_success_in_same_failure_context() -> None:
     )
 
     result = ContextualStrategySelector().select(
-        StrategyContext("evidence_gap"),
+        StrategyContext("evidence_gap", "test_context", (("mode", "test"),)),
         experiences,
         ("research", "recheck_independent_evidence"),
     )
@@ -142,7 +142,7 @@ def test_selector_is_deterministic_when_rates_tie() -> None:
     )
 
     result = ContextualStrategySelector().select(
-        StrategyContext("factual"),
+        StrategyContext("factual", "test_context", (("mode", "test"),)),
         experiences,
         ("research", "alternative"),
     )
@@ -152,7 +152,7 @@ def test_selector_is_deterministic_when_rates_tie() -> None:
 
 def test_selector_does_not_invent_missing_strategy() -> None:
     result = ContextualStrategySelector().select(
-        StrategyContext("logical"),
+        StrategyContext("logical", "test_context", (("mode", "test"),)),
         (),
         ("research",),
     )
