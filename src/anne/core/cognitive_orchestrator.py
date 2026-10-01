@@ -363,6 +363,9 @@ class CognitiveOrchestrator:
                     depth=retry_count,
                     task_mode=task_mode.value,
                     scale_role="frame",
+                    **self._learning_signal(
+                        failure, current_question, retry_index=retry_count
+                    ),
                 )
                 last_reason = reason
                 if retry_count == 0:
@@ -432,6 +435,19 @@ class CognitiveOrchestrator:
                                 depth=retry_count,
                                 task_mode=task_mode.value,
                                 scale_role="frame",
+                                **self._learning_signal(
+                                    FailureSignal(
+                                        FailureRecoveryController.classify(
+                                            last_reason, "POST_RETRY_EVALUATION"
+                                        ),
+                                        last_reason,
+                                        "POST_RETRY_EVALUATION",
+                                        cycle_id,
+                                        retry_count,
+                                    ),
+                                    current_question,
+                                    retry_index=retry_count,
+                                ),
                             )
                             return OrchestrationResult(
                                 "BOUNDED",
@@ -486,6 +502,9 @@ class CognitiveOrchestrator:
                     depth=retry_count,
                     task_mode=task_mode.value,
                     scale_role="frame",
+                    **self._learning_signal(
+                        failure, current_question, retry_index=retry_count
+                    ),
                 )
                 previous_confidence = confidence
 
@@ -525,6 +544,17 @@ class CognitiveOrchestrator:
                     depth=retry_count,
                     task_mode=task_mode.value,
                     scale_role="frame",
+                    **self._learning_signal(
+                        FailureSignal(
+                            FailureRecoveryController.classify(retry.reason, "RETRY_GATE"),
+                            retry.reason,
+                            "RETRY_GATE",
+                            cycle_id,
+                            retry_count,
+                        ),
+                        current_question,
+                        retry_index=retry_count,
+                    ),
                 )
                 return OrchestrationResult(
                     "BOUNDED",
