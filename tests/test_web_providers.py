@@ -114,4 +114,7 @@ def test_web_researcher_consumes_external_registry(monkeypatch) -> None:
     researcher = WebResearcher(
         external_registry=ResearchProviderRegistry((Provider(),), max_total_items=1)
     )
-    assert any(\n        item.claim == "external observation"\n        for item in researcher.research("external observation")\n    )
+    assert any(
+        item.claim == "external observation"
+        for item in researcher.research("external observation")
+    )
