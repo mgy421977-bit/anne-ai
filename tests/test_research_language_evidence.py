@@ -22,7 +22,7 @@ def test_research_loop_records_language_check_without_promoting_evidence():
     assert state.language_check.evidence[0].support == "unclear"
     assert state.language_check.evidence[0].source == "bitigci"
     assert any(
-        entry.source == "bitigci"
+        entry["source"] == "bitigci"
         for entry in state.evidence_ledger.as_dict()["entries"]
     )
 
