@@ -230,7 +230,11 @@ class DecisionLoop:
         else:
             prior_experiences = ()
 
-        research_state = self.research_loop.initialize(
+        research_loop = getattr(self, "research_loop", None)
+        if research_loop is None:
+            research_loop = ResearchCognitiveLoop(memory=getattr(self, "memory", None))
+            self.research_loop = research_loop
+        research_state = research_loop.initialize(
             raw_input,
             completed_trace=trace,
             strategy=strategy or "research",
