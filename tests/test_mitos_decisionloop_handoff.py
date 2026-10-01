@@ -79,7 +79,7 @@ def test_cross_context_mitos_failures_do_not_change_research_strategy() -> None:
     assert state.adaptive_learning.strategy.strategy == "bounded_test"
 
 
-def test_decisionloop_runtime_wires_mitos_strategy_change_without_authority() -> None:
+def test_decisionloop_runtime_consumes_mitos_outcomes_without_authority_bypass() -> None:
     loop = DecisionLoop(memory_db_path=":memory:")
 
     result = loop.run(
@@ -95,17 +95,17 @@ def test_decisionloop_runtime_wires_mitos_strategy_change_without_authority() ->
 
     assert result.research_state is not None
     assert result.research_state.adaptive_learning is not None
-    assert result.research_state.adaptive_learning.strategy.action == "CHANGE"
-    assert (
-        result.research_state.adaptive_learning.strategy.strategy
-        == "seek_fresh_independent_evidence"
-    )
-    assert result.research_state.decision.action == "REVIEW"
-    assert result.research_state.decision.research_allowed is False
 
-    # The runtime exposes the bounded handoff but the enclosing decision
-    # remains fail-closed and cannot become execution authority.
+    strategy = result.research_state.adaptive_learning.strategy
+    assert strategy.action == "ABSTAIN"
+    assert strategy.strategy == "require_authority_review"
+    assert strategy.reason == "safety_or_authority_boundary_must_not_be_bypassed"
+    assert strategy.source_cycle_ids == ("m1", "m2")
+
+    # The runtime consumed the MITOS observations, but the authority boundary
+    # remains fail-closed and cannot be bypassed by learned strategy.
     assert result.action == "HALT"
+    assert result.output.get("authority_check_required") is True
 
 
 def test_decisionloop_authority_boundary_remains_halt() -> None:
