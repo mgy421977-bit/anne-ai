@@ -85,7 +85,8 @@ def test_decision_loop_does_not_fabricate_learning_context() -> None:
     result = loop.run("test")
 
     assert result.trace is not None
-    assert result.trace.learning == {}
+    assert "context" not in result.trace.learning
+    assert "metacognition" in result.trace.learning
 
 
 def test_runtime_passes_explicit_learning_context_to_decision_loop() -> None:
