@@ -12,7 +12,7 @@ def test_cycle_trace_serializes_deterministically() -> None:
     assert trace.schema_version == TRACE_SCHEMA_VERSION
     assert trace.to_json() == trace.to_json()
     assert '"cycle_id":"or_1"' in trace.to_json()
-    assert '"schema_version":"1.2"' in trace.to_json()
+    assert '"schema_version":"1.3"' in trace.to_json()
 
 
 def test_cycle_trace_rejects_invalid_retry_count() -> None:
@@ -205,3 +205,21 @@ def test_runtime_adapter_records_explicit_strategy() -> None:
         strategy="recheck_independent_evidence",
     )
     assert trace.learning["strategy"] == "recheck_independent_evidence"
+
+
+def test_cycle_trace_preserves_historical_memory_boundary() -> None:
+    trace = CycleTrace(
+        cycle_id="or_memory",
+        status="BOUNDED",
+        memory={
+            "status": "historical_context_only",
+            "decision_matches": [{"topic": "prior task", "verdict": "ABSTAIN"}],
+            "strong_rules": [{"rule": "verify first", "confidence": 0.8, "support_count": 2}],
+            "used_for_authority": False,
+            "used_for_fact_verification": False,
+        },
+    )
+    restored = CycleTrace.from_dict(trace.as_dict())
+    assert restored.memory["status"] == "historical_context_only"
+    assert restored.memory["used_for_authority"] is False
+    assert restored.memory["used_for_fact_verification"] is False
