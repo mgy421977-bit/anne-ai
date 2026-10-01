@@ -27,7 +27,7 @@ class MetacognitiveController:
                     or "Metacognitive assessment requires evidence reassessment.",
                     research_allowed=True,
                 )
-            if decision.action == "PROCEED":
+            if not assessment.research_required:
                 return LoopDecision(
                     action="REVIEW",
                     reason=(
