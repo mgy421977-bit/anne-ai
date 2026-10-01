@@ -67,7 +67,7 @@ def test_executor_runs_only_bounded_plan_questions() -> None:
     assert len(researcher.queries) == 1
     assert result.queries_used == 1
     assert result.sources_used == 2
-    assert result.stopped_reason == "source_budget_exhausted"
+    assert result.stopped_reason == "plan_exhausted"
 
 
 def test_executor_enforces_global_source_budget() -> None:
