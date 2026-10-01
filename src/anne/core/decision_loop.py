@@ -25,6 +25,7 @@ from anne.learning.research_cognitive_loop import (
 from anne.memory.context_weighting import weight_historical_decisions
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
+from anne.mythos.experience import ExperienceRecord
 
 
 @dataclass
@@ -120,6 +121,8 @@ class DecisionLoop:
         group_b: Sequence[Consciousness] | None = None,
         learning_context: dict[str, Any] | None = None,
         strategy: str | None = None,
+        mitos_outcomes: Sequence[ExperienceRecord] | None = None,
+        mitos_failure_classes: dict[str, str] | None = None,
     ) -> DecisionResult:
         """Run one request through the canonical orchestrator path."""
         people = list(parties) if parties else [Consciousness(id="user")]
@@ -292,6 +295,8 @@ class DecisionLoop:
             completed_trace=trace,
             strategy=strategy or "research",
             prior_experiences=prior_experiences,
+            mitos_outcomes=tuple(mitos_outcomes or ()),
+            mitos_failure_classes=mitos_failure_classes,
         )
         if research_state.adaptive_learning is not None:
             observed = research_state.adaptive_learning.experience
