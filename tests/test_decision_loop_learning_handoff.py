@@ -3,6 +3,7 @@ from anne.core.cognitive_state import CognitiveState
 from anne.core.decision_loop import DecisionLoop
 from anne.core.fail_fast import FailFastResult
 from anne.learning.critic_loop import LoopDecision
+from anne.learning.research_cognitive_loop import ResearchCognitiveLoop
 
 
 class _StubOrchestrator:
@@ -117,7 +118,9 @@ def test_decision_loop_exposes_learned_research_handoff_contract(tmp_path) -> No
     assert adaptive.strategy.action == "CHANGE"
     assert adaptive.strategy.strategy == "seek_fresh_independent_evidence"
 
-    questions = second.research_state.next_research_questions if hasattr(
-        second.research_state, "next_research_questions"
-    ) else ()
-    assert questions == ()
+    questions = ResearchCognitiveLoop.next_research_questions(second.research_state)
+    assert questions
+    assert second.trace is not None
+    assert second.trace.learning["strategy_adaptation"]["strategy"] == "seek_fresh_independent_evidence"
+    assert second.output["action"] == "RESEARCH"
+    assert second.output["research_questions"] == list(questions)
