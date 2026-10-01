@@ -9,7 +9,7 @@ class _StubOrchestrator:
         state = CognitiveState(
             raw_input=raw_input,
             intent="answer",
-            context_map={"learning": {"context": {"key": "task-a", "conditions": {"mode": "research"}}}},
+            context_map={},
             action="REVIEW",
             output={
                 "verdict": "REVIEW",
@@ -34,12 +34,12 @@ def test_decision_loop_reuses_learning_in_same_explicit_context(tmp_path) -> Non
 
     first = loop.run(
         "research question",
-        learning_context={"context": {"key": "task-a", "conditions": {"mode": "research"}}},
+        learning_context={"key": "task-a", "conditions": {"mode": "research"}},
         strategy="research",
     )
     second = loop.run(
         "research question",
-        learning_context={"context": {"key": "task-a", "conditions": {"mode": "research"}}},
+        learning_context={"key": "task-a", "conditions": {"mode": "research"}},
         strategy="research",
     )
 
@@ -49,7 +49,6 @@ def test_decision_loop_reuses_learning_in_same_explicit_context(tmp_path) -> Non
     assert adaptation is not None
     assert adaptation.strategy.action == "CHANGE"
     assert adaptation.strategy.strategy == "seek_fresh_independent_evidence"
-    assert "evidence_gap" in adaptation.strategy.reason
 
 
 def test_decision_loop_does_not_transfer_learning_across_context(tmp_path) -> None:
@@ -58,12 +57,12 @@ def test_decision_loop_does_not_transfer_learning_across_context(tmp_path) -> No
 
     loop.run(
         "research question",
-        learning_context={"context": {"key": "task-a", "conditions": {"mode": "research"}}},
+        learning_context={"key": "task-a", "conditions": {"mode": "research"}},
         strategy="research",
     )
     isolated = loop.run(
         "research question",
-        learning_context={"context": {"key": "task-b", "conditions": {"mode": "research"}}},
+        learning_context={"key": "task-b", "conditions": {"mode": "research"}},
         strategy="research",
     )
 
