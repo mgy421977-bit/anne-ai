@@ -5,6 +5,7 @@ from anne.learning.web_research_transport import (
     CachePolicy,
     RetryDisposition,
     RetryPolicy,
+    WebResearchTransport,
 )
 
 
