@@ -101,7 +101,8 @@ class AdaptiveLearningCoordinator:
             strategy, experiences
         )
 
-        learning = {
+        learning = dict(trace.learning)
+        learning.update({
             "metacognition": {
                 "known": metacognition.known,
                 "unknown": metacognition.unknown,
@@ -149,7 +150,7 @@ class AdaptiveLearningCoordinator:
                 "reason": contextual_choice.reason,
                 "selected_by_observation": contextual_choice.selected_by_observation,
             },
-        }
+        })
         enriched_trace = replace(trace, learning=learning)
         return AdaptiveLearningResult(
             gap,
