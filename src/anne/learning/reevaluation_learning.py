@@ -66,7 +66,7 @@ class ReEvaluationLearningAdapter:
             else cycle.verification.as_dict()
         )
         lineage = (*parent_lineage, cycle_id) if parent_cycle_id else (cycle_id,)
-        learning = {}
+        learning: dict[str, object] = {}
         if context_key or context_conditions:
             learning["context"] = {
                 "key": context_key,
