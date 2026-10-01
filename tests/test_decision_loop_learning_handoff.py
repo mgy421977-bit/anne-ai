@@ -2,6 +2,7 @@ from anne.core.cognitive_orchestrator import OrchestrationResult
 from anne.core.cognitive_state import CognitiveState
 from anne.core.decision_loop import DecisionLoop
 from anne.core.fail_fast import FailFastResult
+from anne.learning.critic_loop import LoopDecision
 
 
 class _StubOrchestrator:
@@ -9,7 +10,13 @@ class _StubOrchestrator:
         state = CognitiveState(
             raw_input=raw_input,
             intent="answer",
-            context_map={},
+            requires_evidence=True,
+            context_map={
+                "intent": "answer",
+                "requires_evidence": True,
+                "verification_status": "VERIFIED",
+                "verification_sources": ("synthetic-source",),
+            },
             action="REVIEW",
             output={
                 "verdict": "REVIEW",
@@ -28,9 +35,24 @@ class _StubOrchestrator:
         )
 
 
-def test_decision_loop_reuses_learning_in_same_explicit_context(tmp_path) -> None:
+class _StubCriticLoop:
+    def decide(self, *_: object, **__: object) -> LoopDecision:
+        return LoopDecision(
+            action="REVIEW",
+            reason="synthetic baseline decision",
+            research_allowed=True,
+        )
+
+
+def _loop(tmp_path) -> DecisionLoop:
     loop = DecisionLoop(memory_db_path=str(tmp_path / "anne.db"))
     loop.orchestrator = _StubOrchestrator()
+    loop.research_loop.critic_loop = _StubCriticLoop()
+    return loop
+
+
+def test_decision_loop_reuses_learning_in_same_explicit_context(tmp_path) -> None:
+    loop = _loop(tmp_path)
 
     first = loop.run(
         "research question",
@@ -49,11 +71,12 @@ def test_decision_loop_reuses_learning_in_same_explicit_context(tmp_path) -> Non
     assert adaptation is not None
     assert adaptation.strategy.action == "CHANGE"
     assert adaptation.strategy.strategy == "seek_fresh_independent_evidence"
+    assert second.research_state.decision.action == "RESEARCH"
+    assert second.research_state.decision.research_allowed is True
 
 
 def test_decision_loop_does_not_transfer_learning_across_context(tmp_path) -> None:
-    loop = DecisionLoop(memory_db_path=str(tmp_path / "anne.db"))
-    loop.orchestrator = _StubOrchestrator()
+    loop = _loop(tmp_path)
 
     loop.run(
         "research question",
@@ -71,3 +94,4 @@ def test_decision_loop_does_not_transfer_learning_across_context(tmp_path) -> No
     assert adaptation is not None
     assert adaptation.strategy.action == "KEEP"
     assert adaptation.strategy.strategy == "research"
+    assert isolated.research_state.decision.action == "REVIEW"
