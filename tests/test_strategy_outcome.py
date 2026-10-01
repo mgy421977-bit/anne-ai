@@ -14,6 +14,8 @@ def _experience(
     strategy: str,
     outcome: str,
     failure_class: str = "unknown",
+    lineage: tuple[str, ...] = (),
+    parent_cycle_id: str | None = None,
 ) -> Experience:
     return Experience(
         source_cycle_id=cycle_id,
@@ -23,6 +25,8 @@ def _experience(
         lesson="observation only",
         safe_to_reuse=False,
         factual_status="UNVERIFIED",
+        parent_cycle_id=parent_cycle_id,
+        lineage=lineage,
     )
 
 
@@ -33,11 +37,13 @@ def test_changed_strategy_followed_by_success_is_observed_as_improvement() -> No
             strategy="research",
             outcome="FAILURE",
             failure_class="evidence_gap",
+            lineage=("c1",),
         ),
         _experience(
             "c2",
             strategy="recheck_independent_evidence",
             outcome="SUCCESS",
+            lineage=("c1", "c2"),
         ),
     )
     decision = StrategyDecision(
@@ -81,8 +87,8 @@ def test_changed_strategy_followed_by_failure_is_not_improved() -> None:
 
 def test_same_strategy_is_not_mistaken_for_learning() -> None:
     experiences = (
-        _experience("c1", strategy="research", outcome="FAILURE"),
-        _experience("c2", strategy="research", outcome="SUCCESS"),
+        _experience("c1", strategy="research", outcome="FAILURE", lineage=("c1",)),
+        _experience("c2", strategy="research", outcome="SUCCESS", lineage=("c1", "c2")),
     )
     decision = StrategyDecision("KEEP", "research", "observe")
 
@@ -112,6 +118,7 @@ def test_adaptive_trace_records_strategy_outcome_without_authority() -> None:
         cycle_id="c2",
         status="SUCCESS",
         verification={"status": "VERIFIED"},
+        lineage=("c1", "c2"),
     )
 
     result = AdaptiveLearningCoordinator().observe(
