@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from anne.learning.derived_hypothesis import DerivedHypothesis
-from anne.learning.research_planner import ResearchPlan, ResearchPlanner, ResearchSubquestion, SourceDirection
+from anne.learning.research_planner import (
+    ResearchPlan,
+    ResearchPlanner,
+    ResearchSubquestion,
+    SourceDirection,
+)
 
 
 class DerivedResearchPlanner:
