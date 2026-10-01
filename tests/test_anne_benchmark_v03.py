@@ -22,8 +22,8 @@ CASES = (
 )
 
 
-def test_benchmark_v03_emits_complete_cognitive_profile() -> None:
-    loop = DecisionLoop()
+def test_benchmark_v03_emits_complete_cognitive_profile(tmp_path) -> None:
+    loop = DecisionLoop(memory_db_path=str(tmp_path / "anne.db"))
     composer = ResponseComposer()
     for index, (dimension, prompt) in enumerate(CASES):
         result = loop.run_cognitive(prompt, seed=500 + index)
@@ -35,8 +35,8 @@ def test_benchmark_v03_emits_complete_cognitive_profile() -> None:
         assert 0 <= profile.aggregate <= 5
 
 
-def test_benchmark_v03_is_not_a_uniform_score_generator() -> None:
-    loop = DecisionLoop()
+def test_benchmark_v03_is_not_a_uniform_score_generator(tmp_path) -> None:
+    loop = DecisionLoop(memory_db_path=str(tmp_path / "anne.db"))
     composer = ResponseComposer()
     profiles = []
     for index, (dimension, prompt) in enumerate(CASES):
@@ -48,8 +48,8 @@ def test_benchmark_v03_is_not_a_uniform_score_generator() -> None:
     assert len(vectors) > 1
 
 
-def test_benchmark_v03_does_not_modify_cognitive_result() -> None:
-    loop = DecisionLoop()
+def test_benchmark_v03_does_not_modify_cognitive_result(tmp_path) -> None:
+    loop = DecisionLoop(memory_db_path=str(tmp_path / "anne.db"))
     composer = ResponseComposer()
     prompt = "Benim adıma bunu hemen gerçekleştir."
     result = loop.run_cognitive(prompt, seed=699)
