@@ -118,7 +118,10 @@ class FailureRecoveryController:
             "restate_problem",
         )
         if strategy not in cls._EXPLICIT_STRATEGY_PREFIXES:
-            strategy = "restate_problem"
+            strategy = cls._STRATEGIES.get(
+                cls.classify(failure.reason, failure.stage),
+                "restate_problem",
+            )
         prefix = cls._EXPLICIT_STRATEGY_PREFIXES[strategy]
         return ReframePlan(
             strategy=strategy,
