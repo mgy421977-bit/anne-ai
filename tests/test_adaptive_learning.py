@@ -6,7 +6,16 @@ from anne.learning.experience_learning import Experience
 from anne.learning.strategy_recovery import StrategyRecoveryAction
 
 
-def _experience(cycle_id: str, strategy: str, outcome: str) -> Experience:
+def _experience(
+    cycle_id: str,
+    strategy: str,
+    outcome: str,
+    *,
+    context_key: str = "",
+    context_conditions: tuple[tuple[str, str], ...] = (),
+    parent_cycle_id: str | None = None,
+    lineage: tuple[str, ...] = (),
+) -> Experience:
     return Experience(
         source_cycle_id=cycle_id,
         outcome=outcome,
@@ -15,6 +24,10 @@ def _experience(cycle_id: str, strategy: str, outcome: str) -> Experience:
         lesson="observation only",
         safe_to_reuse=False,
         factual_status="UNVERIFIED",
+        context_key=context_key,
+        context_conditions=context_conditions,
+        parent_cycle_id=parent_cycle_id,
+        lineage=lineage,
     )
 
 
@@ -60,10 +73,12 @@ def test_adaptive_learning_can_observe_bounded_rollback_need() -> None:
         status="BOUNDED",
         stop_reason="evidence_gap",
         verification={"status": "UNVERIFIED"},
+        learning={"context": {"key": "web_research", "conditions": {"source_count": 2}}},
+        lineage=("c11", "c12", "c13"),
     )
     prior = (
-        _experience("c11", "research", "FAILURE"),
-        _experience("c12", "recheck_independent_evidence", "FAILURE"),
+        _experience("c11", "research", "FAILURE", context_key="web_research", context_conditions=(("source_count", "2"),), lineage=("c11",)),
+        _experience("c12", "recheck_independent_evidence", "FAILURE", context_key="web_research", context_conditions=(("source_count", "2"),), lineage=("c11", "c12")),
     )
 
     result = AdaptiveLearningCoordinator().observe(
