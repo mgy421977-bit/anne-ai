@@ -21,6 +21,7 @@ from anne.learning.critic_loop import CriticLoopController, LoopDecision
 from anne.learning.decision_synthesis import DecisionSynthesis, DecisionSynthesizer
 from anne.learning.derived_hypothesis import DerivedHypothesis, DerivedHypothesisGenerator
 from anne.learning.derived_research_executor import DerivedResearchExecutor, DerivedResearchResult
+from anne.learning.derived_research_learning import DerivedResearchLearningAdapter
 from anne.learning.derived_research_planner import DerivedResearchPlanner
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
 from anne.learning.experience_learning import Experience
@@ -264,6 +265,7 @@ class ResearchCognitiveLoop:
         *,
         executor: DerivedResearchExecutor | None = None,
         max_hypotheses: int = 3,
+        strategy: str = "research",
     ) -> ResearchCognitiveState:
         """Verify fresh derived evidence, then re-enter the normal loop."""
         result = self.execute_derived_research(state, executor=executor)
@@ -295,6 +297,47 @@ class ResearchCognitiveLoop:
                     retrieved_at=item.retrieved_at,
                 )
 
+        parent_experience = (
+            state.adaptive_learning.experience
+            if state.adaptive_learning is not None
+            else None
+        )
+        cycle_id = f"derived:{uuid4().hex[:12]}"
+        learning_trace = DerivedResearchLearningAdapter().to_trace(
+            result,
+            tuple(verifications),
+            cycle_id=cycle_id,
+            strategy=strategy,
+            parent_experience=parent_experience,
+        )
+        prior_experiences = (
+            (parent_experience,) if parent_experience is not None else ()
+        )
+        adaptive_result = self.adaptive_learning.observe(
+            learning_trace,
+            strategy=strategy,
+            prior_experiences=prior_experiences,
+        )
+        observed = adaptive_result.experience
+        if self.memory is not None and (
+            observed.context_key or observed.context_conditions
+        ):
+            self.memory.save_experience_observation(
+                source_cycle_id=observed.source_cycle_id,
+                outcome=observed.outcome,
+                failure_class=observed.failure_class,
+                strategy=observed.strategy,
+                lesson=observed.lesson,
+                safe_to_reuse=observed.safe_to_reuse,
+                factual_status=observed.factual_status,
+                context_key=observed.context_key,
+                context_conditions=observed.context_conditions,
+                parent_cycle_id=observed.parent_cycle_id,
+                lineage=observed.lineage,
+                language_corroboration_status=observed.language_corroboration_status,
+                language_corroboration_providers=observed.language_corroboration_providers,
+            )
+
         refreshed = self.initialize(
             state.plan.main_question,
             evidence=annotated,
@@ -315,7 +358,7 @@ class ResearchCognitiveLoop:
             result,
             tuple(verifications),
             None,
-            refreshed.adaptive_learning,
+            adaptive_result,
             refreshed.language_check,
             refreshed.language_corroboration,
         )
