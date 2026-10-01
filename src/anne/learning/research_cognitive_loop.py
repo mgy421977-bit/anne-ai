@@ -23,8 +23,8 @@ from anne.learning.derived_hypothesis import DerivedHypothesis, DerivedHypothesi
 from anne.learning.derived_research_executor import DerivedResearchExecutor, DerivedResearchResult
 from anne.learning.derived_research_planner import DerivedResearchPlanner
 from anne.learning.evidence import EvidenceItem, EvidenceLedger, EvidenceLedgerEntry
-from anne.learning.metacognitive_controller import MetacognitiveController
 from anne.learning.experience_learning import Experience
+from anne.learning.metacognitive_controller import MetacognitiveController
 from anne.learning.hypothesis import CriticResult, Hypothesis, HypothesisEngine
 from anne.learning.hypothesis_bridge import EvidenceHypothesisBridge
 from anne.learning.joint_inference import JointInference, JointInferenceEngine
