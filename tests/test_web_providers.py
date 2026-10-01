@@ -114,6 +114,7 @@ def test_web_researcher_consumes_external_registry() -> None:
 
     registry = Registry()
     researcher = WebResearcher(external_registry=registry)
+    researcher._query_variants = lambda query: ()
     results = researcher.research("external observation")
 
     assert registry.queries == ["external observation"]
