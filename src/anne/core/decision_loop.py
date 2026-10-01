@@ -258,7 +258,10 @@ class DecisionLoop:
                     str(row[7])
                     for row in memory.get_recent_failures(limit=32)
                     if len(row) > 7
-                    and str(row[1]) == current_cycle_id
+                    and (
+                        str(row[1]) == current_cycle_id
+                        or str(row[1]).startswith(f"{current_cycle_id}:")
+                    )
                     and str(row[7]).strip()
                 ),
                 "",
