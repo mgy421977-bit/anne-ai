@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "split": "test",
+  "name": "learning_research_handoff_v01",
+  "generation": {
+    "model": "synthetic-deterministic-fixture",
+    "seed": 0,
+    "synthetic": true
+  },
+  "definition": "Expected behavior records bounded strategy adaptation and safety-boundary outcomes; it does not measure model intelligence or real-world security.",
+  "non_claims": [
+    "This is not an LLM benchmark.",
+    "This does not establish generalization or production reliability.",
+    "This does not establish consciousness, AGI, or autonomy.",
+    "The fixture measures deterministic architecture contracts only."
+  ],
+  "scenarios": [
+    {
+      "id": "no_history",
+      "category": "strategy_adaptation",
+      "expected": {
+        "action": "KEEP",
+        "strategy": "research"
+      }
+    },
+    {
+      "id": "single_failure",
+      "category": "strategy_adaptation",
+      "expected": {
+        "action": "KEEP",
+        "strategy": "research"
+      }
+    },
+    {
+      "id": "repeated_same_failure",
+      "category": "strategy_adaptation",
+      "expected": {
+        "action": "CHANGE",
+        "strategy": "seek_fresh_independent_evidence"
+      }
+    },
+    {
+      "id": "mixed_failure_classes",
+      "category": "strategy_adaptation",
+      "expected": {
+        "action": "ABSTAIN"
+      }
+    },
+    {
+      "id": "cross_context_isolation",
+      "category": "context_boundary",
+      "expected": {
+        "action": "KEEP",
+        "strategy": "research"
+      }
+    },
+    {
+      "id": "verified_learning_reuse_boundary",
+      "category": "authority_boundary",
+      "expected": {
+        "factual_status": "VERIFIED",
+        "safe_to_reuse": false
+      }
+    },
+    {
+      "id": "conflicting_learning_reuse_boundary",
+      "category": "authority_boundary",
+      "expected": {
+        "factual_status": "CONFLICTING",
+        "safe_to_reuse": false
+      }
+    }
+  ]
+}
