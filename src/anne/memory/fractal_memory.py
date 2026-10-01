@@ -53,6 +53,12 @@ class FractalMemory:
             id TEXT PRIMARY KEY, cycle_id TEXT, stage TEXT, raw_input TEXT,
             reason TEXT, meta_tag TEXT, hypothesis_id TEXT, ethic_total REAL,
             created_at TEXT)""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS memory_relations (
+            id TEXT PRIMARY KEY, source_decision_id TEXT NOT NULL,
+            target_decision_id TEXT NOT NULL, relation TEXT NOT NULL,
+            reason TEXT NOT NULL, task_mode TEXT NOT NULL DEFAULT 'general',
+            created_at TEXT NOT NULL,
+            UNIQUE(source_decision_id,target_decision_id,relation))""")
         cur.execute("""CREATE TABLE IF NOT EXISTS scale_events (
             cycle_id TEXT PRIMARY KEY, parent_cycle_id TEXT, depth INTEGER NOT NULL DEFAULT 0,
             scale_role TEXT NOT NULL, task_mode TEXT NOT NULL DEFAULT 'general',
