@@ -84,6 +84,8 @@ class AdaptiveLearningCoordinator:
             decision.action != "ABSTAIN"
             and (experience.context_key or experience.context_conditions)
             and contextual_choice.selected_by_observation
+            and contextual_choice.candidates
+            and contextual_choice.candidates[0].successes > 0
             and contextual_choice.strategy != decision.strategy
         ):
             decision = StrategyDecision(
