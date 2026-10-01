@@ -17,13 +17,21 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fail_fast import FailFastResult
 from anne.core.failure_recovery import FailureRecoveryController, FailureSignal
 from anne.core.pipeline import AnnePipeline
-from anne.core.self_correction import SelfCorrectionPlanner
 from anne.core.resource_profile import ResourceProfile
+from anne.core.self_correction import SelfCorrectionPlanner
 from anne.core.verification import ClaimVerifier
 from anne.mythos.candidate import SelectionResult, TaskMode
 from anne.mythos.engine import ExplorationMode, HypothesisCandidate
 from anne.mythos.generate import generate_candidates
 from anne.mythos.selection import CandidateSelector
+
+
+class LearningSignalFields(TypedDict):
+    learning_failure_class: str
+    learning_strategy: str
+    learning_lesson: str
+    learning_confidence: float
+    learning_safe_to_reuse: bool
 
 
 @dataclass(frozen=True)
@@ -166,7 +174,7 @@ class CognitiveOrchestrator:
         question: str,
         *,
         retry_index: int,
-    ) -> dict[str, object]:
+    ) -> LearningSignalFields:
         """Translate a failure into bounded learning metadata for persistence."""
         plan = SelfCorrectionPlanner().plan(
             question,
