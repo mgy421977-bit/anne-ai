@@ -395,6 +395,74 @@ These are engineering controls, **not a safety certification**.
 
 ---
 
+## Agentic safety research focus
+
+Recent public AI-security research illustrates a broader problem that becomes more important as language models gain persistent memory, external tools, and multi-step execution. In a September 2026 disclosure, Mindgard reported that safety controls in Moonshot AI's Kimi could be bypassed and that the resulting model behavior included highly actionable harmful content. Mindgard also highlighted the increased risk when frontier models are connected to tools, external data, and agentic workflows. These findings are cited here as external research context, **not as evidence that ANNE solves the reported vulnerability**.
+
+ANNE uses the case as a representative research target for a broader class of failures:
+
+~~~text
+MODEL OUTPUT
+      ↓
+INTENT / REASONING CANDIDATE
+      ↓
+EVIDENCE + VERIFICATION
+      ↓
+MEMORY / CONTEXT
+      ↓
+AGENCY DECISION
+      ↓
+TOOL / EXTERNAL ACTION
+~~~
+
+The central safety invariant is:
+
+~~~text
+MODEL OUTPUT            ≠ AUTHORIZED INTENT
+MEMORY                  ≠ AUTHORITY
+TOOL PROPOSAL           ≠ TOOL PERMISSION
+RESEARCH RESULT         ≠ VERIFIED FACT
+VERIFIED FACT           ≠ EXECUTION AUTHORITY
+LEARNED STRATEGY        ≠ AUTOMATIC PERMISSION
+~~~
+
+This makes several agentic-security questions explicit research targets:
+
+- instruction and authority-hierarchy manipulation;
+- memory poisoning and unsafe historical reuse;
+- stale or superseded context influencing a current decision;
+- tool-permission escalation;
+- false or incomplete verification being treated as sufficient;
+- conflicting evidence being silently collapsed into one answer;
+- model-generated action proposals bypassing an independent agency gate;
+- recovery after a previously accepted conclusion is invalidated.
+
+The current architecture already contains bounded controls relevant to these questions, including explicit AgencyGate routing, provenance-bearing verification, context-scoped experience, weighted historical memory, explicit historical memory relations, bounded re-evaluation, and fail-closed action routing. **The effectiveness of these controls against adversarial agentic scenarios remains an empirical question and is not yet established by an independent held-out security evaluation.**
+
+### Moonshot/Kimi case as an evaluation hypothesis
+
+The research hypothesis is not:
+
+> "ANNE prevents the Kimi jailbreak."
+
+The testable hypothesis is narrower:
+
+> **Can architectural separation between reasoning, evidence, memory, verification, and agency reduce unsafe propagation from a compromised or manipulated model output into authorized external action?**
+
+A future controlled evaluation should compare:
+
+~~~text
+BASE MODEL / AGENT
+        vs
+BASE MODEL / AGENT + ANNE CONTROLS
+~~~
+
+using non-harmful synthetic scenarios that exercise authority spoofing, memory poisoning, instruction manipulation, verification failure, and tool escalation. Success criteria should include false acceptance, unauthorized-action rate, provenance coverage, recovery success, repeated-error rate, and human-review frequency.
+
+External research context: [Mindgard disclosure](https://mindgard.ai/disclosures/bypassing-safety-controls-in-moonshot-ai-kimi) and [Mindgard analysis](https://mindgard.ai/blog/easy-to-use-ai-to-develop-bioweapons).
+
+---
+
 ## Current repository structure
 
 ```text
@@ -550,7 +618,7 @@ See:
 
 ---
 
-## Current project status — September 30, 2026
+## Current project status — October 1, 2026
 
 **Research Preview / Alpha — active development**
 
@@ -578,6 +646,8 @@ See:
 | Local/offline runtime | Implemented |
 | Model-provider abstraction | Implemented |
 | Safety and agency controls | Implemented / conservative |
+| Agentic safety invariants | Implemented / bounded; evaluation pending |
+| Explicit historical memory relations | Implemented / bounded |
 | Multi-agent coordinator | Experimental / bounded |
 | Benchmark and ablation infrastructure | Implemented |
 | Independent held-out evaluation | **Not yet established** |
@@ -589,7 +659,7 @@ See:
 
 ---
 
-## Engineering progress — September 30, 2026
+## Engineering progress — October 1, 2026
 
 ### Evidence and research infrastructure
 
@@ -638,6 +708,10 @@ See:
 ### Safety / agency
 
 - ✓ ToolPolicy and AgencyGate remain fail-closed for unauthorized action
+- ✓ Model output is separated from execution authority
+- ✓ Tool proposals remain distinct from tool permission
+- ✓ Historical memory remains non-authoritative
+- ✓ Explicit historical memory relations preserve source/target/reason links
 - ✓ Evidence-required decisions remain gated by applicable verification requirements
 - ✓ Action requests without explicit authority remain `REVIEW`
 - ✓ Credential redaction and bounded retry controls remain in the guarded runtime path
@@ -742,7 +816,8 @@ The roadmap prioritizes evidence before expansion:
 4. establish base-model vs base+ANNE evaluation;
 5. improve reproducibility and multi-seed evaluation;
 6. validate product/pilot use cases;
-7. expand advanced multi-agent and long-term planning research only after evidence supports it.
+7. establish agentic-safety evaluation suites for authority manipulation, memory poisoning, tool escalation, and unsafe action propagation;
+8. expand advanced multi-agent and long-term planning research only after evidence supports it.
 
 See [`ROADMAP.md`](ROADMAP.md) for milestone-level criteria.
 
