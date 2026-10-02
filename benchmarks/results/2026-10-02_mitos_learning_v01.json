@@ -1,0 +1,41 @@
+{
+  "schema_version": "mitos_learning_v01",
+  "protocol": "benchmarks/scripts/run_mitos_learning.py",
+  "fixture": "benchmarks/mitos_learning_v01.json",
+  "source_commit": "6bde60006b088799a6f118e6a929fe8c7b62dd7c",
+  "case_count": 4,
+  "passed": 4,
+  "failed": 0,
+  "generation_plan_change_rate": 0.5,
+  "results": [
+    {
+      "id": "verified_combine_changes_order",
+      "modes": ["COMBINE", "EXPLORE", "INVERT"],
+      "expected_modes": ["COMBINE", "EXPLORE", "INVERT"],
+      "learned": true,
+      "matches": true
+    },
+    {
+      "id": "failed_invert_changes_order",
+      "modes": ["EXPLORE", "COMBINE", "INVERT"],
+      "expected_modes": ["EXPLORE", "COMBINE", "INVERT"],
+      "learned": true,
+      "matches": true
+    },
+    {
+      "id": "cross_context_isolated",
+      "modes": ["SIMULATE", "EXPLORE"],
+      "expected_modes": ["SIMULATE", "EXPLORE"],
+      "learned": false,
+      "matches": true
+    },
+    {
+      "id": "inconclusive_is_neutral",
+      "modes": ["EXPLORE", "COMBINE"],
+      "expected_modes": ["EXPLORE", "COMBINE"],
+      "learned": false,
+      "matches": true
+    }
+  ],
+  "note": "Synthetic deterministic implementation-level contract only; not evidence of general model learning, generation quality, or transfer to unseen tasks."
+}
