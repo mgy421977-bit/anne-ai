@@ -25,8 +25,8 @@ Success is **evidence**, not slogans.
 | EthicCore + axioms | Done |
 | FractalMemory + SFT | Done |
 | Mythos (placeholder / API) | Done |
-| ANLA score skeleton | In progress — runtime integrated; A3 C_ctx contract not yet satisfied |
-| Ablation scaffold | Done (no published numbers) |
+| ANLA score skeleton | Done (A3 context-consistency contract implemented; PR #132, commit fd8d147663231c6514b45acd07dd35d148b23c83) |
+| Ablation scaffold | Done (A2 CI execution + raw artifact published; PR #134, commit 4f33e22ca5c941bcc29472c713b5608e7394bb12) |
 | Independent review response | Done |
 | MITOS architecture specification | Experimental proposal |
 | MITOS → AdaptiveLearning → DecisionLoop runtime handoff regression coverage | Done (PR #130, commit ced5f718e65962fc69782598b6fbac043055f1e7) |
@@ -39,13 +39,13 @@ Success is **evidence**, not slogans.
 
 | ID | Milestone | Exit criteria |
 |----|-----------|---------------|
-| A1 | Expand ablation fixture (≥30 prompts, coherent/incoherent/conflict) | datasets/ versioned JSON |
-| A2 | Run ANLA ON vs OFF; save raw JSON under benchmarks/results/ | Commit SHA + counts published |
-| A3 | Implement heuristic $S_{ANLA}$ (overlap + contradiction + SFT penalty) in pipeline path | **Contract tests proving DUY input ↔ candidate $C_{ctx}$ + unit/integration test** |
-| A4 | Retry-loop bound (max N returns to DUY) | No unbounded veto in tests |
-| A5 | CI: pytest must pass; ruff clean on main | Green Actions |
+| A1 | Expand ablation fixture (≥30 prompts, coherent/incoherent/conflict) | **Done** — versioned fixture v0.3 with 30 prompts (15 coherent / 15 incoherent) |
+| A2 | Run ANLA ON vs OFF; save raw JSON under benchmarks/results/ | **Done** — CI run #605 green; raw artifact generated from merge commit c8bacd3; 30 cases, 15 blocked with ANLA ON vs 0 blocked with ANLA OFF |
+| A3 | Implement heuristic $S_{ANLA}$ (overlap + contradiction + SFT penalty) in pipeline path | **Done** — DUY input ↔ candidate $C_{ctx}$ contract tests + unit/integration coverage; PR #132, commit fd8d147663231c6514b45acd07dd35d148b23c83 |
+| A4 | Retry-loop bound (max N returns to DUY) | **Done** — bounded retry tests; PR #133, commit 25961c6e43e54efe5f2c0b6df234011df3dd86e6 |
+| A5 | CI: pytest must pass; ruff clean on main | In progress — PR #134 CI is green; post-merge main workflow evidence still needs verification |
 
-**A3 scope correction (2026-10-02):** Independent contract audit confirmed that ANLA is in the runtime path, but the current `C_ctx` implementation scores candidate text without receiving the DUY input. A3 is therefore not considered complete until the input↔candidate context contract is expressed in falsifiable tests and implemented. See `research/decision_logs/2026-10-02_a3_context_consistency_contract.md`.
+**A3 completion note (2026-10-02):** The context-consistency contract identified by the independent audit is now implemented and covered by falsifiable tests. `C_ctx` receives both DUY input and candidate text, while ANLA remains a semantic/consistency gate rather than a factual verifier. See `research/decision_logs/2026-10-02_a3_context_consistency_contract.md` and PR #132.
 
 **Non-goals for v0.2:** TruthfulQA leaderboard claims, VSA, BCI, neuromorphic hardware.
 
