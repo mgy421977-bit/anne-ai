@@ -1,7 +1,7 @@
 # A3 ANLA Context-Consistency Contract Audit
 
-**Date:** 2026-10-02  
-**Type:** Research / engineering decision log (no implementation)  
+**Date:** 2026-10-02
+**Type:** Research / engineering decision log (no implementation)
 **Status:** Contract definition proposed; implementation intentionally deferred
 
 ## Decision
@@ -81,6 +81,6 @@ The implementation should remain minimal and deterministic, using the existing t
 
 ## Audit conclusion
 
-**A3 runtime integration: implemented.**  
-**A3 documented C_ctx contract: not yet satisfied.**  
+**A3 runtime integration: implemented.**
+**A3 documented C_ctx contract: not yet satisfied.**
 **Next action: contract tests first; implementation second.**
