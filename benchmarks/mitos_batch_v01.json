@@ -3,8 +3,8 @@
   "description": "Synthetic deterministic batch-size protocol for bounded MITOS candidate selection.",
   "candidates": [
     {"id":"H01","mode":"EXPLORE","score":0.20,"discovery":false},
-    {"id":"H02","mode":"COMBINE","score":0.35,"discovery":false},
     {"id":"H03","mode":"INVERT","score":0.48,"discovery":true},
+    {"id":"H02","mode":"COMBINE","score":0.35,"discovery":false},
     {"id":"H04","mode":"SIMULATE","score":0.30,"discovery":false},
     {"id":"H05","mode":"EXPLORE","score":0.55,"discovery":true},
     {"id":"H06","mode":"COMBINE","score":0.41,"discovery":false},
