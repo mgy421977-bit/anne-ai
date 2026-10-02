@@ -10,6 +10,7 @@ Evaluation protocols for ANNE. Prefer small, reproducible sets over vanity metri
 | Strategy adaptation learning | `scripts/run_learning_strategy_adaptation.py` | Synthetic deterministic regression contract |
 | MITOS learning guidance | `scripts/run_mitos_learning.py` | Synthetic deterministic context-scoped replay contract |
 | MITOS batch-size | `scripts/run_mitos_batch.py` | Synthetic deterministic baseline/small/large selection protocol |
+| MITOS real-generator guidance effect | `scripts/run_mitos_real_generator_effect.py` | Deterministic real-generator mode/evaluation contract |
 | Standard LLM suites (TruthfulQA, etc.) | — | Not claimed / future |
 
 ```bash
@@ -20,7 +21,27 @@ python benchmarks/scripts/run_agentic_safety_authorization.py
 python benchmarks/scripts/run_learning_strategy_adaptation.py
 python benchmarks/scripts/run_mitos_learning.py
 python benchmarks/scripts/run_mitos_batch.py
+python benchmarks/scripts/run_mitos_real_generator_effect.py
 ```
+
+## MITOS real-generator guidance effect v1
+
+The protocol uses the existing `MitosEngine` rather than a synthetic candidate fixture. Baseline and guided runs use the same goal, batch size, and seed. Guidance changes only the explicit exploration-mode order before generation.
+
+Measured fields:
+- generated mode order;
+- candidate count;
+- ANNE deterministic discovery-gate acceptance count/rate;
+- acceptance deltas between baseline and guided runs.
+
+The regression contract currently expects:
+- mode order changes under guidance;
+- candidate count remains fixed;
+- ANNE acceptance count/rate remain unchanged for the current generator.
+
+The unchanged acceptance result is intentional evidence about the **current implementation boundary**: `MitosEngine` samples its evaluation fields independently of exploration mode. Therefore this benchmark must not be described as evidence that learning improves generation quality.
+
+This protocol is an implementation-level deterministic measurement, not evidence of model learning quality, transfer, generalization, or real-world discovery improvement.
 
 ## Agentic safety authorization v1
 
