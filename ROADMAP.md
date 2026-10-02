@@ -3,7 +3,7 @@
 **Policy:** Milestones are engineering deliverables, not product promises.  
 **Rule:** No public claim of “hallucination solved” or “AGI” until the matching benchmark row is green and published under benchmarks/results/.
 
-Last updated: 2026-10-01
+Last updated: 2026-10-02
 
 ---
 
@@ -25,7 +25,7 @@ Success is **evidence**, not slogans.
 | EthicCore + axioms | Done |
 | FractalMemory + SFT | Done |
 | Mythos (placeholder / API) | Done |
-| ANLA score skeleton | Done (not proven) |
+| ANLA score skeleton | In progress — runtime integrated; A3 C_ctx contract not yet satisfied |
 | Ablation scaffold | Done (no published numbers) |
 | Independent review response | Done |
 | MITOS architecture specification | Experimental proposal |
@@ -41,9 +41,11 @@ Success is **evidence**, not slogans.
 |----|-----------|---------------|
 | A1 | Expand ablation fixture (≥30 prompts, coherent/incoherent/conflict) | datasets/ versioned JSON |
 | A2 | Run ANLA ON vs OFF; save raw JSON under benchmarks/results/ | Commit SHA + counts published |
-| A3 | Implement heuristic $S_{ANLA}$ (overlap + contradiction + SFT penalty) in pipeline path | Unit tests + one integration test |
+| A3 | Implement heuristic $S_{ANLA}$ (overlap + contradiction + SFT penalty) in pipeline path | **Contract tests proving DUY input ↔ candidate $C_{ctx}$ + unit/integration test** |
 | A4 | Retry-loop bound (max N returns to DUY) | No unbounded veto in tests |
 | A5 | CI: pytest must pass; ruff clean on main | Green Actions |
+
+**A3 scope correction (2026-10-02):** Independent contract audit confirmed that ANLA is in the runtime path, but the current `C_ctx` implementation scores candidate text without receiving the DUY input. A3 is therefore not considered complete until the input↔candidate context contract is expressed in falsifiable tests and implemented. See `research/decision_logs/2026-10-02_a3_context_consistency_contract.md`.
 
 **Non-goals for v0.2:** TruthfulQA leaderboard claims, VSA, BCI, neuromorphic hardware.
 
