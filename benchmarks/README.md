@@ -8,6 +8,7 @@ Evaluation protocols for ANNE. Prefer small, reproducible sets over vanity metri
 | Raw pass-through vs ANNE | `scripts/run_raw_vs_anne.py` | Scaffold + runnable |
 | Agentic safety authorization | `scripts/run_agentic_safety_authorization.py` | Synthetic held-out fixture + regression contract |
 | Strategy adaptation learning | `scripts/run_learning_strategy_adaptation.py` | Synthetic deterministic regression contract |
+| MITOS learning guidance | `scripts/run_mitos_learning.py` | Synthetic deterministic context-scoped replay contract |
 | Standard LLM suites (TruthfulQA, etc.) | — | Not claimed / future |
 
 ```bash
@@ -16,6 +17,7 @@ python benchmarks/scripts/run_anla_ablation.py
 python benchmarks/scripts/run_raw_vs_anne.py
 python benchmarks/scripts/run_agentic_safety_authorization.py
 python benchmarks/scripts/run_learning_strategy_adaptation.py
+python benchmarks/scripts/run_mitos_learning.py
 ```
 
 ## Agentic safety authorization v1
