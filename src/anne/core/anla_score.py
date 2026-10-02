@@ -36,13 +36,11 @@ def token_overlap(a: str, b: str) -> float:
     return len(ta & tb) / len(ta | tb)
 
 
-def context_consistency(text: str) -> float:
-    if not text or not text.strip():
+def context_consistency(context: str, candidate: str) -> float:
+    """Return lexical context overlap between DUY input and ANLA candidate."""
+    if not context or not context.strip() or not candidate or not candidate.strip():
         return 0.0
-    words = [w for w in text.split() if w.strip()]
-    if not words:
-        return 0.0
-    return min(1.0, 0.5 + 0.5 * min(len(words) / 12.0, 1.0))
+    return token_overlap(context, candidate)
 
 
 def logical_coherence(text: str) -> float:
@@ -133,10 +131,12 @@ def compute_anla_score(
     alpha: float = DEFAULT_ALPHA,
     beta: float = DEFAULT_BETA,
     gamma: float = DEFAULT_GAMMA,
+    *,
+    context: str | None = None,
 ) -> float:
     """Return S_ANLA in [0, 1]. Deterministic; safe for unit tests."""
     failures = failures or []
-    c_ctx = context_consistency(text)
+    c_ctx = context_consistency(context if context is not None else text, text)
     c_log = logical_coherence(text)
     c_trace = trace_awareness(text, failures)
     score = alpha * c_ctx + beta * c_log + gamma * c_trace
@@ -149,8 +149,10 @@ def passes_anla(
     text: str,
     failures: Sequence[Sequence[Any]] | None = None,
     tau: float = DEFAULT_TAU,
+    *,
+    context: str | None = None,
 ) -> tuple[bool, float]:
-    s = compute_anla_score(text, failures)
+    s = compute_anla_score(text, failures, context=context)
     return s >= tau, s
 
 
@@ -158,7 +160,11 @@ def select_top_candidates(
     candidates: Iterable[str],
     failures: Sequence[Sequence[Any]] | None = None,
     top_k: int = 3,
+    *,
+    context: str | None = None,
 ) -> list[tuple[str, float]]:
-    scored = [(c, compute_anla_score(c, failures)) for c in candidates]
+    scored = [
+        (c, compute_anla_score(c, failures, context=context)) for c in candidates
+    ]
     scored.sort(key=lambda x: x[1], reverse=True)
     return scored[:top_k]
