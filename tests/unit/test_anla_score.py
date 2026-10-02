@@ -2,6 +2,7 @@
 
 from anne.core.anla_score import (
     compute_anla_score,
+    context_consistency,
     logical_coherence,
     passes_anla,
     select_top_candidates,
@@ -62,3 +63,41 @@ def test_select_top_candidates_orders_by_score():
 
 def test_token_overlap_empty():
     assert token_overlap("", "abc") == 0.0
+
+def test_context_consistency_relevant_candidate_scores_higher():
+    context = "solar roof system with battery storage"
+    relevant = "battery storage for a solar roof system"
+    unrelated = "olive oil factory water treatment"
+    assert context_consistency(context, relevant) > context_consistency(context, unrelated)
+
+
+def test_context_consistency_is_sensitive_to_input():
+    candidate = "solar roof system with battery storage"
+    unrelated_input = "olive oil factory water treatment"
+    assert context_consistency(candidate, candidate) > context_consistency(
+        unrelated_input, candidate
+    )
+
+
+def test_context_consistency_empty_inputs_are_fail_safe():
+    assert context_consistency("", "candidate") == 0.0
+    assert context_consistency("context", "") == 0.0
+    assert context_consistency(" ", "candidate") == 0.0
+
+
+def test_context_consistency_long_unrelated_candidate_is_not_high():
+    context = "solar roof system"
+    long_unrelated = " ".join(["olive", "oil", "factory", "water", "treatment"] * 20)
+    assert context_consistency(context, long_unrelated) == 0.0
+
+
+def test_trace_effect_is_separate_from_context_consistency():
+    context = "solar roof system"
+    candidate = "solar roof system with battery"
+    failures = [
+        ("ft1", "c1", "ANLA", "unrelated failure reason", "", 0.0, ""),
+    ]
+    assert context_consistency(context, candidate) > 0.0
+    without_trace = compute_anla_score(candidate, context=context)
+    with_trace = compute_anla_score(candidate, failures, context=context)
+    assert with_trace <= without_trace
