@@ -187,7 +187,12 @@ class AnnePipeline:
         if self.anla_enabled:
             failures = self.memory.get_recent_failures(limit=5)
             retries = 0
-            semantic_ok, s_anla = passes_anla(text, failures, tau=self.anla_tau)
+            semantic_ok, s_anla = passes_anla(
+                text,
+                failures,
+                tau=self.anla_tau,
+                context=state.raw_input,
+            )
             while not semantic_ok and retries < self.max_anla_retries:
                 self.memory.save_failure_trace(
                     cycle_id=hypothesis.id or "cycle",
@@ -200,7 +205,12 @@ class AnnePipeline:
                 )
                 retries += 1
                 failures = self.memory.get_recent_failures(limit=5)
-                semantic_ok, s_anla = passes_anla(text, failures, tau=self.anla_tau)
+                semantic_ok, s_anla = passes_anla(
+                text,
+                failures,
+                tau=self.anla_tau,
+                context=state.raw_input,
+            )
                 if not semantic_ok and retries >= self.max_anla_retries:
                     break
 
