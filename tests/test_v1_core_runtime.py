@@ -3,7 +3,7 @@ from __future__ import annotations
 from anne import AnneRequest, AnneRuntime
 from anne.agent.runtime import AnneAgent
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate, Authorization
-from anne.core.cognitive_state import Consciousness
+from anne.core.cognitive_state import Consciousness, Hypothesis
 from anne.core.decision_loop import DecisionLoop
 from anne.core.evidence import evidence_status_from_verification
 from anne.core.pipeline import AnnePipeline
@@ -61,6 +61,34 @@ def test_pipeline_uses_independent_verification_before_decision(tmp_path) -> Non
     assert state.evidence_verified is True
     assert state.context_map["verification_status"] == FactualStatus.VERIFIED.value
     assert state.context_map["evidence_gate"] == "passed"
+
+
+def test_pipeline_passes_duy_input_to_anla_context_gate(tmp_path, monkeypatch) -> None:
+    captured: dict[str, str] = {}
+
+    def fake_passes_anla(text, failures, tau, *, context):
+        captured["candidate"] = text
+        captured["context"] = context
+        return True, 0.9
+
+    monkeypatch.setattr("anne.core.pipeline.passes_anla", fake_passes_anla)
+    pipeline = AnnePipeline(FractalMemory(tmp_path / "anne.db"))
+    raw_input = "solar roof system with battery storage"
+    state = pipeline.duy(raw_input, [Consciousness(id="user")])
+    state = pipeline.bak(state)
+    hypothesis = Hypothesis(
+        id="h1",
+        topic="energy",
+        claim="battery storage for a solar roof system",
+        probability=0.9,
+    )
+
+    pipeline.anla(state, hypothesis)
+
+    assert captured == {
+        "candidate": hypothesis.claim,
+        "context": raw_input,
+    }
 
 
 def test_mitos_candidate_remains_non_authoritative(tmp_path) -> None:
