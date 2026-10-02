@@ -128,3 +128,50 @@ def test_orchestrator_persists_learning_signal_for_selection_failure(tmp_path) -
     assert row[7] == "evidence_gap"
     assert row[8] == "seek_missing_evidence_or_abstain"
     assert row[11] == 0
+
+def test_orchestrator_stops_at_retry_budget_on_repeated_yap_failure(tmp_path, monkeypatch) -> None:
+    memory = FractalMemory(tmp_path / "anne.db")
+    pipeline = AnnePipeline(memory=memory)
+
+    def always_fail_anla(state, hypothesis, *, claim_verifier=None):
+        del hypothesis, claim_verifier
+        state.logic_valid = False
+        state.ethic_score = None
+        state.context_map["anla_score"] = 0.1
+        return state
+
+    monkeypatch.setattr(pipeline, "anla", always_fail_anla)
+
+    result = CognitiveOrchestrator(
+        pipeline,
+        max_retries=2,
+    ).run("Evaluate a bounded technical option", seed=7)
+
+    assert result.status == "BOUNDED"
+    assert result.retry_count == 2
+    assert result.stop_reason == "retry_budget_exhausted"
+    assert len(result.lineage) == 3
+
+
+def test_orchestrator_zero_retry_budget_never_retries(tmp_path, monkeypatch) -> None:
+    memory = FractalMemory(tmp_path / "anne.db")
+    pipeline = AnnePipeline(memory=memory)
+
+    def always_fail_anla(state, hypothesis, *, claim_verifier=None):
+        del hypothesis, claim_verifier
+        state.logic_valid = False
+        state.ethic_score = None
+        state.context_map["anla_score"] = 0.1
+        return state
+
+    monkeypatch.setattr(pipeline, "anla", always_fail_anla)
+
+    result = CognitiveOrchestrator(
+        pipeline,
+        max_retries=0,
+    ).run("Evaluate a bounded technical option", seed=7)
+
+    assert result.status == "BOUNDED"
+    assert result.retry_count == 0
+    assert result.stop_reason == "retry_budget_exhausted"
+    assert len(result.lineage) == 1
