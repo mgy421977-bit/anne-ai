@@ -74,7 +74,7 @@ Success is **evidence**, not slogans.
 | M3 | ANNE evaluation gate | Probability, benefit, novelty, testability, cost, harm-risk and uncertainty recorded |
 | M4 | Low-probability/high-value ranking experiment | Low-probability candidates remain eligible when test cost and harm risk are sufficiently low |
 | M5 | Reality feedback loop | Observed outcome stored separately from prediction; prediction error recorded |
-| M6 | MITOS learning guidance | Later MITOS generation changes measurably from prior experience |
+| M6 | MITOS learning guidance | **Done** — deterministic context-scoped replay artifact; PR #141, merge `6bde60006b088799a6f118e6a929fe8c7b62dd7c`; 4/4 contract cases pass |
 | M7 | Batch-size benchmark | Compare small vs larger MITOS batches against baseline generation |
 
 **Important:** M1–M7 are research milestones, not claims that MITOS currently learns or improves ANNE. Results must be published as benchmark artifacts.

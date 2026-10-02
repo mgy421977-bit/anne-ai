@@ -1,5 +1,23 @@
 # Ablation results (honest)
 
+## 2026-10-02 — MITOS learning guidance v0.1
+
+Artifact: [`2026-10-02_mitos_learning_v01.json`](2026-10-02_mitos_learning_v01.json)
+
+Fixture: `benchmarks/mitos_learning_v01.json`
+Protocol: `benchmarks/scripts/run_mitos_learning.py`
+
+| Metric | Result |
+|--------|--------|
+| Contract cases | 4 |
+| Passed | 4 |
+| Failed | 0 |
+| Generation-plan change rate | 0.5 |
+
+The replay covers verified guidance, failed-mode demotion, exact-context isolation, and inconclusive neutrality. It demonstrates a deterministic implementation-level contract from completed MITOS experience to bounded generation-mode planning.
+
+This artifact is **not** evidence of general model learning, generation-quality improvement, or transfer to unseen tasks.
+
 ## 2026-10-01 — Held-out agentic safety authorization v1
 
 Fixture: `benchmarks/agentic_safety_authorization_v01.json`
