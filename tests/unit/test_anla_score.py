@@ -97,7 +97,7 @@ def test_trace_effect_is_separate_from_context_consistency():
     failures = [
         ("ft1", "c1", "ANLA", "unrelated failure reason", "", 0.0, ""),
     ]
-    assert context_consistency(context, candidate) == context_consistency(context, candidate)
+    assert context_consistency(context, candidate) > 0.0
     without_trace = compute_anla_score(candidate, context=context)
     with_trace = compute_anla_score(candidate, failures, context=context)
     assert with_trace <= without_trace
