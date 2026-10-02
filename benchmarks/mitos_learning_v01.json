@@ -1,0 +1,46 @@
+{
+  "schema_version": "mitos_learning_v01",
+  "description": "Synthetic deterministic replay for context-scoped MITOS learning guidance.",
+  "cases": [
+    {
+      "id": "verified_combine_changes_order",
+      "context_key": "energy:roof",
+      "experiences": [
+        {"generation_mode": "COMBINE", "status": "VERIFIED"}
+      ],
+      "modes": ["EXPLORE", "COMBINE", "INVERT"],
+      "expected_modes": ["COMBINE", "EXPLORE", "INVERT"],
+      "expected_learned": true
+    },
+    {
+      "id": "failed_invert_changes_order",
+      "context_key": "energy:roof",
+      "experiences": [
+        {"generation_mode": "INVERT", "status": "FAILED"}
+      ],
+      "modes": ["INVERT", "EXPLORE", "COMBINE"],
+      "expected_modes": ["EXPLORE", "COMBINE", "INVERT"],
+      "expected_learned": true
+    },
+    {
+      "id": "cross_context_isolated",
+      "context_key": "energy:roof",
+      "experiences": [
+        {"generation_mode": "SIMULATE", "status": "VERIFIED", "experience_context": "energy:ground"}
+      ],
+      "modes": ["SIMULATE", "EXPLORE"],
+      "expected_modes": ["SIMULATE", "EXPLORE"],
+      "expected_learned": false
+    },
+    {
+      "id": "inconclusive_is_neutral",
+      "context_key": "energy:roof",
+      "experiences": [
+        {"generation_mode": "EXPLORE", "status": "INCONCLUSIVE"}
+      ],
+      "modes": ["EXPLORE", "COMBINE"],
+      "expected_modes": ["EXPLORE", "COMBINE"],
+      "expected_learned": false
+    }
+  ]
+}
