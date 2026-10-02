@@ -8,6 +8,7 @@ Does not claim production hallucination metrics.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -24,6 +25,10 @@ RESULTS = ROOT / "benchmarks" / "results"
 
 
 def git_sha() -> str:
+    """Return the CI commit when available, otherwise the checked-out commit."""
+    github_sha = os.environ.get("GITHUB_SHA")
+    if github_sha:
+        return github_sha[:7]
     if not (ROOT / ".git").exists():
         return "unknown"
     try:
