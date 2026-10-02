@@ -59,3 +59,23 @@ jobs:
       - name: Mypy baseline
         if: always()
         run: mypy src
+
+  anla-ablation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: python -m pip install -e ".[dev]"
+      - name: Run ANLA ON vs OFF ablation
+        run: python benchmarks/scripts/run_anla_ablation.py
+      - name: Upload raw ablation result
+        uses: actions/upload-artifact@v4
+        with:
+          name: anla-ablation-result
+          path: benchmarks/results/*_anla_ablation.json
+          if-no-files-found: error
