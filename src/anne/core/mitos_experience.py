@@ -41,12 +41,18 @@ class MitosExperience:
     outcome: Any | None = None
     prediction_error: float | None = None
     provenance: tuple[str, ...] = ()
+    context_key: str = ""
+    generation_mode: str = ""
 
     def validate(self) -> None:
         if not self.experience_id.strip():
             raise ValueError("experience_id is required")
         if not self.hypothesis.strip() or not self.prediction.strip():
             raise ValueError("hypothesis and prediction are required")
+        if self.context_key and not self.context_key.strip():
+            raise ValueError("context_key cannot be whitespace-only")
+        if self.generation_mode and not self.generation_mode.strip():
+            raise ValueError("generation_mode cannot be whitespace-only")
 
         for name, value in (
             ("predicted_probability", self.predicted_probability),
