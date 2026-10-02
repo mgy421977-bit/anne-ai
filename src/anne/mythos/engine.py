@@ -127,12 +127,25 @@ class MitosEngine:
         self.random = random.Random(seed)
         self._candidate_counter = 0
 
-    def generate(self, goal: str, batch_size: int = 10) -> list[HypothesisCandidate]:
+    def generate(
+        self,
+        goal: str,
+        batch_size: int = 10,
+        *,
+        mode_order: tuple[ExplorationMode, ...] | None = None,
+    ) -> list[HypothesisCandidate]:
         if not goal.strip():
             raise ValueError("goal is required")
         if batch_size < 1:
             raise ValueError("batch_size must be >= 1")
-        modes = list(ExplorationMode)
+        modes = list(mode_order or ExplorationMode)
+        if not modes or any(mode not in ExplorationMode for mode in modes):
+            raise ValueError("mode_order must contain valid exploration modes")
+        if len(set(modes)) != len(modes):
+            raise ValueError("mode_order must not contain duplicate modes")
+        if set(modes) != set(ExplorationMode):
+            raise ValueError("mode_order must contain every exploration mode")
+
         candidates: list[HypothesisCandidate] = []
         for index in range(batch_size):
             self._candidate_counter += 1
@@ -150,13 +163,20 @@ class MitosEngine:
                 4,
             )
             candidate = HypothesisCandidate(
-                id=f"cand_{self._candidate_counter:08d}", goal=goal,
-                claim=self._claim(goal, mode, index), mode=mode,
-                probability=round(probability, 4), discovery_value=discovery_value,
-                novelty=round(novelty, 4), testability=round(testability, 4),
-                harm_risk=0.0, reversibility=1.0,
-                expected_benefit=round(expected_benefit, 4), test_cost=round(test_cost, 4),
-                evidence_status="SIMULATION", score_origin="seeded_random_fixture",
+                id=f"cand_{self._candidate_counter:08d}",
+                goal=goal,
+                claim=self._claim(goal, mode, index),
+                mode=mode,
+                probability=round(probability, 4),
+                discovery_value=discovery_value,
+                novelty=round(novelty, 4),
+                testability=round(testability, 4),
+                harm_risk=0.0,
+                reversibility=1.0,
+                expected_benefit=round(expected_benefit, 4),
+                test_cost=round(test_cost, 4),
+                evidence_status="SIMULATION",
+                score_origin="seeded_random_fixture",
             )
             candidate.validate()
             candidates.append(candidate)
