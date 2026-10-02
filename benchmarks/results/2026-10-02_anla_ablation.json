@@ -1,7 +1,7 @@
 {
   "fixture_version": "0.3",
-  "git_sha": "b1729f8",
-  "timestamp": "2026-10-02T09:00:37.115219+00:00",
+  "git_sha": "c8bacd3",
+  "timestamp": "2026-10-02T09:04:24.503037+00:00",
   "ANLA_OFF": {
     "anla": "OFF",
     "passed": 30,
