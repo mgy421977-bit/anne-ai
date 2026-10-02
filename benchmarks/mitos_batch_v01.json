@@ -1,0 +1,20 @@
+{
+  "schema_version": "mitos_batch_v01",
+  "description": "Synthetic deterministic batch-size protocol for bounded MITOS candidate selection.",
+  "candidates": [
+    {"id":"H01","mode":"EXPLORE","score":0.20,"discovery":false},
+    {"id":"H02","mode":"COMBINE","score":0.35,"discovery":false},
+    {"id":"H03","mode":"INVERT","score":0.48,"discovery":true},
+    {"id":"H04","mode":"SIMULATE","score":0.30,"discovery":false},
+    {"id":"H05","mode":"EXPLORE","score":0.55,"discovery":true},
+    {"id":"H06","mode":"COMBINE","score":0.41,"discovery":false},
+    {"id":"H07","mode":"INVERT","score":0.62,"discovery":true},
+    {"id":"H08","mode":"SIMULATE","score":0.28,"discovery":false}
+  ],
+  "protocol": {
+    "baseline_batch_size": 1,
+    "small_batch_size": 2,
+    "large_batch_size": 8,
+    "selection_k": 2
+  }
+}
