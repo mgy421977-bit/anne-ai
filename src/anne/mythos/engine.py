@@ -121,11 +121,17 @@ class MythosEngine:
 
 
 class MitosEngine:
-    """Bounded, deterministic candidate generator for the MITOS discovery API."""
+    """Bounded deterministic generator; mode_conditioned is an opt-in synthetic fixture."""
 
-    def __init__(self, seed: int | None = None) -> None:
+    def __init__(
+        self,
+        seed: int | None = None,
+        *,
+        mode_conditioned: bool = False,
+    ) -> None:
         self.random = random.Random(seed)
         self._candidate_counter = 0
+        self.mode_conditioned = mode_conditioned
 
     def generate(
         self,
@@ -150,11 +156,37 @@ class MitosEngine:
         for index in range(batch_size):
             self._candidate_counter += 1
             mode = modes[index % len(modes)]
-            probability = self.random.uniform(0.05, 0.95)
-            novelty = self.random.uniform(0.25, 0.95)
-            testability = self.random.uniform(0.45, 1.0)
-            expected_benefit = self.random.uniform(0.2, 1.0)
-            test_cost = self.random.uniform(0.05, 0.8)
+            if self.mode_conditioned:
+                ranges = {
+                    ExplorationMode.HYPOTHESIS: (
+                        (0.45, 0.95),
+                        (0.30, 0.75),
+                        (0.65, 1.00),
+                        (0.35, 0.90),
+                        (0.10, 0.55),
+                    ),
+                    ExplorationMode.CURIOSITY: (
+                        (0.10, 0.80),
+                        (0.55, 0.95),
+                        (0.45, 0.90),
+                        (0.20, 0.90),
+                        (0.15, 0.70),
+                    ),
+                    ExplorationMode.ASSOCIATION: (
+                        (0.20, 0.85),
+                        (0.45, 0.90),
+                        (0.45, 0.85),
+                        (0.25, 0.95),
+                        (0.10, 0.65),
+                    ),
+                }[mode]
+            else:
+                ranges = ((0.05, 0.95), (0.25, 0.95), (0.45, 1.0), (0.2, 1.0), (0.05, 0.8))
+            probability = self.random.uniform(*ranges[0])
+            novelty = self.random.uniform(*ranges[1])
+            testability = self.random.uniform(*ranges[2])
+            expected_benefit = self.random.uniform(*ranges[3])
+            test_cost = self.random.uniform(*ranges[4])
             discovery_value = round(
                 0.30 * novelty
                 + 0.25 * testability

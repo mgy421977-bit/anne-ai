@@ -10,9 +10,8 @@ def test_real_generator_guidance_changes_mode_order() -> None:
     assert result["baseline"]["modes"] != result["guided"]["modes"]
 
 
-def test_real_generator_guidance_keeps_deterministic_evaluation_contract() -> None:
+def test_real_generator_guidance_changes_downstream_characteristics() -> None:
     result = run()
     assert result["baseline"]["candidate_count"] == 12
     assert result["guided"]["candidate_count"] == 12
-    assert result["acceptance_count_delta"] == 0
-    assert result["acceptance_rate_delta"] == 0.0
+    assert result["discovery_value_delta"] != 0.0
