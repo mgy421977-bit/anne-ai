@@ -2,30 +2,41 @@ name: Actions Storage Cleanup
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/actions-storage-cleanup.yml"
+    inputs:
+      run_ids:
+        description: "Comma-separated workflow run IDs to delete after review"
+        required: true
+        type: string
+      confirm:
+        description: "Type DELETE to confirm the reviewed run IDs"
+        required: true
+        type: string
 
 permissions:
   actions: write
 
 jobs:
   cleanup:
+    if: ${{ inputs.confirm == 'DELETE' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Delete old workflow runs
+      - name: Delete explicitly approved workflow runs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          RUN_IDS: ${{ inputs.run_ids }}
         run: |
           set -euo pipefail
 
-          echo "Keeping the 20 newest completed workflow runs."
-          gh api --paginate "repos/${GH_REPO}/actions/runs?per_page=100"             --jq '.workflow_runs[] | select(.status == "completed") | [.id, .created_at] | @tsv'             | sort -k2,2r             | tail -n +21             | cut -f1             | while read -r run_id; do
-                [ -z "${run_id}" ] && continue
-                echo "Deleting workflow run ${run_id}"
-                gh api --method DELETE "repos/${GH_REPO}/actions/runs/${run_id}"
-              done
+          IFS=',' read -ra IDS <<< "${RUN_IDS}"
+          for run_id in "${IDS[@]}"; do
+            run_id="${run_id//[[:space:]]/}"
+            if [[ ! "${run_id}" =~ ^[0-9]+$ ]]; then
+              echo "Invalid workflow run ID: ${run_id}"
+              exit 1
+            fi
+            echo "Deleting explicitly approved workflow run ${run_id}"
+            gh api --method DELETE "repos/${GH_REPO}/actions/runs/${run_id}"
+          done
 
-          echo "Actions storage cleanup completed."
+          echo "Approved Actions cleanup completed."
