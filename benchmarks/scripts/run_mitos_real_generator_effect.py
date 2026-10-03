@@ -39,12 +39,12 @@ def run() -> dict[str, object]:
     baseline = generate_candidates(
         GOAL,
         batch_size=BATCH_SIZE,
-        engine=MitosEngine(seed=SEED),
+        engine=MitosEngine(seed=SEED, mode_conditioned=True),
     )
     guided = generate_candidates(
         GOAL,
         batch_size=BATCH_SIZE,
-        engine=MitosEngine(seed=SEED),
+        engine=MitosEngine(seed=SEED, mode_conditioned=True),
         generation_plan=GUIDED_PLAN,
     )
 
@@ -67,6 +67,11 @@ def run() -> dict[str, object]:
         ),
         "acceptance_rate_delta": (
             guided_eval["acceptance_rate"] - baseline_eval["acceptance_rate"]
+        ),
+        "discovery_value_delta": round(
+            sum(candidate.discovery_value for candidate in guided) / len(guided)
+            - sum(candidate.discovery_value for candidate in baseline) / len(baseline),
+            4,
         ),
         "note": (
             "Implementation-level deterministic measurement over the real "
