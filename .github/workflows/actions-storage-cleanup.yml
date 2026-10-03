@@ -1,0 +1,31 @@
+name: Actions Storage Cleanup
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/actions-storage-cleanup.yml"
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old workflow runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          echo "Keeping the 20 newest completed workflow runs."
+          gh api --paginate "repos/${GH_REPO}/actions/runs?per_page=100"             --jq '.workflow_runs[] | select(.status == "completed") | [.id, .created_at] | @tsv'             | sort -k2,2r             | tail -n +21             | cut -f1             | while read -r run_id; do
+                [ -z "${run_id}" ] && continue
+                echo "Deleting workflow run ${run_id}"
+                gh api --method DELETE "repos/${GH_REPO}/actions/runs/${run_id}"
+              done
+
+          echo "Actions storage cleanup completed."
