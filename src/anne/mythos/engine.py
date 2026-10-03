@@ -158,9 +158,27 @@ class MitosEngine:
             mode = modes[index % len(modes)]
             if self.mode_conditioned:
                 ranges = {
-                    ExplorationMode.HYPOTHESIS: ((0.45, 0.95), (0.30, 0.75), (0.65, 1.00), (0.35, 0.90), (0.10, 0.55)),
-                    ExplorationMode.CURIOSITY: ((0.10, 0.80), (0.55, 0.95), (0.45, 0.90), (0.20, 0.90), (0.15, 0.70)),
-                    ExplorationMode.ASSOCIATION: ((0.20, 0.85), (0.45, 0.90), (0.45, 0.85), (0.25, 0.95), (0.10, 0.65)),
+                    ExplorationMode.HYPOTHESIS: (
+                        (0.45, 0.95),
+                        (0.30, 0.75),
+                        (0.65, 1.00),
+                        (0.35, 0.90),
+                        (0.10, 0.55),
+                    ),
+                    ExplorationMode.CURIOSITY: (
+                        (0.10, 0.80),
+                        (0.55, 0.95),
+                        (0.45, 0.90),
+                        (0.20, 0.90),
+                        (0.15, 0.70),
+                    ),
+                    ExplorationMode.ASSOCIATION: (
+                        (0.20, 0.85),
+                        (0.45, 0.90),
+                        (0.45, 0.85),
+                        (0.25, 0.95),
+                        (0.10, 0.65),
+                    ),
                 }[mode]
             else:
                 ranges = ((0.05, 0.95), (0.25, 0.95), (0.45, 1.0), (0.2, 1.0), (0.05, 0.8))
