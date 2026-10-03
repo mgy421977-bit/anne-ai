@@ -806,6 +806,14 @@ Current limitations include:
 
 ---
 
+### Future research note — continuous cognitive state loop
+
+A comparative review of continuous conversational-state architectures (including the Griffin approach discussed in the October 2026 research review) identified a possible future research direction for ANNE: a more explicit **continuous cognitive state transition / re-evaluation loop**.
+
+This is **not a current implementation requirement** and no architectural change is made by this note. The current ANNE architecture already contains bounded cycle traces, metacognitive assessment, adaptive learning, provenance-aware re-evaluation, lineage, and context-scoped experience handoff. The open question is whether a later version should make state transitions and re-evaluation more explicitly continuous across incoming signals rather than primarily cycle/research driven.
+
+**Decision:** keep the current architecture unchanged for the present development phase. Revisit the necessity and scope of a continuous cognitive state loop in a subsequent version after the current MITOS/learning milestones and empirical evidence are evaluated.
+
 ## Roadmap
 
 The roadmap prioritizes evidence before expansion:
