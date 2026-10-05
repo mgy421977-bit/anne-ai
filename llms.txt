@@ -1,0 +1,69 @@
+# ANNE AI
+
+> Cognitive orchestration research platform for controllable LLM systems.
+
+## Summary
+
+ANNE (Adaptive Neural Nexus Engine) is an open research platform that studies whether an additional cognitive orchestration layer can improve the reliability, traceability, recoverability, and controllability of model-assisted reasoning.
+
+It treats the language model as a reasoning component, not as the final authority. Perception, memory, evidence, verification, metacognition, safety, tool execution, and human/agency boundaries are separated from raw model generation.
+
+## Status
+
+- Type: research preview
+- Not an AGI claim
+- Not a production reliability certification
+- Not a claim of solved hallucination or SOTA benchmark dominance
+
+## Canonical repositories
+
+- Platform (this repo): https://github.com/mgy421977-bit/anne-ai
+- Installable core: https://github.com/mgy421977-bit/anne-core
+- Legacy/frozen line: https://github.com/mgy421977-bit/anne
+
+## What it tests
+
+Central research question:
+
+Can an additional cognitive orchestration layer improve reliability, traceability, recoverability, and controllability of model-assisted reasoning in measurable ways?
+
+Explored mechanisms (engineering, not proof of consciousness):
+
+- Bounded cognitive stages (DUY → BAK → GÖR → ANLA → HİSSET → YAP)
+- Evidence and verification gates (memory ≠ verification)
+- Agency / human-approval boundaries for actions
+- Structured failure traces and bounded recovery
+- Optional research, metacognition, and experience observations
+
+## What it does not claim
+
+- General intelligence or consciousness
+- Automatic safe autonomous operation
+- That model confidence, search results, or memory alone are verified truth
+- Published superiority on TruthfulQA, HaluEval, or similar leaderboards without matching benchmark artifacts
+
+## Technical signals
+
+- Language: Python 3.12+
+- License: Apache-2.0
+- Package: src/anne (research platform code)
+- Tests: pytest suite under tests/
+- CI: GitHub Actions
+- Benchmarks: benchmarks/ and benchmarks/results/
+- Docs: docs/architecture/, ROADMAP.md
+
+## Machine-readable entry points
+
+- This file: /llms.txt
+- Human-oriented short card: /DISCOVERY.md
+- Citation metadata: /CITATION.cff
+- Full documentation: /README.md
+
+## Author
+
+Mustafa Gökhan Yılmaz
+ORCID: https://orcid.org/0009-0002-6591-0163
+
+## Optional contact
+
+mgy421977@gmail.com

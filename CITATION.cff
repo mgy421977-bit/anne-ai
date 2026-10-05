@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use ANNE AI, please cite it using these metadata."
+type: software
+title: "ANNE — Adaptive Neural Nexus Engine"
+abstract: "Open research platform for cognitive orchestration around language models, with explicit evidence, verification, memory, and agency boundaries. Research preview; not an AGI claim."
+authors:
+  - family-names: "Yılmaz"
+    given-names: "Mustafa Gökhan"
+    orcid: "https://orcid.org/0009-0002-6591-0163"
+    email: "mgy421977@gmail.com"
+repository-code: "https://github.com/mgy421977-bit/anne-ai"
+url: "https://github.com/mgy421977-bit/anne-ai"
+license: Apache-2.0
+keywords:
+  - cognitive-architecture
+  - llm-orchestration
+  - ai-safety
+  - evidence
+  - agency
+  - research-software
+version: "0.1.0"
+date-released: "2026-09-08"
