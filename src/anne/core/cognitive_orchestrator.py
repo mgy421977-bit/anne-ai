@@ -377,7 +377,6 @@ class CognitiveOrchestrator:
                     engine=engine,
                 )
             state = self.pipeline.epistemic_analysis(state, candidates)
-            trace.append("EPISTEMIC_ANALYSIS")
             selection = self.selector.select(candidates, task_mode=task_mode)
             last_selection = selection
 
