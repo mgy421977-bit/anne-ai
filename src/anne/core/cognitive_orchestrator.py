@@ -351,7 +351,7 @@ class CognitiveOrchestrator:
                     ff,
                     state,
                     None,
-                    tuple(trace[:4]),
+                    tuple(trace[:5]),
                     "clarification_required",
                     retry_count=retry_count,
                     lineage=tuple(lineage),
