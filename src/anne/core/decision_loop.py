@@ -9,7 +9,7 @@ from uuid import uuid4
 from anne.core.adaptive_resource_planner import AdaptiveResourcePlanner, ResourceDecision
 from anne.core.cognitive_orchestrator import CognitiveOrchestrator, OrchestrationResult
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
-from anne.core.compute_router import ComputeEnvironment, ComputeRouter
+from anne.core.compute_router import ComputeEnvironment, ComputeRouter, ExecutionMode
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
@@ -74,7 +74,7 @@ class DecisionLoop:
         self._explicit_resource_profile = resource_profile is not None
         self._experience_history: tuple[dict[str, Any], ...] = ()
         self._experience_history_limit = 64
-        self.execution_environments = tuple(execution_environments or ())
+        self.execution_environments = (\n            tuple(execution_environments)\n            if execution_environments is not None\n            else (ComputeEnvironment("local-default", ExecutionMode.LOCAL, capacity=1),)\n        )
         self.orchestrator = CognitiveOrchestrator(
             self.pipeline,
             resource_profile=self.resource_profile,
