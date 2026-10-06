@@ -1,6 +1,7 @@
 """Phase 1c executive orchestration with bounded recovery and ambiguity.
 
-Flow: FailFast → DUY → REQUEST_CONSISTENCY → BAK → AMBIGUITY → GÖR → MITOS → EPISTEMIC_ANALYSIS → SELECT → ANLA → HİSSET → YAP.
+Flow: FailFast → DUY → REQUEST_CONSISTENCY → BAK → AMBIGUITY → GÖR → MITOS
+→ EPISTEMIC_ANALYSIS → SELECT → ANLA → HİSSET → YAP.
 MITOS proposes; ANNE selects. Recovery can reframe a failed cycle but cannot
 bypass existing safety, semantic, evidence, ethics, or agency boundaries.
 """
@@ -297,7 +298,9 @@ class CognitiveOrchestrator:
                     "verdict": "REFRAME",
                     "action": "CLARIFY",
                     "reason": state.context_map.get("request_consistency_reason"),
-                    "contradictions": state.context_map.get("request_consistency_contradictions", []),
+                    "contradictions": state.context_map.get(
+                        "request_consistency_contradictions", []
+                    ),
                 }
                 return OrchestrationResult(
                     "BOUNDED",
