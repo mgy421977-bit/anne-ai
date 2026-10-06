@@ -9,10 +9,10 @@ proposal remains explicitly unverified.
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
-import re
 
 from anne.mythos.engine import HypothesisCandidate
 
