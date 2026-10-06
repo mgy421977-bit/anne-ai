@@ -95,8 +95,9 @@ def test_normal_specific_request_still_reaches_mitos(tmp_path):
     result = make_orchestrator(tmp_path).run("Merhaba Anne")
 
     assert result.state is not None
-    assert result.stage_trace[:7] == (
-        "FAIL_FAST", "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"
+    assert result.stage_trace[:9] == (
+        "FAIL_FAST", "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY",
+        "GÖR", "MITOS", "EPISTEMIC_ANALYSIS", "SELECT"
     )
     assert result.selection is not None
 
