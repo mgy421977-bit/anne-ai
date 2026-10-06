@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
+from anne.core.adaptive_resource_planner import AdaptiveResourcePlanner
 from anne.core.cognitive_orchestrator import CognitiveOrchestrator, OrchestrationResult
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
@@ -72,6 +73,8 @@ class DecisionLoop:
             claim_verifier=claim_verifier,
         )
         self.resource_profile = resource_profile or ResourceProfile.minimal()
+        self.resource_planner = AdaptiveResourcePlanner()
+        self._explicit_resource_profile = resource_profile is not None
         self.orchestrator = CognitiveOrchestrator(
             self.pipeline,
             resource_profile=self.resource_profile,
@@ -91,6 +94,16 @@ class DecisionLoop:
         strategy: str | None = None,
     ) -> DecisionResult:
         """Run one request through the canonical orchestrator path."""
+        resource_decision = self.resource_planner.plan(
+            raw_input,
+            experiences=self._experience_history,
+            mitos_outcomes=tuple(mitos_outcomes or ()),
+            mitos_failure_classes=mitos_failure_classes,
+            baseline=self.resource_profile if self._explicit_resource_profile else None,
+        )
+        self.resource_profile = resource_decision.profile
+        self.orchestrator.resource_profile = resource_decision.profile
+        self.orchestrator.candidate_batch_size = resource_decision.profile.max_mitos_candidates
         people = list(parties) if parties else [Consciousness(id="user")]
         text_claim = claim if claim is not None else raw_input
         hyp = hypothesis or Hypothesis(
@@ -116,7 +129,23 @@ class DecisionLoop:
                 "reason": result.fail_fast.reason,
                 "rule_id": result.fail_fast.rule_id,
             }
-            trace = trace_from_runtime(
+            out["resource_decision"] = {
+            "execution": resource_decision.execution,
+            "basis": resource_decision.basis,
+            "reason": resource_decision.reason,
+            "estimated_complexity": resource_decision.estimated_complexity,
+            "minimum_sufficient_capacity": resource_decision.minimum_sufficient_capacity,
+            "profile": {
+                "substrate": resource_decision.profile.substrate.value,
+                "cpu_units": resource_decision.profile.cpu_units,
+                "memory_units": resource_decision.profile.memory_units,
+                "reasoning_budget": resource_decision.profile.reasoning_budget,
+                "max_mitos_candidates": resource_decision.profile.max_mitos_candidates,
+                "max_fractal_depth": resource_decision.profile.max_fractal_depth,
+                "max_iterations": resource_decision.profile.max_iterations,
+            },
+        }
+        trace = trace_from_runtime(
                 cycle_id=result.lineage[-1] if result.lineage else f"or_{uuid4().hex[:12]}",
                 status="ABORTED",
                 stage_trace=result.stage_trace,
