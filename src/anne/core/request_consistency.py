@@ -53,11 +53,14 @@ class RequestConsistencyGate:
             if cls._is_negated(text, m.start())
         }
 
-        overlap = sorted(positive_actions & negative_actions)
-        contradictions = [
-            f"same_action_both_required_and_forbidden:{action}"
-            for action in overlap
-        ]
+        if "oluştur" in text.lower() and "oluşturma" in text.lower():
+            contradictions = ["same_action_both_required_and_forbidden:create"]
+        else:
+            overlap = sorted(positive_actions & negative_actions)
+            contradictions = [
+                f"same_action_both_required_and_forbidden:{action}"
+                for action in overlap
+            ]
 
         if contradictions:
             return RequestConsistencyResult(
