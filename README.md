@@ -383,6 +383,39 @@ For the authoritative milestone sequence, see [`ROADMAP.md`](ROADMAP.md).
 - ☐ **Advanced MITOS orchestration** — expand bounded specialist coordination only after the preceding evidence and synthesis layers are stable.
 - ☐ **Long-term planning and broader evaluation** — later roadmap work; no AGI claim is implied.
 
+### Local laptop runtime
+
+ANNE can run as a local Python desktop application on a normal laptop. The local shell uses the existing guarded cognitive runtime, observes host resources, and keeps local media/context separate from cognitive authority.
+
+```text
+Laptop
+├── OS / media player
+├── ANNE Desktop
+│   ├── Cognitive Runtime
+│   ├── Adaptive Resource Planner
+│   ├── Resource Optimizer
+│   ├── Workload Scheduler
+│   └── Media Context
+└── persistent FractalMemory (anne.db)
+```
+
+The media layer is deliberately local-first: ANNE can open a user-selected local media file with an already-installed player and attach an explicit timestamp/scene label to a subsequent discussion. ANNE does not download media, bypass DRM, install media software, or assume ownership of the host.
+
+Quick start after cloning:
+
+```bash
+python -m pip install -e ".[dev]"
+python -m anne
+```
+
+or:
+
+```bash
+anne-desktop
+```
+
+On systems where Tkinter is not included with the Python distribution, the platform's Tk package must be installed separately.
+
 ### Future execution architecture
 
 The long-term runtime direction is to keep ANNE's cognitive architecture independent from any specific operating system or hardware environment. The initial bootstrap should be minimal, while the runtime discovers the available execution substrate and adapts to the host rather than requiring a fixed installation model.
