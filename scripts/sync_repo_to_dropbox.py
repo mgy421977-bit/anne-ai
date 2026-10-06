@@ -43,10 +43,34 @@ def iter_files() -> list[Path]:
     return sorted(files, key=lambda p: p.relative_to(ROOT).as_posix().casefold())
 
 
+def ensure_parent_folder(dbx: dropbox.Dropbox, target: str) -> None:
+    parent = target.rsplit("/", 1)[0]
+    if not parent or parent == "/":
+        return
+    try:
+        dbx.files_get_metadata(parent)
+        return
+    except dropbox.exceptions.ApiError:
+        pass
+
+    parts = [part for part in parent.split("/") if part]
+    current = ""
+    for part in parts:
+        current += f"/{part}"
+        try:
+            dbx.files_get_metadata(current)
+        except dropbox.exceptions.ApiError:
+            try:
+                dbx.files_create_folder_v2(current, autorename=False)
+            except dropbox.exceptions.ApiError:
+                dbx.files_get_metadata(current)
+
+
 def upload_file(dbx: dropbox.Dropbox, source: Path) -> None:
     rel = source.relative_to(ROOT).as_posix()
     target = f"{DROPBOX_ROOT.rstrip('/')}/{rel}"
     size = source.stat().st_size
+    ensure_parent_folder(dbx, target)
     with source.open("rb") as handle:
         if size <= MAX_SIMPLE_UPLOAD:
             dbx.files_upload(
