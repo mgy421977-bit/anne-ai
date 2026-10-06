@@ -13,6 +13,7 @@ from anne.core.compute_router import ComputeEnvironment, ComputeRouter, Executio
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
+from anne.core.resource_optimizer import ResourceOptimizer, SystemResourceProbe
 from anne.core.trace import CycleTrace, trace_from_runtime
 from anne.core.verification import ClaimVerifier
 from anne.memory.fractal_memory import FractalMemory
@@ -70,6 +71,8 @@ class DecisionLoop:
         )
         self.resource_profile = resource_profile or ResourceProfile.minimal()
         self.resource_planner = AdaptiveResourcePlanner()
+        self.resource_optimizer = ResourceOptimizer()
+        self.resource_probe = SystemResourceProbe()
         self.compute_router = ComputeRouter()
         self._explicit_resource_profile = resource_profile is not None
         self._experience_history: tuple[dict[str, Any], ...] = ()
@@ -106,6 +109,21 @@ class DecisionLoop:
                 "max_fractal_depth": decision.profile.max_fractal_depth,
                 "max_iterations": decision.profile.max_iterations,
             },
+            "optimization": {
+                "status": optimization.status,
+                "requested_capacity": optimization.requested_capacity,
+                "optimized_capacity": optimization.optimized_capacity,
+                "reason": optimization.reason,
+                "host": {
+                    "cpu_count": optimization.snapshot.cpu_count,
+                    "cpu_utilization": optimization.snapshot.cpu_utilization,
+                    "memory_total_bytes": optimization.snapshot.memory_total_bytes,
+                    "memory_available_bytes": optimization.snapshot.memory_available_bytes,
+                    "gpu_count": optimization.snapshot.gpu_count,
+                    "gpu_utilization": optimization.snapshot.gpu_utilization,
+                    "os_present": optimization.snapshot.os_present,
+                },
+            },
             "route": {
                 "status": route.status,
                 "reason": route.reason,
@@ -138,6 +156,26 @@ class DecisionLoop:
             mitos_failure_classes=mitos_failure_classes,
             baseline=self.resource_profile if self._explicit_resource_profile else None,
         )
+        runtime_snapshot = self.resource_probe.snapshot()
+        optimization = self.resource_optimizer.optimize(
+            resource_decision.profile,
+            runtime_snapshot,
+        )
+        optimized_profile = self.resource_optimizer.apply(
+            resource_decision.profile,
+            optimization,
+        )
+        if optimized_profile != resource_decision.profile:
+            resource_decision = ResourceDecision(
+                profile=optimized_profile,
+                execution=resource_decision.execution,
+                basis=resource_decision.basis,
+                reason=resource_decision.reason + "; " + optimization.reason,
+                estimated_complexity=resource_decision.estimated_complexity,
+                minimum_sufficient_capacity=resource_decision.minimum_sufficient_capacity,
+                experience_profile=resource_decision.experience_profile,
+            )
+
         self.resource_profile = resource_decision.profile
         self.orchestrator.resource_profile = resource_decision.profile
         self.orchestrator.candidate_batch_size = (
