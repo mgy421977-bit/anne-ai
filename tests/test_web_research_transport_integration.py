@@ -163,7 +163,7 @@ def test_web_research_applies_caller_defined_freshness_policy() -> None:
                     provenance="https://example.test/source",
                     confidence=0.8,
                     retrieved_at=datetime(
-                        2026, 9, 29, 4, 0, tzinfo=timezone.utc
+                        2026, 10, 6, 10, 30, tzinfo=timezone.utc
                     ).isoformat(),
                 )
             ]
@@ -173,7 +173,7 @@ def test_web_research_applies_caller_defined_freshness_policy() -> None:
         transport=WebResearchTransport(
             fetcher=lambda _: "unused",
             clock=lambda: datetime(
-                2026, 9, 29, 4, 0, tzinfo=timezone.utc
+                2026, 10, 6, 10, 30, tzinfo=timezone.utc
             ),
         )
     )
