@@ -167,7 +167,10 @@ class CognitiveOrchestrator:
 
     @staticmethod
     def _base_trace() -> list[str]:
-        return [\n            "FAIL_FAST", "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY",\n            "GÖR", "MITOS", "EPISTEMIC_ANALYSIS", "SELECT",\n        ]
+        return [
+            "FAIL_FAST", "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY",
+            "GÖR", "MITOS", "EPISTEMIC_ANALYSIS", "SELECT",
+        ]
 
     @staticmethod
     def _learning_signal(
@@ -282,7 +285,10 @@ class CognitiveOrchestrator:
                         lineage=tuple(lineage),
                         stop_reason="fail_fast",
                     )
-                trace.extend([\n                    "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY",\n                    "GÖR", "MITOS", "EPISTEMIC_ANALYSIS", "SELECT",\n                ])
+                trace.extend([
+                    "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY",
+                    "GÖR", "MITOS", "EPISTEMIC_ANALYSIS", "SELECT",
+                ])
             state = self.pipeline.duy(current_question, people)
             state = self.pipeline.request_consistency(state)
             if state.context_map.get("request_consistency") == "INCONSISTENT":
