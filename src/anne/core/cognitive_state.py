@@ -71,6 +71,9 @@ class CognitiveState:
     context_map: dict[str, Any] = field(default_factory=dict)
     related_memories: list[Any] = field(default_factory=list)
 
+    # Epistemic hypothesis-space analysis
+    epistemic_map: dict[str, Any] = field(default_factory=dict)
+
     # GÖR
     priority_score: float = 0.0
     attention_focus: str = ""
