@@ -18,6 +18,7 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fail_fast import FailFastResult
 from anne.core.failure_recovery import FailureRecoveryController, FailureSignal
 from anne.core.pipeline import AnnePipeline
+from anne.core.request_consistency import RequestConsistencyGate
 from anne.core.resource_profile import ResourceProfile
 from anne.core.self_correction import SelfCorrectionPlanner
 from anne.core.verification import ClaimVerifier
@@ -167,7 +168,7 @@ class CognitiveOrchestrator:
 
     @staticmethod
     def _base_trace() -> list[str]:
-        return ["FAIL_FAST", "DUY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"]
+        return ["FAIL_FAST", "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"]
 
     @staticmethod
     def _learning_signal(
@@ -282,8 +283,28 @@ class CognitiveOrchestrator:
                         lineage=tuple(lineage),
                         stop_reason="fail_fast",
                     )
-                trace.extend(["DUY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"])
+                trace.extend(["DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"])
             state = self.pipeline.duy(current_question, people)
+            state = self.pipeline.request_consistency(state)
+            if state.context_map.get("request_consistency") == "INCONSISTENT":
+                state.action = "REFRAME"
+                state.output = {
+                    "verdict": "REFRAME",
+                    "action": "CLARIFY",
+                    "reason": state.context_map.get("request_consistency_reason"),
+                    "contradictions": state.context_map.get("request_consistency_contradictions", []),
+                }
+                return OrchestrationResult(
+                    "BOUNDED",
+                    ff,
+                    state,
+                    None,
+                    tuple(trace[:3]),
+                    state.context_map.get("request_consistency_reason", "request_inconsistent"),
+                    retry_count=retry_count,
+                    lineage=tuple(lineage),
+                    stop_reason="request_inconsistent",
+                )
             evidence_required = evidence_required or state.requires_evidence
             authority_required = authority_required or state.authority_check_required
             state.requires_evidence = evidence_required
