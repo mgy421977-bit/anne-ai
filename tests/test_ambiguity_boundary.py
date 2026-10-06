@@ -69,7 +69,7 @@ def test_high_ambiguity_abstains_before_mitos(tmp_path):
     assert result.state is not None
     assert result.state.action == "ABSTAIN"
     assert result.state.output["action"] == "HALT"
-    assert result.stage_trace == ("FAIL_FAST", "DUY", "BAK", "AMBIGUITY")
+    assert result.stage_trace == ("FAIL_FAST", "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY")
     assert result.state.context_map["ambiguity_level"] == "high"
 
 
