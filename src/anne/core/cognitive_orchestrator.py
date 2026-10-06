@@ -449,6 +449,24 @@ class CognitiveOrchestrator:
                     if state.evidence_status == "conflicting"
                     else "unverified"
                 )
+                state.output["epistemic_summary"] = {
+                    "candidate_count": state.context_map.get("epistemic_candidate_count", 0),
+                    "internally_consistent_count": state.context_map.get(
+                        "epistemic_consistent_count", 0
+                    ),
+                    "relation_count": state.context_map.get("epistemic_relation_count", 0),
+                    "cluster_count": state.context_map.get("epistemic_cluster_count", 0),
+                    "common_solution_space": state.context_map.get(
+                        "common_solution_space", []
+                    ),
+                    "novel_hypothesis": state.context_map.get("novel_hypothesis"),
+                    "novel_hypothesis_status": state.context_map.get(
+                        "novel_hypothesis_status", "NOT_DERIVED"
+                    ),
+                    "verification_boundary": state.epistemic_map.get(
+                        "verification_boundary", []
+                    ),
+                }
                 last_state = state
                 confidence = float(state.context_map.get("anla_score") or selected.probability)
                 if self._is_success(state):
