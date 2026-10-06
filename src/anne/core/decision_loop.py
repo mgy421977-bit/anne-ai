@@ -15,6 +15,7 @@ from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.core.resource_optimizer import ResourceOptimizer, SystemResourceProbe
 from anne.core.resource_negotiator import ResourceNegotiator
+from anne.core.windows_execution import WindowsExecutionAdapter
 from anne.core.trace import CycleTrace, trace_from_runtime
 from anne.core.verification import ClaimVerifier
 from anne.memory.fractal_memory import FractalMemory
@@ -75,6 +76,7 @@ class DecisionLoop:
         self.resource_optimizer = ResourceOptimizer()
         self.resource_probe = SystemResourceProbe()
         self.resource_negotiator = ResourceNegotiator()
+        self.windows_execution = WindowsExecutionAdapter()
         self.compute_router = ComputeRouter()
         self._explicit_resource_profile = resource_profile is not None
         self._experience_history: tuple[dict[str, Any], ...] = ()
@@ -90,6 +92,7 @@ class DecisionLoop:
         decision: ResourceDecision,
         route: Any,
         negotiation: Any,
+        execution_plan: Any,
     ) -> dict[str, Any]:
         environment = route.selected_environment
         return {
@@ -137,6 +140,14 @@ class DecisionLoop:
                 "shared_driver_boundary": negotiation.shared_driver_boundary,
                 "shared_subsystems": list(negotiation.shared_subsystems),
                 "reason": negotiation.reason,
+            },
+            "windows_execution": {
+                "status": execution_plan.status,
+                "requested_capacity": execution_plan.requested_capacity,
+                "priority": execution_plan.priority,
+                "affinity_mask": execution_plan.affinity_mask,
+                "requires_authorization": execution_plan.requires_authorization,
+                "reason": execution_plan.reason,
             },
             "route": {
                 "status": route.status,
@@ -200,6 +211,10 @@ class DecisionLoop:
             optimization,
             runtime_snapshot,
         )
+        execution_plan = self.windows_execution.plan(
+            negotiation.effective_profile,
+            background=False,
+        )
         route = self.compute_router.route(
             negotiation.effective_profile,
             self.execution_environments,
@@ -224,7 +239,12 @@ class DecisionLoop:
             preferred_strategy=strategy,
         )
 
-        resource_payload = self._resource_payload(resource_decision, route, negotiation)
+        resource_payload = self._resource_payload(
+            resource_decision,
+            route,
+            negotiation,
+            execution_plan,
+        )
         if not result.fail_fast.passed:
             fail_output = {
                 "verdict": "FAIL_FAST",
