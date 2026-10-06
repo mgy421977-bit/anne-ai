@@ -106,6 +106,7 @@ class AnnePipeline:
             state.evidence_verified = False
 
         rules = self.memory.get_strong_rules()
+        consistency = state.context_map
         state.context_map = {
             "input_type": state.input_type,
             "intent": state.intent,
@@ -124,6 +125,12 @@ class AnnePipeline:
             "past_similar_count": len(past),
             "has_prior_knowledge": len(past) > 0,
             "active_rules": [r[0] for r in rules],
+            "request_consistency": consistency.get("request_consistency", "UNDETERMINED"),
+            "request_consistency_action": consistency.get("request_consistency_action", "REVIEW"),
+            "request_consistency_reason": consistency.get("request_consistency_reason", ""),
+            "request_consistency_contradictions": consistency.get(
+                "request_consistency_contradictions", []
+            ),
         }
         return state
 
