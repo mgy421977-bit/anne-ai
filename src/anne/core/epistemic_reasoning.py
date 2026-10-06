@@ -105,7 +105,7 @@ class EpistemicAnalyzer:
             if len(component) > 1:
                 clusters.append(tuple(sorted(component)))
 
-        term_counts = Counter()
+        term_counts: Counter[str] = Counter()
         for candidate in candidates:
             term_counts.update(cls._terms(candidate.claim))
         common_terms = tuple(
