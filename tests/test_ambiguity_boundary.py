@@ -56,7 +56,7 @@ def test_medium_ambiguity_returns_clarification_before_mitos(tmp_path):
     assert result.state is not None
     assert result.state.action == "CLARIFY"
     assert result.state.output["action"] == "CLARIFY"
-    assert result.stage_trace == ("FAIL_FAST", "DUY", "BAK", "AMBIGUITY")
+    assert result.stage_trace == ("FAIL_FAST", "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY")
     assert result.state.context_map["ambiguity_level"] == "medium"
 
 
@@ -96,6 +96,17 @@ def test_normal_specific_request_still_reaches_mitos(tmp_path):
 
     assert result.state is not None
     assert result.stage_trace[:7] == (
-        "FAIL_FAST", "DUY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"
+        "FAIL_FAST", "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"
     )
     assert result.selection is not None
+
+def test_inconsistent_request_is_reframed_before_ambiguity(tmp_path):
+    result = make_orchestrator(tmp_path).run("Dosyayı oluştur ama dosyayı oluşturma")
+
+    assert result.status == "BOUNDED"
+    assert result.stop_reason == "request_inconsistent"
+    assert result.selection is None
+    assert result.state is not None
+    assert result.state.action == "REFRAME"
+    assert result.state.context_map["request_consistency"] == "INCONSISTENT"
+    assert result.stage_trace == ("FAIL_FAST", "DUY", "REQUEST_CONSISTENCY")
