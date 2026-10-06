@@ -11,10 +11,12 @@ from typing import Any
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
 from anne.core.anla_score import DEFAULT_TAU, MAX_ANLA_RETRIES, passes_anla
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
+from anne.core.epistemic_reasoning import EpistemicAnalyzer, analysis_as_dict
 from anne.core.ethic_core import EthicCore
 from anne.core.evidence import EvidenceGate, evidence_status_from_verification
 from anne.core.fail_fast import FailFastGate, FailFastResult
 from anne.core.intent import IntentClassifier
+from anne.core.request_consistency import RequestConsistencyGate
 from anne.core.requirements import CognitiveRequirements, EvidenceStatus
 from anne.core.values import ANNECore, CoreDecision
 from anne.core.verification import ClaimVerifier, verify_claim
@@ -78,6 +80,15 @@ class AnnePipeline:
         state.authority_check_required = requirements.requires_authority_check
         return state
 
+    def request_consistency(self, state: CognitiveState) -> CognitiveState:
+        """Evaluate explicit internal conflicts in the user's request."""
+        decision = RequestConsistencyGate.evaluate(state.raw_input)
+        state.context_map["request_consistency"] = decision.status
+        state.context_map["request_consistency_action"] = decision.action
+        state.context_map["request_consistency_reason"] = decision.reason
+        state.context_map["request_consistency_contradictions"] = list(decision.contradictions)
+        return state
+
     def bak(self, state: CognitiveState) -> CognitiveState:
         past = self.memory.get_similar_decisions(state.raw_input)
         state.related_memories = past
@@ -96,6 +107,7 @@ class AnnePipeline:
             state.evidence_verified = False
 
         rules = self.memory.get_strong_rules()
+        consistency = state.context_map
         state.context_map = {
             "input_type": state.input_type,
             "intent": state.intent,
@@ -114,7 +126,32 @@ class AnnePipeline:
             "past_similar_count": len(past),
             "has_prior_knowledge": len(past) > 0,
             "active_rules": [r[0] for r in rules],
+            "request_consistency": consistency.get("request_consistency", "UNDETERMINED"),
+            "request_consistency_action": consistency.get("request_consistency_action", "REVIEW"),
+            "request_consistency_reason": consistency.get("request_consistency_reason", ""),
+            "request_consistency_contradictions": consistency.get(
+                "request_consistency_contradictions", []
+            ),
         }
+        return state
+
+    def epistemic_analysis(
+        self,
+        state: CognitiveState,
+        candidates: Sequence[Any],
+    ) -> CognitiveState:
+        """Map candidate explanations before selection without claiming truth."""
+        analysis = EpistemicAnalyzer.analyze(state.raw_input, candidates)
+        state.epistemic_map = analysis_as_dict(analysis)
+        state.context_map["epistemic_candidate_count"] = len(candidates)
+        state.context_map["epistemic_consistent_count"] = sum(
+            1 for item in analysis.assessments if item.internally_consistent
+        )
+        state.context_map["epistemic_relation_count"] = len(analysis.relations)
+        state.context_map["epistemic_cluster_count"] = len(analysis.clusters)
+        state.context_map["common_solution_space"] = list(analysis.common_solution_space)
+        state.context_map["novel_hypothesis"] = analysis.novel_hypothesis
+        state.context_map["novel_hypothesis_status"] = analysis.novel_hypothesis_status
         return state
 
     def gor(self, state: CognitiveState, hypotheses: Sequence[Hypothesis]) -> CognitiveState:
@@ -457,6 +494,16 @@ class AnnePipeline:
 
         state = self.duy(raw_input, consciousnesses)
         state.context_map["fail_fast"] = ff.as_dict()
+        state = self.request_consistency(state)
+        if state.context_map.get("request_consistency") == "INCONSISTENT":
+            state.action = "REFRAME"
+            state.output = {
+                "verdict": "REFRAME",
+                "action": "CLARIFY",
+                "reason": state.context_map.get("request_consistency_reason"),
+                "contradictions": state.context_map.get("request_consistency_contradictions", []),
+            }
+            return ff, state
         state = self.bak(state)
         state = self.gor(state, [hypothesis])
         state = self.anla(state, hypothesis, claim_verifier=claim_verifier)

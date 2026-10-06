@@ -46,13 +46,15 @@ def test_cognitive_orchestrator_keeps_ambiguity_and_mitos_selection_before_anla(
         task_mode=TaskMode.TECHNICAL,
         seed=7,
     )
-    assert result.stage_trace[:7] == (
+    assert result.stage_trace[:9] == (
         "FAIL_FAST",
         "DUY",
+        "REQUEST_CONSISTENCY",
         "BAK",
         "AMBIGUITY",
         "GÖR",
         "MITOS",
+        "EPISTEMIC_ANALYSIS",
         "SELECT",
     )
     assert result.selection is not None
@@ -79,10 +81,12 @@ def test_cognitive_orchestrator_rejected_selection_cannot_reach_anla_or_yap(
     assert result.stage_trace == (
         "FAIL_FAST",
         "DUY",
+        "REQUEST_CONSISTENCY",
         "BAK",
         "AMBIGUITY",
         "GÖR",
         "MITOS",
+        "EPISTEMIC_ANALYSIS",
         "SELECT",
     )
     assert "ANLA" not in result.stage_trace

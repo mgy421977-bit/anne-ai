@@ -1,6 +1,7 @@
 """Phase 1c executive orchestration with bounded recovery and ambiguity.
 
-Flow: FailFast → DUY → BAK → AMBIGUITY → GÖR → MITOS → SELECT → ANLA → HİSSET → YAP.
+Flow: FailFast → DUY → REQUEST_CONSISTENCY → BAK → AMBIGUITY → GÖR → MITOS
+→ EPISTEMIC_ANALYSIS → SELECT → ANLA → HİSSET → YAP.
 MITOS proposes; ANNE selects. Recovery can reframe a failed cycle but cannot
 bypass existing safety, semantic, evidence, ethics, or agency boundaries.
 """
@@ -167,7 +168,10 @@ class CognitiveOrchestrator:
 
     @staticmethod
     def _base_trace() -> list[str]:
-        return ["FAIL_FAST", "DUY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"]
+        return [
+            "FAIL_FAST", "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY",
+            "GÖR", "MITOS", "EPISTEMIC_ANALYSIS", "SELECT",
+        ]
 
     @staticmethod
     def _learning_signal(
@@ -282,8 +286,35 @@ class CognitiveOrchestrator:
                         lineage=tuple(lineage),
                         stop_reason="fail_fast",
                     )
-                trace.extend(["DUY", "BAK", "AMBIGUITY", "GÖR", "MITOS", "SELECT"])
+                trace.extend([
+                    "DUY", "REQUEST_CONSISTENCY", "BAK", "AMBIGUITY",
+                    "GÖR", "MITOS", "EPISTEMIC_ANALYSIS", "SELECT",
+                ])
             state = self.pipeline.duy(current_question, people)
+            state = self.pipeline.request_consistency(state)
+            if state.context_map.get("request_consistency") == "INCONSISTENT":
+                state.action = "REFRAME"
+                state.output = {
+                    "verdict": "REFRAME",
+                    "action": "CLARIFY",
+                    "reason": state.context_map.get("request_consistency_reason"),
+                    "contradictions": state.context_map.get(
+                        "request_consistency_contradictions", []
+                    ),
+                }
+                return OrchestrationResult(
+                    "BOUNDED",
+                    ff,
+                    state,
+                    None,
+                    tuple(trace[:3]),
+                    state.context_map.get(
+                        "request_consistency_reason", "request_inconsistent"
+                    ),
+                    retry_count=retry_count,
+                    lineage=tuple(lineage),
+                    stop_reason="request_inconsistent",
+                )
             evidence_required = evidence_required or state.requires_evidence
             authority_required = authority_required or state.authority_check_required
             state.requires_evidence = evidence_required
@@ -311,7 +342,7 @@ class CognitiveOrchestrator:
                     ff,
                     state,
                     None,
-                    tuple(trace[:4]),
+                    tuple(trace[:5]),
                     ambiguity.reason,
                     retry_count=retry_count,
                     lineage=tuple(lineage),
@@ -331,7 +362,7 @@ class CognitiveOrchestrator:
                     ff,
                     state,
                     None,
-                    tuple(trace[:4]),
+                    tuple(trace[:5]),
                     "clarification_required",
                     retry_count=retry_count,
                     lineage=tuple(lineage),
@@ -350,6 +381,7 @@ class CognitiveOrchestrator:
                     batch_size=self.candidate_batch_size,
                     engine=engine,
                 )
+            state = self.pipeline.epistemic_analysis(state, candidates)
             selection = self.selector.select(candidates, task_mode=task_mode)
             last_selection = selection
 
@@ -427,6 +459,24 @@ class CognitiveOrchestrator:
                     if state.evidence_status == "conflicting"
                     else "unverified"
                 )
+                state.output["epistemic_summary"] = {
+                    "candidate_count": state.context_map.get("epistemic_candidate_count", 0),
+                    "internally_consistent_count": state.context_map.get(
+                        "epistemic_consistent_count", 0
+                    ),
+                    "relation_count": state.context_map.get("epistemic_relation_count", 0),
+                    "cluster_count": state.context_map.get("epistemic_cluster_count", 0),
+                    "common_solution_space": state.context_map.get(
+                        "common_solution_space", []
+                    ),
+                    "novel_hypothesis": state.context_map.get("novel_hypothesis"),
+                    "novel_hypothesis_status": state.context_map.get(
+                        "novel_hypothesis_status", "NOT_DERIVED"
+                    ),
+                    "verification_boundary": state.epistemic_map.get(
+                        "verification_boundary", []
+                    ),
+                }
                 last_state = state
                 confidence = float(state.context_map.get("anla_score") or selected.probability)
                 if self._is_success(state):
