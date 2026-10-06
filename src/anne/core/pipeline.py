@@ -16,6 +16,7 @@ from anne.core.evidence import EvidenceGate, evidence_status_from_verification
 from anne.core.fail_fast import FailFastGate, FailFastResult
 from anne.core.intent import IntentClassifier
 from anne.core.requirements import CognitiveRequirements, EvidenceStatus
+from anne.core.request_consistency import RequestConsistencyGate
 from anne.core.values import ANNECore, CoreDecision
 from anne.core.verification import ClaimVerifier, verify_claim
 from anne.memory.fractal_memory import FractalMemory
@@ -76,6 +77,15 @@ class AnnePipeline:
         state.ambiguity = frame.ambiguity
         requirements = CognitiveRequirements.from_intent(frame)
         state.authority_check_required = requirements.requires_authority_check
+        return state
+
+    def request_consistency(self, state: CognitiveState) -> CognitiveState:
+        """Evaluate explicit internal conflicts in the user's request."""
+        decision = RequestConsistencyGate.evaluate(state.raw_input)
+        state.context_map["request_consistency"] = decision.status
+        state.context_map["request_consistency_action"] = decision.action
+        state.context_map["request_consistency_reason"] = decision.reason
+        state.context_map["request_consistency_contradictions"] = list(decision.contradictions)
         return state
 
     def bak(self, state: CognitiveState) -> CognitiveState:
@@ -457,6 +467,16 @@ class AnnePipeline:
 
         state = self.duy(raw_input, consciousnesses)
         state.context_map["fail_fast"] = ff.as_dict()
+        state = self.request_consistency(state)
+        if state.context_map.get("request_consistency") == "INCONSISTENT":
+            state.action = "REFRAME"
+            state.output = {
+                "verdict": "REFRAME",
+                "action": "CLARIFY",
+                "reason": state.context_map.get("request_consistency_reason"),
+                "contradictions": state.context_map.get("request_consistency_contradictions", []),
+            }
+            return ff, state
         state = self.bak(state)
         state = self.gor(state, [hypothesis])
         state = self.anla(state, hypothesis, claim_verifier=claim_verifier)
