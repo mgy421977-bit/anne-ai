@@ -18,7 +18,6 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.fail_fast import FailFastResult
 from anne.core.failure_recovery import FailureRecoveryController, FailureSignal
 from anne.core.pipeline import AnnePipeline
-from anne.core.request_consistency import RequestConsistencyGate
 from anne.core.resource_profile import ResourceProfile
 from anne.core.self_correction import SelfCorrectionPlanner
 from anne.core.verification import ClaimVerifier
@@ -332,7 +331,7 @@ class CognitiveOrchestrator:
                     ff,
                     state,
                     None,
-                    tuple(trace[:4]),
+                    tuple(trace[:5]),
                     ambiguity.reason,
                     retry_count=retry_count,
                     lineage=tuple(lineage),
