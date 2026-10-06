@@ -54,6 +54,9 @@ Homepage = "https://github.com/mgy421977-bit/anne"
 Repository = "https://github.com/mgy421977-bit/anne"
 "Bug Tracker" = "https://github.com/mgy421977-bit/anne/issues"
 
+[project.scripts]
+anne-desktop = "anne.desktop:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
