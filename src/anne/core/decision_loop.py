@@ -14,6 +14,7 @@ from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinking
 from anne.core.pipeline import AnnePipeline
 from anne.core.resource_profile import ResourceProfile
 from anne.core.resource_optimizer import ResourceOptimizer, SystemResourceProbe
+from anne.core.resource_negotiator import ResourceNegotiator
 from anne.core.trace import CycleTrace, trace_from_runtime
 from anne.core.verification import ClaimVerifier
 from anne.memory.fractal_memory import FractalMemory
@@ -73,6 +74,7 @@ class DecisionLoop:
         self.resource_planner = AdaptiveResourcePlanner()
         self.resource_optimizer = ResourceOptimizer()
         self.resource_probe = SystemResourceProbe()
+        self.resource_negotiator = ResourceNegotiator()
         self.compute_router = ComputeRouter()
         self._explicit_resource_profile = resource_profile is not None
         self._experience_history: tuple[dict[str, Any], ...] = ()
@@ -84,7 +86,11 @@ class DecisionLoop:
         )
 
     @staticmethod
-    def _resource_payload(decision: ResourceDecision, route: Any) -> dict[str, Any]:
+    def _resource_payload(
+        decision: ResourceDecision,
+        route: Any,
+        negotiation: Any,
+    ) -> dict[str, Any]:
         environment = route.selected_environment
         return {
             "execution": decision.execution,
@@ -123,6 +129,14 @@ class DecisionLoop:
                     "gpu_utilization": optimization.snapshot.gpu_utilization,
                     "os_present": optimization.snapshot.os_present,
                 },
+            },
+            "negotiation": {
+                "status": negotiation.status,
+                "platform": negotiation.platform_name,
+                "ownership": negotiation.ownership,
+                "shared_driver_boundary": negotiation.shared_driver_boundary,
+                "shared_subsystems": list(negotiation.shared_subsystems),
+                "reason": negotiation.reason,
             },
             "route": {
                 "status": route.status,
@@ -181,8 +195,13 @@ class DecisionLoop:
         self.orchestrator.candidate_batch_size = (
             resource_decision.profile.max_mitos_candidates
         )
-        route = self.compute_router.route(
+        negotiation = self.resource_negotiator.negotiate(
             resource_decision.profile,
+            optimization,
+            runtime_snapshot,
+        )
+        route = self.compute_router.route(
+            negotiation.effective_profile,
             self.execution_environments,
         )
 
@@ -205,7 +224,7 @@ class DecisionLoop:
             preferred_strategy=strategy,
         )
 
-        resource_payload = self._resource_payload(resource_decision, route)
+        resource_payload = self._resource_payload(resource_decision, route, negotiation)
         if not result.fail_fast.passed:
             fail_output = {
                 "verdict": "FAIL_FAST",
