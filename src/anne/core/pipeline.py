@@ -13,6 +13,7 @@ from anne.core.anla_score import DEFAULT_TAU, MAX_ANLA_RETRIES, passes_anla
 from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.ethic_core import EthicCore
 from anne.core.evidence import EvidenceGate, evidence_status_from_verification
+from anne.core.epistemic_reasoning import EpistemicAnalyzer, analysis_as_dict
 from anne.core.fail_fast import FailFastGate, FailFastResult
 from anne.core.intent import IntentClassifier
 from anne.core.requirements import CognitiveRequirements, EvidenceStatus
@@ -132,6 +133,25 @@ class AnnePipeline:
                 "request_consistency_contradictions", []
             ),
         }
+        return state
+
+    def epistemic_analysis(
+        self,
+        state: CognitiveState,
+        candidates: Sequence[Any],
+    ) -> CognitiveState:
+        """Map candidate explanations before selection without claiming truth."""
+        analysis = EpistemicAnalyzer.analyze(state.raw_input, candidates)
+        state.epistemic_map = analysis_as_dict(analysis)
+        state.context_map["epistemic_candidate_count"] = len(candidates)
+        state.context_map["epistemic_consistent_count"] = sum(
+            1 for item in analysis.assessments if item.internally_consistent
+        )
+        state.context_map["epistemic_relation_count"] = len(analysis.relations)
+        state.context_map["epistemic_cluster_count"] = len(analysis.clusters)
+        state.context_map["common_solution_space"] = list(analysis.common_solution_space)
+        state.context_map["novel_hypothesis"] = analysis.novel_hypothesis
+        state.context_map["novel_hypothesis_status"] = analysis.novel_hypothesis_status
         return state
 
     def gor(self, state: CognitiveState, hypotheses: Sequence[Hypothesis]) -> CognitiveState:
