@@ -308,7 +308,9 @@ class CognitiveOrchestrator:
                     state,
                     None,
                     tuple(trace[:3]),
-                    state.context_map.get("request_consistency_reason", "request_inconsistent"),
+                    state.context_map.get(
+                        "request_consistency_reason", "request_inconsistent"
+                    ),
                     retry_count=retry_count,
                     lineage=tuple(lineage),
                     stop_reason="request_inconsistent",
