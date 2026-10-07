@@ -2,10 +2,19 @@ name: Actions Storage Cleanup
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/actions-storage-cleanup.yml"
+    inputs:
+      run_id:
+        description: "Exactly one failed workflow run ID to delete"
+        required: true
+        type: string
+      expected_head_sha:
+        description: "Full 40-character commit SHA for that run"
+        required: true
+        type: string
+      confirm:
+        description: "Type DELETE followed by a space and the run ID"
+        required: true
+        type: string
 
 permissions:
   actions: write
@@ -14,18 +23,36 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete old workflow runs
+      - name: Delete only the explicitly identified failed run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ inputs.run_id }}
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          CONFIRM: ${{ inputs.confirm }}
         run: |
           set -euo pipefail
 
-          echo "Keeping the 20 newest completed workflow runs."
-          gh api --paginate "repos/${GH_REPO}/actions/runs?per_page=100"             --jq '.workflow_runs[] | select(.status == "completed") | [.id, .created_at] | @tsv'             | sort -k2,2r             | tail -n +21             | cut -f1             | while read -r run_id; do
-                [ -z "${run_id}" ] && continue
-                echo "Deleting workflow run ${run_id}"
-                gh api --method DELETE "repos/${GH_REPO}/actions/runs/${run_id}"
-              done
+          if [[ "${GH_REPO}" != "mgy421977-bit/anne-ai" ]]; then
+            echo "Refusing to operate on another repository."
+            exit 1
+          fi
+          if [[ ! "${RUN_ID}" =~ ^[0-9]+$ ]] || [[ ! "${EXPECTED_HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "A numeric run ID and full lowercase commit SHA are required."
+            exit 1
+          fi
+          if [[ "${CONFIRM}" != "DELETE ${RUN_ID}" ]]; then
+            echo "Confirmation must exactly match DELETE <run_id>."
+            exit 1
+          fi
 
-          echo "Actions storage cleanup completed."
+          run_info=$(gh api "repos/${GH_REPO}/actions/runs/${RUN_ID}" \
+            --jq '[.status, .conclusion, .head_sha] | @tsv')
+          IFS=$'\t' read -r status conclusion head_sha <<< "${run_info}"
+          if [[ "${status}" != "completed" || "${conclusion}" != "failure" || "${head_sha}" != "${EXPECTED_HEAD_SHA}" ]]; then
+            echo "Run is not a completed failure with the expected commit; no deletion performed."
+            exit 1
+          fi
+
+          echo "Deleting verified failed workflow run ${RUN_ID} (${head_sha})."
+          gh api --method DELETE "repos/${GH_REPO}/actions/runs/${RUN_ID}"
