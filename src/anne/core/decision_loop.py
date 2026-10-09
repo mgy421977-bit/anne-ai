@@ -81,7 +81,11 @@ class DecisionLoop:
         self._explicit_resource_profile = resource_profile is not None
         self._experience_history: tuple[dict[str, Any], ...] = ()
         self._experience_history_limit = 64
-        self.execution_environments = (\n            tuple(execution_environments)\n            if execution_environments is not None\n            else (ComputeEnvironment("local-default", ExecutionMode.LOCAL, capacity=1),)\n        )
+        self.execution_environments = (
+            tuple(execution_environments)
+            if execution_environments is not None
+            else (ComputeEnvironment("local-default", ExecutionMode.LOCAL, capacity=1),)
+        )
         self.orchestrator = CognitiveOrchestrator(
             self.pipeline,
             resource_profile=self.resource_profile,
