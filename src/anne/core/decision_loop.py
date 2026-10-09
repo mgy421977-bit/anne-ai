@@ -15,6 +15,7 @@ from anne.core.pipeline import AnnePipeline
 from anne.core.resource_negotiator import ResourceNegotiator
 from anne.core.resource_optimizer import ResourceOptimizer, SystemResourceProbe
 from anne.core.resource_profile import ResourceProfile
+from anne.core.runtime_feedback import RuntimeFeedbackController
 from anne.core.trace import CycleTrace, trace_from_runtime
 from anne.core.verification import ClaimVerifier
 from anne.core.windows_execution import WindowsExecutionAdapter
@@ -77,7 +78,9 @@ class DecisionLoop:
         self.resource_probe = SystemResourceProbe()
         self.resource_negotiator = ResourceNegotiator()
         self.windows_execution = WindowsExecutionAdapter()
+        self.runtime_feedback = RuntimeFeedbackController()
         self.compute_router = ComputeRouter()
+        self._feedback_profile: ResourceProfile | None = None
         self._explicit_resource_profile = resource_profile is not None
         self._experience_history: tuple[dict[str, Any], ...] = ()
         self._experience_history_limit = 64
@@ -98,6 +101,7 @@ class DecisionLoop:
         negotiation: Any,
         optimization: Any,
         execution_plan: Any,
+        feedback: Any,
     ) -> dict[str, Any]:
         environment = route.selected_environment
         return {
@@ -146,6 +150,15 @@ class DecisionLoop:
                 "shared_subsystems": list(negotiation.shared_subsystems),
                 "reason": negotiation.reason,
             },
+            "feedback": {
+                "status": feedback.status,
+                "elapsed_seconds": feedback.measurement.elapsed_seconds,
+                "cpu_utilization_before": feedback.measurement.cpu_utilization_before,
+                "cpu_utilization_after": feedback.measurement.cpu_utilization_after,
+                "memory_headroom_before": feedback.measurement.memory_headroom_before,
+                "memory_headroom_after": feedback.measurement.memory_headroom_after,
+                "reason": feedback.reason,
+            },
             "windows_execution": {
                 "status": execution_plan.status,
                 "requested_capacity": execution_plan.requested_capacity,
@@ -184,7 +197,7 @@ class DecisionLoop:
             experiences=self._experience_history,
             mitos_outcomes=tuple(mitos_outcomes or ()),
             mitos_failure_classes=mitos_failure_classes,
-            baseline=self.resource_profile if self._explicit_resource_profile else None,
+            baseline=(self._feedback_profile or self.resource_profile) if (self._explicit_resource_profile or self._feedback_profile is not None) else None,
         )
         runtime_snapshot = self.resource_probe.snapshot()
         optimization = self.resource_optimizer.optimize(
@@ -234,15 +247,32 @@ class DecisionLoop:
             probability=probability,
             source="decision_loop",
         )
-        result = self.orchestrator.run(
-            raw_input,
-            parties=people,
-            hypothesis=hyp,
-            verifier=verifier,
-            group_a=group_a,
-            group_b=group_b,
-            preferred_strategy=strategy,
+        result, measurement = self.runtime_feedback.measure(
+            lambda: self.orchestrator.run(
+                raw_input,
+                parties=people,
+                hypothesis=hyp,
+                verifier=verifier,
+                group_a=group_a,
+                group_b=group_b,
+                preferred_strategy=strategy,
+            ),
+            self.resource_probe.snapshot,
         )
+        feedback = self.runtime_feedback.decide(
+            negotiation.effective_profile,
+            measurement,
+        )
+        if feedback.status == "REDUCE_LOAD":
+            self._feedback_profile = feedback.profile
+        elif feedback.status == "HOLD" and self._feedback_profile is not None:
+            # Keep the safer reduced profile until an explicit policy restores it.
+            feedback = type(feedback)(
+                "HOLD_REDUCED",
+                self._feedback_profile,
+                "host pressure did not rise; retaining the previously reduced profile",
+                measurement,
+            )
 
         resource_payload = self._resource_payload(
             resource_decision,
@@ -250,6 +280,7 @@ class DecisionLoop:
             negotiation,
             optimization,
             execution_plan,
+            feedback,
         )
         if not result.fail_fast.passed:
             fail_output = {
@@ -339,7 +370,7 @@ class DecisionLoop:
         decision = self.resource_planner.plan(
             raw_input,
             experiences=self._experience_history,
-            baseline=self.resource_profile if self._explicit_resource_profile else None,
+            baseline=(self._feedback_profile or self.resource_profile) if (self._explicit_resource_profile or self._feedback_profile is not None) else None,
         )
         snapshot = self.resource_probe.snapshot()
         optimization = self.resource_optimizer.optimize(decision.profile, snapshot)
