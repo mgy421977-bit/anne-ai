@@ -12,10 +12,10 @@ than assuming that all machine resources belong to ANNE.
 
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import dataclass
 import os
 from pathlib import Path
-from typing import Any
 
 from anne.core.resource_profile import ResourceProfile
 
@@ -83,10 +83,8 @@ class SystemResourceProbe:
             for line in meminfo.read_text(encoding="utf-8").splitlines():
                 key, _, value = line.partition(":")
                 if key in {"MemTotal", "MemAvailable"}:
-                    try:
+                    with suppress(ValueError, IndexError):
                         values[key] = int(value.strip().split()[0]) * 1024
-                    except (ValueError, IndexError):
-                        pass
             total = values.get("MemTotal")
             available = values.get("MemAvailable")
 
