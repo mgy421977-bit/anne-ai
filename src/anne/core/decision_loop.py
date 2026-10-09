@@ -80,7 +80,8 @@ class DecisionLoop:
         self.windows_execution = WindowsExecutionAdapter()
         self.runtime_feedback = RuntimeFeedbackController()
         self.compute_router = ComputeRouter()
-        self._feedback_profile: ResourceProfile | None = None
+        self._feedback_capacity_limit: int | None = None
+        self._stable_feedback_observations = 0
         self._explicit_resource_profile = resource_profile is not None
         self._experience_history: tuple[dict[str, Any], ...] = ()
         self._experience_history_limit = 64
@@ -150,15 +151,7 @@ class DecisionLoop:
                 "shared_subsystems": list(negotiation.shared_subsystems),
                 "reason": negotiation.reason,
             },
-            "feedback": {
-                "status": feedback.status,
-                "elapsed_seconds": feedback.measurement.elapsed_seconds,
-                "cpu_utilization_before": feedback.measurement.cpu_utilization_before,
-                "cpu_utilization_after": feedback.measurement.cpu_utilization_after,
-                "memory_headroom_before": feedback.measurement.memory_headroom_before,
-                "memory_headroom_after": feedback.measurement.memory_headroom_after,
-                "reason": feedback.reason,
-            },
+            "feedback": feedback,
             "windows_execution": {
                 "status": execution_plan.status,
                 "requested_capacity": execution_plan.requested_capacity,
@@ -197,7 +190,7 @@ class DecisionLoop:
             experiences=self._experience_history,
             mitos_outcomes=tuple(mitos_outcomes or ()),
             mitos_failure_classes=mitos_failure_classes,
-            baseline=(self._feedback_profile or self.resource_profile) if (self._explicit_resource_profile or self._feedback_profile is not None) else None,
+            baseline=self.resource_profile if self._explicit_resource_profile else None,
         )
         runtime_snapshot = self.resource_probe.snapshot()
         optimization = self.resource_optimizer.optimize(
@@ -219,22 +212,21 @@ class DecisionLoop:
                 experience_profile=resource_decision.experience_profile,
             )
 
-        self.resource_profile = resource_decision.profile
-        self.orchestrator.resource_profile = resource_decision.profile
-        self.orchestrator.candidate_batch_size = (
-            resource_decision.profile.max_mitos_candidates
-        )
         negotiation = self.resource_negotiator.negotiate(
             resource_decision.profile,
             optimization,
             runtime_snapshot,
         )
+        effective_profile = self._apply_feedback_limit(negotiation.effective_profile)
+        self.resource_profile = effective_profile
+        self.orchestrator.resource_profile = effective_profile
+        self.orchestrator.candidate_batch_size = effective_profile.max_mitos_candidates
         execution_plan = self.windows_execution.plan(
-            negotiation.effective_profile,
+            effective_profile,
             background=False,
         )
         route = self.compute_router.route(
-            negotiation.effective_profile,
+            effective_profile,
             self.execution_environments,
         )
 
@@ -259,20 +251,7 @@ class DecisionLoop:
             ),
             self.resource_probe.snapshot,
         )
-        feedback = self.runtime_feedback.decide(
-            negotiation.effective_profile,
-            measurement,
-        )
-        if feedback.status == "REDUCE_LOAD":
-            self._feedback_profile = feedback.profile
-        elif feedback.status == "HOLD" and self._feedback_profile is not None:
-            # Keep the safer reduced profile until an explicit policy restores it.
-            feedback = type(feedback)(
-                "HOLD_REDUCED",
-                self._feedback_profile,
-                "host pressure did not rise; retaining the previously reduced profile",
-                measurement,
-            )
+        feedback = self._record_runtime_feedback(effective_profile, measurement)
 
         resource_payload = self._resource_payload(
             resource_decision,
@@ -365,18 +344,64 @@ class DecisionLoop:
         )
 
 
+    @staticmethod
+    def _capacity(profile: ResourceProfile) -> int:
+        return max(profile.cpu_units, profile.memory_units, profile.reasoning_budget)
+
+    def _apply_feedback_limit(self, profile: ResourceProfile) -> ResourceProfile:
+        """Apply a temporary workload cap without changing the planner's target."""
+        if self._feedback_capacity_limit is None:
+            return profile
+        capacity = min(self._capacity(profile), self._feedback_capacity_limit)
+        return ResourceProfile.scaled(substrate=profile.substrate, capacity=max(1, capacity))
+
+    def _record_runtime_feedback(
+        self,
+        profile: ResourceProfile,
+        measurement: Any,
+    ) -> dict[str, Any]:
+        """Update a bounded pressure cap and recover capacity after stable samples."""
+        decision = self.runtime_feedback.decide(profile, measurement)
+        target_capacity = self._capacity(profile)
+
+        if decision.status == "REDUCE_LOAD":
+            self._feedback_capacity_limit = self._capacity(decision.profile)
+            self._stable_feedback_observations = 0
+        elif self._feedback_capacity_limit is not None:
+            self._stable_feedback_observations += 1
+            if self._stable_feedback_observations >= 3:
+                self._feedback_capacity_limit = min(
+                    target_capacity,
+                    self._feedback_capacity_limit + 1,
+                )
+                self._stable_feedback_observations = 0
+                if self._feedback_capacity_limit >= target_capacity:
+                    self._feedback_capacity_limit = None
+
+        return {
+            "status": decision.status,
+            "elapsed_seconds": measurement.elapsed_seconds,
+            "cpu_utilization_before": measurement.cpu_utilization_before,
+            "cpu_utilization_after": measurement.cpu_utilization_after,
+            "memory_headroom_before": measurement.memory_headroom_before,
+            "memory_headroom_after": measurement.memory_headroom_after,
+            "feedback_capacity_limit": self._feedback_capacity_limit,
+            "stable_observations_toward_recovery": self._stable_feedback_observations,
+            "reason": decision.reason,
+        }
+
     def _prepare_runtime_profile(self, raw_input: str) -> ResourceProfile:
         """Prepare a bounded resource profile for every public execution path."""
         decision = self.resource_planner.plan(
             raw_input,
             experiences=self._experience_history,
-            baseline=(self._feedback_profile or self.resource_profile) if (self._explicit_resource_profile or self._feedback_profile is not None) else None,
+            baseline=self.resource_profile if self._explicit_resource_profile else None,
         )
         snapshot = self.resource_probe.snapshot()
         optimization = self.resource_optimizer.optimize(decision.profile, snapshot)
         profile = self.resource_optimizer.apply(decision.profile, optimization)
         negotiation = self.resource_negotiator.negotiate(profile, optimization, snapshot)
-        profile = negotiation.effective_profile
+        profile = self._apply_feedback_limit(negotiation.effective_profile)
         self.resource_profile = profile
         self.orchestrator.resource_profile = profile
         self.orchestrator.candidate_batch_size = profile.max_mitos_candidates
@@ -395,14 +420,20 @@ class DecisionLoop:
         seed: int | None = None,
         verifier: ClaimVerifier | None = None,
     ) -> OrchestrationResult:
-        self._prepare_runtime_profile(raw_input)
-        return self.orchestrator.run(
-            raw_input,
-            parties=parties,
-            task_mode=task_mode,
-            seed=seed,
-            verifier=verifier,
+        profile = self._prepare_runtime_profile(raw_input)
+        result, measurement = self.runtime_feedback.measure(
+            lambda: self.orchestrator.run(
+                raw_input,
+                parties=parties,
+                task_mode=task_mode,
+                seed=seed,
+                verifier=verifier,
+            ),
+            self.resource_probe.snapshot,
         )
+        feedback = self._record_runtime_feedback(profile, measurement)
+        from dataclasses import replace
+        return replace(result, resource_feedback=feedback)
 
     def run_fractal(
         self,
@@ -426,18 +457,24 @@ class DecisionLoop:
             probability=probability,
             source="decision_loop",
         )
-        return FractalThinkingLoop(
+        loop = FractalThinkingLoop(
             self.memory,
             self.pipeline,
             budget=budget,
             resource_profile=profile,
             claim_verifier=verifier,
-        ).run(
-            raw_input,
-            hyp,
-            parties=people,
-            task_mode=task_mode,
         )
+        result, measurement = self.runtime_feedback.measure(
+            lambda: loop.run(
+                raw_input,
+                hyp,
+                parties=people,
+                task_mode=task_mode,
+            ),
+            self.resource_probe.snapshot,
+        )
+        result.resource_feedback = self._record_runtime_feedback(profile, measurement)
+        return result
 
 
 __all__ = ["DecisionLoop", "DecisionResult"]
