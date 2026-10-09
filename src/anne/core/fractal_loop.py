@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import Any
 from uuid import uuid4
 
 from anne.core.cognitive_state import Consciousness, Hypothesis
@@ -56,6 +57,7 @@ class FractalResult:
     nodes: list[FractalNode]
     iterations: int
     stop_reason: str
+    resource_feedback: dict[str, Any] = field(default_factory=dict)
 
 
 class FractalThinkingLoop:
