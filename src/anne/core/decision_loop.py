@@ -73,6 +73,8 @@ class DecisionLoop:
             claim_verifier=claim_verifier,
         )
         self.resource_profile = resource_profile or ResourceProfile.minimal()
+        self._configured_resource_profile = self.resource_profile
+        self._current_target_capacity = self._capacity(self.resource_profile)
         self.resource_planner = AdaptiveResourcePlanner()
         self.resource_optimizer = ResourceOptimizer()
         self.resource_probe = SystemResourceProbe()
@@ -190,7 +192,7 @@ class DecisionLoop:
             experiences=self._experience_history,
             mitos_outcomes=tuple(mitos_outcomes or ()),
             mitos_failure_classes=mitos_failure_classes,
-            baseline=self.resource_profile if self._explicit_resource_profile else None,
+            baseline=self._configured_resource_profile if self._explicit_resource_profile else None,
         )
         runtime_snapshot = self.resource_probe.snapshot()
         optimization = self.resource_optimizer.optimize(
@@ -217,6 +219,7 @@ class DecisionLoop:
             optimization,
             runtime_snapshot,
         )
+        self._current_target_capacity = self._capacity(negotiation.effective_profile)
         effective_profile = self._apply_feedback_limit(negotiation.effective_profile)
         self.resource_profile = effective_profile
         self.orchestrator.resource_profile = effective_profile
@@ -362,7 +365,7 @@ class DecisionLoop:
     ) -> dict[str, Any]:
         """Update a bounded pressure cap and recover capacity after stable samples."""
         decision = self.runtime_feedback.decide(profile, measurement)
-        target_capacity = self._capacity(profile)
+        target_capacity = max(self._current_target_capacity, self._capacity(profile))
 
         if decision.status == "REDUCE_LOAD":
             self._feedback_capacity_limit = self._capacity(decision.profile)
@@ -395,12 +398,13 @@ class DecisionLoop:
         decision = self.resource_planner.plan(
             raw_input,
             experiences=self._experience_history,
-            baseline=self.resource_profile if self._explicit_resource_profile else None,
+            baseline=self._configured_resource_profile if self._explicit_resource_profile else None,
         )
         snapshot = self.resource_probe.snapshot()
         optimization = self.resource_optimizer.optimize(decision.profile, snapshot)
         profile = self.resource_optimizer.apply(decision.profile, optimization)
         negotiation = self.resource_negotiator.negotiate(profile, optimization, snapshot)
+        self._current_target_capacity = self._capacity(negotiation.effective_profile)
         profile = self._apply_feedback_limit(negotiation.effective_profile)
         self.resource_profile = profile
         self.orchestrator.resource_profile = profile
