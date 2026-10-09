@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 from uuid import uuid4
 
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
@@ -36,6 +37,7 @@ class OrchestrationResult:
     retry_count: int = 0
     lineage: tuple[str, ...] = ()
     stop_reason: str = ""
+    resource_feedback: dict[str, Any] | None = None
 
 
 class CognitiveOrchestrator:
