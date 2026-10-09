@@ -7,10 +7,10 @@ Windows drivers or the host scheduler.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import ctypes
 import os
 import platform
+from dataclasses import dataclass
 from typing import Final
 
 from anne.core.resource_profile import ResourceProfile
@@ -83,7 +83,11 @@ class WindowsExecutionAdapter:
         if cpu_mask is not None and cpu_mask <= 0:
             return WindowsExecutionPlan(
                 status="INVALID",
-                requested_capacity=max(profile.cpu_units, profile.memory_units, profile.reasoning_budget),
+                requested_capacity=max(
+                    profile.cpu_units,
+                    profile.memory_units,
+                    profile.reasoning_budget,
+                ),
                 priority=None,
                 affinity_mask=None,
                 reason="CPU affinity mask must be a positive bitmask",
