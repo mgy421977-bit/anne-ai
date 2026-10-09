@@ -13,6 +13,19 @@ is not required to run these first calculations.
 - BESS usable-energy and constant-load runtime screening with power-limit checks.
 - Input validation, explicit missing inputs, assumptions and warnings.
 
+## Runtime integration and durable rules
+The OpenRouter tool interface exposes this layer as `engineering_calculate`.
+The tool is registered in ANNE's allowlist and still passes through the existing
+AgencyGate authorization path. It is read-only and has no external side effects.
+
+The following are durable architecture rules, not optional prompting preferences:
+1. Arithmetic is performed by deterministic Python formulas, not guessed by an LLM.
+2. Preserve inputs, units, outputs, assumptions, missing inputs, warnings and status.
+3. Never silently fill missing values with typical or plausible defaults.
+4. Recompute when relevant inputs change; a remembered prior result is not a current result.
+5. Keep calculations traceable and reproducible; invalid input must fail explicitly.
+6. Persistent memory is contextual recall, not a substitute for recalculation or validation.
+
 ## Deliberate limits
 - No invented yield, tariff, installed cost, hourly profile, self-consumption profile,
   export compensation, finance assumptions or engineering constraints.
