@@ -65,11 +65,22 @@ class AdaptiveRuntimeController:
             strategy=self.current_strategy,
             prior_experiences=self._experiences,
         )
+        prior_same_strategy_failures = sum(
+            item.outcome == "FAILURE" and item.strategy == self.current_strategy
+            for item in self._experiences
+        )
+        # StrategyAdapter may propose a change after two observations, but the
+        # runtime applies it only after three total same-strategy failures.
+        # This separates a suggestion from the policy that activates it.
+        if not (
+            learning.strategy.action == "CHANGE"
+            and prior_same_strategy_failures < 2
+        ):
+            self.current_strategy = learning.strategy.strategy
         self._experiences = (
             *self._experiences,
             learning.experience,
         )[-self.max_experiences :]
-        self.current_strategy = learning.strategy.strategy
         return AdaptiveRuntimeResult(
             decision=decision,
             learning=learning,
