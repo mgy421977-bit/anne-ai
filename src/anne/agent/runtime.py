@@ -13,6 +13,7 @@ from typing import Any, cast
 
 from anne.agent.github_memory import GitHubMemory
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
+from anne.calculation.engine import CalculationError, DeterministicCalculationEngine
 from anne.core.cognitive_runtime import (
     CognitiveWorkspace,
     HierarchicalPlanner,
@@ -115,6 +116,11 @@ class AnneAgent:
 You are not a claim of AGI or consciousness.
 Use DUY -> BAK -> GÖR -> ANLA -> HİSSET -> YAP as a reasoning discipline.
 Treat persistent memory as prior context, not unquestionable truth.
+Mathematical and engineering calculations MUST use deterministic calculation tools
+when available; never estimate arithmetic by language-model intuition. Preserve
+formula inputs, units, assumptions, missing inputs, warnings, and outputs. Do not
+silently invent values. Reuse saved calculation decisions as context, but recalculate
+when inputs change and distinguish remembered facts from current computed results.
 Do not invent repository facts. Use tools when evidence is required.
 Use the minimum number of tools necessary.
 If authoritative repository evidence has already been provided,
@@ -205,6 +211,47 @@ omit only when no semantic extraction is useful.
         {
             "type": "function",
             "function": {
+                "name": "deterministic_calculate",
+                "description": (
+                    "Run ANNE's general deterministic calculation engine. "
+                    "Use arithmetic_expression for arithmetic, or pv_screening / "
+                    "bess_screening for domain formulas. Never invent inputs. "
+                    "Returns a trace with inputs, outputs, assumptions, warnings and status."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string",
+                            "enum": ["arithmetic_expression", "pv_screening", "bess_screening"],
+                        },
+                        "expression": {"type": "string"},
+                        "variables": {
+                            "type": "object",
+                            "additionalProperties": {"type": "number"},
+                        },
+                        "roof_area_m2": {"type": "number"},
+                        "panel_power_w": {"type": "number"},
+                        "panel_area_m2": {"type": "number"},
+                        "usable_roof_fraction": {"type": "number"},
+                        "specific_yield_kwh_per_kwp_year": {"type": "number"},
+                        "annual_consumption_kwh": {"type": "number"},
+                        "tariff_tl_per_kwh": {"type": "number"},
+                        "installed_cost_tl": {"type": "number"},
+                        "nominal_energy_kwh": {"type": "number"},
+                        "continuous_power_kw": {"type": "number"},
+                        "load_power_kw": {"type": "number"},
+                        "depth_of_discharge": {"type": "number"},
+                        "discharge_efficiency": {"type": "number"},
+                    },
+                    "required": ["operation"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "web_research",
                 "description": (
                     "Research a question using bounded public web sources. "
@@ -264,6 +311,7 @@ omit only when no semantic extraction is useful.
                 "local_list": self.local_tools.list,
                 "local_read": self.local_tools.read,
                 "web_research": self._web_research,
+                "deterministic_calculate": self._deterministic_calculate,
             }
         )
         if isinstance(memory, GitHubMemory):
@@ -277,6 +325,14 @@ omit only when no semantic extraction is useful.
                     "github_search": self.github_tools.search_code,
                 }
             )
+
+    @staticmethod
+    def _deterministic_calculate(operation: str, **inputs: Any) -> dict[str, Any]:
+        """Run ANNE's general deterministic calculation engine."""
+        try:
+            return DeterministicCalculationEngine().calculate(operation, **inputs)
+        except (CalculationError, TypeError, ValueError) as exc:
+            return {"ok": False, "error": str(exc)}
 
     def _create_research_plan(self, query: str) -> ResearchPlan:
         """Create a bounded, inspectable plan before web research executes."""
