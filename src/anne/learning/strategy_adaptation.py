@@ -46,7 +46,7 @@ class StrategyAdapter:
                 "safety_or_authority_boundary_must_not_be_bypassed",
                 tuple(item.source_cycle_id for item in failures),
             )
-        if len(failures) < 3:
+        if len(failures) < 2:
             return StrategyDecision(
                 "KEEP",
                 current_strategy,
