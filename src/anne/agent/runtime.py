@@ -13,6 +13,11 @@ from typing import Any, cast
 
 from anne.agent.github_memory import GitHubMemory
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
+from anne.engineering.calculations import (
+    InputValidationError,
+    preliminary_bess_screening,
+    preliminary_pv_screening,
+)
 from anne.core.cognitive_runtime import (
     CognitiveWorkspace,
     HierarchicalPlanner,
@@ -115,6 +120,11 @@ class AnneAgent:
 You are not a claim of AGI or consciousness.
 Use DUY -> BAK -> GÖR -> ANLA -> HİSSET -> YAP as a reasoning discipline.
 Treat persistent memory as prior context, not unquestionable truth.
+Mathematical and engineering calculations MUST use deterministic calculation tools
+when available; never estimate arithmetic by language-model intuition. Preserve
+formula inputs, units, assumptions, missing inputs, warnings, and outputs. Do not
+silently invent values. Reuse saved calculation decisions as context, but recalculate
+when inputs change and distinguish remembered facts from current computed results.
 Do not invent repository facts. Use tools when evidence is required.
 Use the minimum number of tools necessary.
 If authoritative repository evidence has already been provided,
@@ -205,6 +215,41 @@ omit only when no semantic extraction is useful.
         {
             "type": "function",
             "function": {
+                "name": "engineering_calculate",
+                "description": (
+                    "Run ANNE's deterministic preliminary PV or BESS calculations. "
+                    "Supply explicit numeric inputs; never invent missing assumptions. "
+                    "Returns values, assumptions, missing inputs and warnings."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "calculation": {
+                            "type": "string",
+                            "enum": ["pv", "bess"],
+                        },
+                        "roof_area_m2": {"type": "number"},
+                        "panel_power_w": {"type": "number"},
+                        "panel_area_m2": {"type": "number"},
+                        "usable_roof_fraction": {"type": "number"},
+                        "specific_yield_kwh_per_kwp_year": {"type": "number"},
+                        "annual_consumption_kwh": {"type": "number"},
+                        "tariff_tl_per_kwh": {"type": "number"},
+                        "installed_cost_tl": {"type": "number"},
+                        "nominal_energy_kwh": {"type": "number"},
+                        "continuous_power_kw": {"type": "number"},
+                        "load_power_kw": {"type": "number"},
+                        "depth_of_discharge": {"type": "number"},
+                        "discharge_efficiency": {"type": "number"},
+                    },
+                    "required": ["calculation"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "web_research",
                 "description": (
                     "Research a question using bounded public web sources. "
@@ -264,6 +309,7 @@ omit only when no semantic extraction is useful.
                 "local_list": self.local_tools.list,
                 "local_read": self.local_tools.read,
                 "web_research": self._web_research,
+                "engineering_calculate": self._engineering_calculate,
             }
         )
         if isinstance(memory, GitHubMemory):
@@ -277,6 +323,25 @@ omit only when no semantic extraction is useful.
                     "github_search": self.github_tools.search_code,
                 }
             )
+
+    @staticmethod
+    def _engineering_calculate(
+        calculation: str, **arguments: Any
+    ) -> dict[str, Any]:
+        """Dispatch only to deterministic ANNE-owned engineering formulas."""
+        try:
+            if calculation == "pv":
+                result = preliminary_pv_screening(**arguments)
+            elif calculation == "bess":
+                result = preliminary_bess_screening(**arguments)
+            else:
+                return {
+                    "ok": False,
+                    "error": "calculation must be either 'pv' or 'bess'",
+                }
+            return {"ok": True, "result": result.to_dict()}
+        except (InputValidationError, TypeError) as exc:
+            return {"ok": False, "error": str(exc)}
 
     def _create_research_plan(self, query: str) -> ResearchPlan:
         """Create a bounded, inspectable plan before web research executes."""
