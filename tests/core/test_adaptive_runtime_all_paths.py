@@ -1,7 +1,9 @@
+from dataclasses import dataclass
 from pathlib import Path
 
 from anne.core.decision_loop import DecisionLoop
 from anne.core.resource_profile import ResourceProfile
+from anne.core.cognitive_orchestrator import OrchestrationResult
 
 
 def test_prepare_runtime_profile_updates_orchestrator(tmp_path: Path) -> None:
@@ -23,11 +25,16 @@ def test_run_cognitive_prepares_adaptive_profile(tmp_path: Path, monkeypatch) ->
         "_prepare_runtime_profile",
         lambda raw_input: calls.append(raw_input) or ResourceProfile.minimal(),
     )
-    monkeypatch.setattr(loop.orchestrator, "run", lambda *args, **kwargs: "result")
+    @dataclass(frozen=True)
+    class FakeResult:
+        resource_feedback: dict | None = None
+
+    monkeypatch.setattr(loop.orchestrator, "run", lambda *args, **kwargs: FakeResult())
 
     result = loop.run_cognitive("cognitive route")
 
-    assert result == "result"
+    assert isinstance(result, FakeResult)
+    assert result.resource_feedback is not None
     assert calls == ["cognitive route"]
 
 
