@@ -95,6 +95,8 @@ class UsbSecurityGate:
         expected_key_id: str | None = None,
     ) -> UsbAuthorization:
         mount = Path(usb_mount).expanduser().resolve()
+        if not mount.is_dir():
+            raise FileNotFoundError(f"USB mount is not available: {mount}")
         token_path = mount / self.key_filename
         if not token_path.is_file():
             raise PermissionError("ANNE authorization USB token is missing")
