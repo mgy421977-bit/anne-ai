@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/adaptive-runtime-feedback-loop]
   pull_request:
     branches: [main]
 
