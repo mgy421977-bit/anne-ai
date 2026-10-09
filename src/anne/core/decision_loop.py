@@ -12,12 +12,12 @@ from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
 from anne.core.compute_router import ComputeEnvironment, ComputeRouter, ExecutionMode
 from anne.core.fractal_loop import FractalBudget, FractalResult, FractalThinkingLoop
 from anne.core.pipeline import AnnePipeline
-from anne.core.resource_profile import ResourceProfile
-from anne.core.resource_optimizer import ResourceOptimizer, SystemResourceProbe
 from anne.core.resource_negotiator import ResourceNegotiator
-from anne.core.windows_execution import WindowsExecutionAdapter
+from anne.core.resource_optimizer import ResourceOptimizer, SystemResourceProbe
+from anne.core.resource_profile import ResourceProfile
 from anne.core.trace import CycleTrace, trace_from_runtime
 from anne.core.verification import ClaimVerifier
+from anne.core.windows_execution import WindowsExecutionAdapter
 from anne.memory.fractal_memory import FractalMemory
 from anne.mythos.candidate import TaskMode
 
