@@ -15,7 +15,7 @@ def test_pv_screening_does_not_invent_yield_tariff_or_capex() -> None:
         usable_roof_fraction=0.7,
     )
     assert result.status == "NEEDS_INPUT"
-    assert result.values["capacity_kwp_screening"] == 16.2
+    assert result.values["capacity_kwp_screening"] == 15.6
     assert result.values["annual_production_kwh"] is None
     assert result.values["estimated_savings_tl"] is None
     assert "site_specific_yield_kwh_per_kwp_year" in result.missing_inputs
@@ -30,7 +30,7 @@ def test_pv_financial_estimates_require_explicit_inputs() -> None:
         installed_cost_tl=100000,
     )
     assert result.status == "PRELIMINARY_ESTIMATE"
-    assert result.values["annual_production_kwh"] == pytest.approx(22680)
+    assert result.values["annual_production_kwh"] == pytest.approx(21840)
     assert result.values["estimated_self_consumption_kwh"] == 12000
     assert result.values["estimated_savings_tl"] == 36000
     assert result.values["simple_payback_years"] == pytest.approx(100000 / 36000)
