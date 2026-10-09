@@ -7,11 +7,12 @@ Windows drivers or the host scheduler.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Final
+
 import ctypes
 import os
 import platform
-from dataclasses import dataclass
-from typing import Final
 
 from anne.core.resource_profile import ResourceProfile
 
