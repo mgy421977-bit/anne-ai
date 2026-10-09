@@ -6,9 +6,9 @@ does not directly change OS scheduling or grant execution authority.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from time import monotonic
-from collections.abc import Callable
 from typing import TypeVar
 
 from anne.core.resource_optimizer import RuntimeResourceSnapshot
