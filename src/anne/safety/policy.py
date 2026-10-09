@@ -82,7 +82,7 @@ class ToolPolicy:
             "local_list",
             "local_read",
             "web_research",
-            "engineering_calculate",
+            "deterministic_calculate",
         }
         self.allowed_tools = set(defaults if allowed_tools is None else allowed_tools)
         read_only = ToolMetadata(
