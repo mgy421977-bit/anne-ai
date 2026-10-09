@@ -409,7 +409,7 @@ omit only when no semantic extraction is useful.
                     "passage": entry.passage,
                     "support": entry.support,
                     "retrieved_at": entry.retrieved_at,
-                    "freshness": (EvidenceFreshness.assess(entry.retrieved_at, reference_time=datetime.now(UTC).isoformat(), policy=self.freshness_policy).as_dict() if self.freshness_policy is not None and entry.retrieved_at else None),
+                    "freshness": (EvidenceFreshness.assess(entry.retrieved_at, reference_time=datetime.now(UTC).isoformat(), policy=getattr(self, "freshness_policy", None)).as_dict() if getattr(self, "freshness_policy", None) is not None and entry.retrieved_at else None),
                     "verification_sources": list(verification.sources),
                     "verification_reason": verification.reason,
                 }
