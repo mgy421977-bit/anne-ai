@@ -62,7 +62,10 @@ class WindowsExecutionAdapter:
         if platform.system() != "Windows":
             return WindowsExecutionCapabilities(False, False, False, False)
 
-        kernel32 = ctypes.windll.kernel32
+        windll = getattr(ctypes, "windll", None)
+        if windll is None:
+            return WindowsExecutionCapabilities(False, False, False, False)
+        kernel32 = windll.kernel32
         return WindowsExecutionCapabilities(
             windows=True,
             priority_control=bool(kernel32.SetPriorityClass),
@@ -141,7 +144,15 @@ class WindowsExecutionAdapter:
                 "Platform changed or Windows controls are unavailable",
             )
 
-        kernel32 = ctypes.windll.kernel32
+        windll = getattr(ctypes, "windll", None)
+        if windll is None:
+            return WindowsExecutionResult(
+                "SKIPPED",
+                (),
+                ("windows_controls",),
+                "Windows API bindings are unavailable in this runtime",
+            )
+        kernel32 = windll.kernel32
         process = kernel32.GetCurrentProcess()
         applied: list[str] = []
         skipped: list[str] = []
