@@ -370,7 +370,7 @@ class DecisionLoop:
         if decision.status == "REDUCE_LOAD":
             self._feedback_capacity_limit = self._capacity(decision.profile)
             self._stable_feedback_observations = 0
-        elif self._feedback_capacity_limit is not None:
+        elif decision.status == "HOLD" and self._feedback_capacity_limit is not None:
             self._stable_feedback_observations += 1
             if self._stable_feedback_observations >= 3:
                 self._feedback_capacity_limit = min(
