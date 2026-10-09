@@ -396,6 +396,15 @@ omit only when no semantic extraction is useful.
                     status=EvidenceStatus(verification.status.value),
                 )
 
+            freshness = None
+            freshness_policy = getattr(self, "freshness_policy", None)
+            if isinstance(freshness_policy, FreshnessPolicy) and entry.retrieved_at:
+                freshness = EvidenceFreshness.assess(
+                    entry.retrieved_at,
+                    reference_time=datetime.now(UTC).isoformat(),
+                    policy=freshness_policy,
+                ).as_dict()
+
             serialized.append(
                 {
                     "source": entry.source,
@@ -409,7 +418,7 @@ omit only when no semantic extraction is useful.
                     "passage": entry.passage,
                     "support": entry.support,
                     "retrieved_at": entry.retrieved_at,
-                    "freshness": (EvidenceFreshness.assess(entry.retrieved_at, reference_time=datetime.now(UTC).isoformat(), policy=getattr(self, "freshness_policy", None)).as_dict() if getattr(self, "freshness_policy", None) is not None and entry.retrieved_at else None),
+                    "freshness": freshness,
                     "verification_sources": list(verification.sources),
                     "verification_reason": verification.reason,
                 }
