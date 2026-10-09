@@ -96,6 +96,7 @@ class DecisionLoop:
         decision: ResourceDecision,
         route: Any,
         negotiation: Any,
+        optimization: Any,
         execution_plan: Any,
     ) -> dict[str, Any]:
         environment = route.selected_environment
@@ -247,6 +248,7 @@ class DecisionLoop:
             resource_decision,
             route,
             negotiation,
+            optimization,
             execution_plan,
         )
         if not result.fail_fast.passed:
