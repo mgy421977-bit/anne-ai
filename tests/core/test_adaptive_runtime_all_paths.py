@@ -55,7 +55,7 @@ def test_run_fractal_prepares_adaptive_profile(tmp_path: Path, monkeypatch) -> N
 
     class FakeFractalThinkingLoop:
         def __init__(self, *args, **kwargs):
-            assert kwargs["resource_profile"] == ResourceProfile.scaled(2)
+            assert kwargs["resource_profile"] == ResourceProfile.scaled(capacity=2)
 
         def run(self, *args, **kwargs):
             return FakeFractalResult()
