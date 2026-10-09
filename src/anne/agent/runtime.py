@@ -13,11 +13,7 @@ from typing import Any, cast
 
 from anne.agent.github_memory import GitHubMemory
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
-from anne.engineering.calculations import (
-    InputValidationError,
-    preliminary_bess_screening,
-    preliminary_pv_screening,
-)
+from anne.calculation.engine import CalculationError, DeterministicCalculationEngine
 from anne.core.cognitive_runtime import (
     CognitiveWorkspace,
     HierarchicalPlanner,
@@ -215,18 +211,24 @@ omit only when no semantic extraction is useful.
         {
             "type": "function",
             "function": {
-                "name": "engineering_calculate",
+                "name": "deterministic_calculate",
                 "description": (
-                    "Run ANNE's deterministic preliminary PV or BESS calculations. "
-                    "Supply explicit numeric inputs; never invent missing assumptions. "
-                    "Returns values, assumptions, missing inputs and warnings."
+                    "Run ANNE's general deterministic calculation engine. "
+                    "Use arithmetic_expression for arithmetic, or pv_screening / "
+                    "bess_screening for domain formulas. Never invent inputs. "
+                    "Returns a trace with inputs, outputs, assumptions, warnings and status."
                 ),
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "calculation": {
+                        "operation": {
                             "type": "string",
-                            "enum": ["pv", "bess"],
+                            "enum": ["arithmetic_expression", "pv_screening", "bess_screening"],
+                        },
+                        "expression": {"type": "string"},
+                        "variables": {
+                            "type": "object",
+                            "additionalProperties": {"type": "number"},
                         },
                         "roof_area_m2": {"type": "number"},
                         "panel_power_w": {"type": "number"},
@@ -242,7 +244,7 @@ omit only when no semantic extraction is useful.
                         "depth_of_discharge": {"type": "number"},
                         "discharge_efficiency": {"type": "number"},
                     },
-                    "required": ["calculation"],
+                    "required": ["operation"],
                     "additionalProperties": False,
                 },
             },
@@ -309,7 +311,7 @@ omit only when no semantic extraction is useful.
                 "local_list": self.local_tools.list,
                 "local_read": self.local_tools.read,
                 "web_research": self._web_research,
-                "engineering_calculate": self._engineering_calculate,
+                "deterministic_calculate": self._deterministic_calculate,
             }
         )
         if isinstance(memory, GitHubMemory):
@@ -325,22 +327,11 @@ omit only when no semantic extraction is useful.
             )
 
     @staticmethod
-    def _engineering_calculate(
-        calculation: str, **arguments: Any
-    ) -> dict[str, Any]:
-        """Dispatch only to deterministic ANNE-owned engineering formulas."""
+    def _deterministic_calculate(operation: str, **inputs: Any) -> dict[str, Any]:
+        """Run ANNE's general deterministic calculation engine."""
         try:
-            if calculation == "pv":
-                result = preliminary_pv_screening(**arguments)
-            elif calculation == "bess":
-                result = preliminary_bess_screening(**arguments)
-            else:
-                return {
-                    "ok": False,
-                    "error": "calculation must be either 'pv' or 'bess'",
-                }
-            return {"ok": True, "result": result.to_dict()}
-        except (InputValidationError, TypeError) as exc:
+            return DeterministicCalculationEngine().calculate(operation, **inputs)
+        except (CalculationError, InputValidationError, TypeError, ValueError) as exc:
             return {"ok": False, "error": str(exc)}
 
     def _create_research_plan(self, query: str) -> ResearchPlan:
