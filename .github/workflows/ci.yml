@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, feat/adaptive-runtime-feedback-loop]
   pull_request:
-    branches: [main]
+    branches: [main, feat/apply-selected-strategy-to-retry]
 
 permissions:
   contents: read
