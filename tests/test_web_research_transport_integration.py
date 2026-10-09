@@ -162,9 +162,7 @@ def test_web_research_applies_caller_defined_freshness_policy() -> None:
                     kind="web",
                     provenance="https://example.test/source",
                     confidence=0.8,
-                    retrieved_at=datetime(
-                        2026, 9, 29, 4, 0, tzinfo=timezone.utc
-                    ).isoformat(),
+                    retrieved_at=(datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
                 )
             ]
 
