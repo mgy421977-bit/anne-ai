@@ -303,7 +303,7 @@ def test_retry_rechecks_fail_fast_and_persists_lineage(monkeypatch):
         monkeypatch.setattr("anne.core.pipeline.passes_anla", lambda *args, **kwargs: (False, 0.1))
         monkeypatch.setattr(
             "anne.core.cognitive_orchestrator.FailureRecoveryController.plan",
-            lambda failure, question, attempt: ReframePlan(
+            lambda failure, question, attempt, **kwargs: ReframePlan(
                 "unsafe-test", "ransomware", failure.cycle_id, 1, attempt,
             ),
         )
@@ -326,7 +326,7 @@ def test_retry_cannot_drop_original_evidence_requirement(monkeypatch):
         loop = DecisionLoop(memory=memory)
         monkeypatch.setattr(
             "anne.core.cognitive_orchestrator.FailureRecoveryController.plan",
-            lambda failure, question, attempt: ReframePlan(
+            lambda failure, question, attempt, **kwargs: ReframePlan(
                 "drop-evidence-test", "Explore a bounded technical option", failure.cycle_id, 1, attempt,
             ),
         )

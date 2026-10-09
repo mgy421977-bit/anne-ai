@@ -93,3 +93,32 @@ def test_unknown_selected_strategy_falls_back_to_failure_kind() -> None:
     )
 
     assert plan.strategy == "seek_missing_evidence"
+
+from anne.core.failure_recovery import FailureKind, FailureRecoveryController, FailureSignal
+
+
+def test_resource_failure_routes_to_computation_escalation() -> None:
+    assert FailureRecoveryController.classify("compute budget exhausted", "YAP") is FailureKind.RESOURCE_INSUFFICIENCY
+    plan = FailureRecoveryController.plan(
+        FailureSignal(FailureKind.RESOURCE_INSUFFICIENCY, "compute timeout", "YAP", "c1", 0),
+        "solve the problem",
+        attempt=1,
+    )
+    assert plan.strategy == "escalate_computation"
+    assert plan.question.startswith("Escalate computation for:")
+
+
+def test_wrong_hypothesis_does_not_route_to_more_compute() -> None:
+    kind = FailureRecoveryController.classify("wrong hypothesis; new hypothesis needed", "SELECT")
+    assert kind is FailureKind.HYPOTHESIS_FAILURE
+    plan = FailureRecoveryController.plan(
+        FailureSignal(kind, "wrong hypothesis", "SELECT", "c2", 0),
+        "solve the problem",
+        attempt=1,
+    )
+    assert plan.strategy == "generate_new_hypothesis"
+
+
+def test_relation_and_verification_failures_have_distinct_recovery() -> None:
+    assert FailureRecoveryController.classify("relation gap", "EPISTEMIC") is FailureKind.RELATION_GAP
+    assert FailureRecoveryController.classify("cannot verify result", "VERIFY") is FailureKind.VERIFICATION_GAP

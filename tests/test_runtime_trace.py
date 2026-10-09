@@ -44,7 +44,7 @@ def test_decision_loop_produces_trace_with_explicit_learning_context() -> None:
         lineage=("or_test",),
         stop_reason="agency_review",
     )
-    loop = DecisionLoop.__new__(DecisionLoop)
+    loop = DecisionLoop(memory_db_path=":memory:")
     loop.orchestrator = _FakeOrchestrator(orchestration)
 
     result = loop.run(
@@ -79,7 +79,7 @@ def test_decision_loop_does_not_fabricate_learning_context() -> None:
         lineage=("or_test_2",),
         stop_reason="bounded",
     )
-    loop = DecisionLoop.__new__(DecisionLoop)
+    loop = DecisionLoop(memory_db_path=":memory:")
     loop.orchestrator = _FakeOrchestrator(orchestration)
 
     result = loop.run("test")

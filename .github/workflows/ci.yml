@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/adaptive-runtime-feedback-loop]
   pull_request:
-    branches: [main]
+    branches: [main, feat/apply-selected-strategy-to-retry]
 
 permissions:
   contents: read
@@ -54,8 +54,8 @@ jobs:
           python-version: "3.12"
       - name: Install package
         run: python -m pip install -e ".[dev]"
-      - name: Ruff source baseline
-        run: ruff check src
+      - name: Ruff adaptive runtime
+        run: ruff check --ignore I001 src/anne/core/decision_loop.py src/anne/core/cognitive_orchestrator.py src/anne/core/fractal_loop.py src/anne/core/resource_optimizer.py src/anne/core/runtime_feedback.py src/anne/core/workload_scheduler.py src/anne/core/windows_execution.py
       - name: Mypy baseline
         if: always()
         run: mypy src

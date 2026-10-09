@@ -26,11 +26,7 @@ class ReEvaluationLearningAdapter:
             else cycle.verification.status.value
         ).upper()
 
-        if cycle.reactivated:
-            status = "SUCCESS"
-            stop_reason = "reevaluation_verified"
-            decision_status = "REACTIVATED"
-        elif verification_status == "CONFLICTING":
+        if verification_status == "CONFLICTING":
             status = "BOUNDED"
             stop_reason = "reevaluation_conflict"
             decision_status = "REVIEW"
@@ -38,6 +34,10 @@ class ReEvaluationLearningAdapter:
             status = "BOUNDED"
             stop_reason = "reevaluation_refuted"
             decision_status = "REVIEW"
+        elif cycle.reactivated:
+            status = "SUCCESS"
+            stop_reason = "reevaluation_verified"
+            decision_status = "REACTIVATED"
         elif cycle.research_result is not None and not cycle.research_result.evidence:
             status = "BOUNDED"
             stop_reason = "reevaluation_insufficient_evidence"

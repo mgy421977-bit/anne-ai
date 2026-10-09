@@ -61,6 +61,20 @@ class SemanticSupportEvaluator:
         if any(marker in normalized_passage for marker in self.INJECTION_MARKERS):
             return SupportStatus.UNCLEAR
         if normalized_claim in normalized_passage:
+            suffix = normalized_passage.split(normalized_claim, 1)[1].strip()
+            contradiction_suffixes = (
+                "is not true",
+                "not true",
+                "is false",
+                "is incorrect",
+                "is wrong",
+                "not supported",
+            )
+            if any(
+                suffix == marker or suffix.startswith(marker + " ")
+                for marker in contradiction_suffixes
+            ):
+                return SupportStatus.CONTRADICTS
             return SupportStatus.SUPPORTS
         capital = re.fullmatch(r"(.+?) is the capital of (.+?)\.?", normalized_claim)
         if capital:
