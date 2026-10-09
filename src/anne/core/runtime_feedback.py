@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from time import monotonic
-from typing import Callable, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 from anne.core.resource_optimizer import RuntimeResourceSnapshot
 from anne.core.resource_profile import ResourceProfile
