@@ -326,7 +326,7 @@ def test_retry_cannot_drop_original_evidence_requirement(monkeypatch):
         loop = DecisionLoop(memory=memory)
         monkeypatch.setattr(
             "anne.core.cognitive_orchestrator.FailureRecoveryController.plan",
-            lambda failure, question, attempt: ReframePlan(
+            lambda failure, question, attempt, **kwargs: ReframePlan(
                 "drop-evidence-test", "Explore a bounded technical option", failure.cycle_id, 1, attempt,
             ),
         )
