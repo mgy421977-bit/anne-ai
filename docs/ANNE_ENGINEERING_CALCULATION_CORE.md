@@ -1,11 +1,16 @@
-# ANNE engineering calculation core — initial scope
+# ANNE general deterministic calculation architecture
 
 ## Decision
-For the initial Vitavolt workflow, ANNE owns the preliminary deterministic PV/BESS
-calculations. VITA Engine remains a future downstream engineering integration and
-is not required to run these first calculations.
+ANNE owns a domain-neutral deterministic calculation engine. It provides a safe arithmetic-expression evaluator and a registry for domain-specific formula modules. PV and BESS are the first registered domains, not the architecture's boundary. VITA Engine remains a possible downstream engineering integration and is not required for ANNE's calculations.
 
-## Current scope
+## Architecture layers
+- **Input contract:** typed operation, explicit inputs, units and validation.
+- **Deterministic core:** safe arithmetic expressions and formula dispatch.
+- **Domain modules:** independently testable formula groups registered by name.
+- **Trace and memory:** preserve inputs, outputs, assumptions, missing inputs, warnings, status and version context for reproducibility.
+- **Agent interface:** the model selects/requests a calculation and explains results; it does not replace the calculation core.
+
+## Initial domain modules
 - Rooftop PV geometric screening from explicitly supplied roof area, panel power,
   panel dimensions and usable roof fraction.
 - Optional production, annual-energy ceiling, savings and simple-payback estimates
@@ -14,12 +19,12 @@ is not required to run these first calculations.
 - Input validation, explicit missing inputs, assumptions and warnings.
 
 ## Runtime integration and durable rules
-The OpenRouter tool interface exposes this layer as `engineering_calculate`.
+The OpenRouter tool interface exposes the general engine as `deterministic_calculate`, with operation names and a common trace format.
 The tool is registered in ANNE's allowlist and still passes through the existing
 AgencyGate authorization path. It is read-only and has no external side effects.
 
 The following are durable architecture rules, not optional prompting preferences:
-1. Arithmetic is performed by deterministic Python formulas, not guessed by an LLM.
+1. Arithmetic is performed by a restricted deterministic evaluator or registered Python formulas, never guessed by an LLM.
 2. Preserve inputs, units, outputs, assumptions, missing inputs, warnings and status.
 3. Never silently fill missing values with typical or plausible defaults.
 4. Recompute when relevant inputs change; a remembered prior result is not a current result.
