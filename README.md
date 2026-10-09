@@ -94,6 +94,107 @@ Research      ≠ Execution
 
 This separation is a core architectural constraint.
 
+## Adaptive Runtime & Hardware Independence
+
+ANNE is designed around a fundamental architectural principle:
+
+> **ANNE's cognitive architecture is hardware-independent. Its execution strategy adapts to the computational environment in which it runs.**
+
+ANNE does not define intelligence by the machine, operating system, processor, accelerator, or model available to it. These are execution resources—not the cognitive identity of the system.
+
+### Architectural separation
+
+```text
+                 ANNE COGNITIVE CORE
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+       Cognition     Epistemics      Memory
+          │              │              │
+          └──────────────┼──────────────┘
+                         │
+                ADAPTIVE RUNTIME
+                         │
+        ┌────────────────┼────────────────┐
+        │                │                │
+      CPU/RAM          GPU/CPU      Other backends
+        │                │                │
+        └────────────────┼────────────────┘
+                         │
+                 Execution Strategy
+```
+
+The cognitive architecture remains stable while the execution strategy adapts to available capabilities.
+
+ANNE therefore separates:
+
+**1. Cognitive Core** — the stable cognitive architecture: perception, ambiguity handling, epistemic analysis, memory, metacognition, verification, reasoning, and agency boundaries.
+
+**2. Epistemic Sandbox** — a bounded internal workspace where ANNE can relate newly discovered findings, compare hypotheses, detect support and contradiction, identify shared mechanisms, explore common solution spaces, generate novel hypothesis candidates, and recursively reevaluate relationships. Sandbox results remain epistemically bounded until independently verified.
+
+**3. Adaptive Runtime** — the runtime discovers available computational resources and selects an appropriate execution strategy. CPU/RAM, GPU acceleration, local models, hosted models, and future specialized backends may be used according to capability and resource constraints.
+
+**4. Agency Layer** — computational capability does not imply authorization. Reasoning may determine that an action is possible or useful without granting permission to execute it. External actions remain subject to verification, authority, and safety boundaries.
+
+### Resource-aware execution
+
+The same cognitive operation may have different implementations depending on available resources:
+
+```text
+Relation Analysis
+    ├── lightweight CPU graph traversal
+    ├── vector / embedding acceleration
+    ├── parallel GPU evaluation
+    └── future specialized computational backend
+```
+
+A low-resource machine may rely primarily on CPU and RAM. A GPU-equipped workstation may accelerate model inference or parallel evaluation. A future heterogeneous or quantum-capable environment may expose additional computational backends.
+
+The underlying epistemic semantics remain unchanged.
+
+> **ANNE adapts its way of executing cognition, not the principles by which cognition is evaluated.**
+
+A more powerful processor, model, or computational backend must provide more capability—not a different definition of truth, evidence, authority, or reality.
+
+### Environment discovery
+
+The long-term runtime goal is for ANNE to discover its execution environment and construct an appropriate runtime profile:
+
+```text
+ENVIRONMENT DISCOVERY
+        ↓
+CPU / RAM / GPU / STORAGE
+        ↓
+OPERATING SYSTEM
+        ↓
+AVAILABLE SOFTWARE
+        ↓
+COMPUTATIONAL BACKENDS
+        ↓
+RESOURCE PROFILE
+        ↓
+ADAPTIVE EXECUTION STRATEGY
+        ↓
+ANNE RUNTIME
+```
+
+This is a **long-term architectural goal**, not a claim that fully autonomous environment provisioning is already implemented.
+
+The same cognitive architecture should ultimately be portable across personal computers, workstations, servers, edge systems, cloud environments, heterogeneous compute environments, and potentially future quantum-classical systems.
+
+### Core invariants
+
+```text
+Capability          ≠ Authorization
+Reasoning           ≠ Action
+Hypothesis          ≠ Fact
+Simulation          ≠ Reality
+Evidence            ≠ Conclusion
+Computational power ≠ Epistemic authority
+```
+
+These invariants are preserved independently of hardware or model provider.
+
 ---
 
 ## Bounded cognitive feedback loop
@@ -645,6 +746,7 @@ See:
 | Language corroboration through re-evaluation | Implemented / bounded |
 | Local/offline runtime | Implemented |
 | Model-provider abstraction | Implemented |
+| Adaptive / hardware-independent runtime | Architectural principle / long-term goal |
 | Safety and agency controls | Implemented / conservative |
 | Agentic safety invariants | Implemented / bounded; evaluation pending |
 | Explicit historical memory relations | Implemented / bounded |
