@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Iterable
+from collections.abc import Iterable
 
 from anne.core.resource_profile import ResourceProfile, Substrate
 
