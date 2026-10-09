@@ -6,10 +6,10 @@ priority while background jobs yield under host pressure.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import IntEnum
 from time import monotonic
-from collections.abc import Callable
 
 
 class WorkloadPriority(IntEnum):
