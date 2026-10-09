@@ -35,3 +35,13 @@ def test_capabilities_are_false_off_windows(monkeypatch) -> None:
     capabilities = WindowsExecutionAdapter().capabilities()
     assert capabilities.windows is False
     assert capabilities.any_control is False
+
+
+def test_invalid_cpu_affinity_mask_is_rejected(monkeypatch) -> None:
+    monkeypatch.setattr("anne.core.windows_execution.platform.system", lambda: "Windows")
+    plan = WindowsExecutionAdapter.plan(
+        ResourceProfile.minimal(),
+        cpu_mask=0,
+    )
+    assert plan.status == "INVALID"
+    assert plan.affinity_mask is None
