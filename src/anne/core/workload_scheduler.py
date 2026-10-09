@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import IntEnum
 from time import monotonic
-from typing import Callable
+from collections.abc import Callable
 
 
 class WorkloadPriority(IntEnum):
