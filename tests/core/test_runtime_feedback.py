@@ -70,3 +70,23 @@ def test_invalid_latency_budget_is_rejected() -> None:
 
     assert decision.status == "INVALID_BUDGET"
     assert decision.profile == profile
+
+
+def test_capacity_recovers_gradually_after_three_stable_observations(tmp_path) -> None:
+    loop = __import__("anne.core.decision_loop", fromlist=["DecisionLoop"]).DecisionLoop(
+        resource_profile=ResourceProfile.scaled(capacity=4),
+        memory_db_path=str(tmp_path / "recovery.db"),
+    )
+    loop._current_target_capacity = 4
+    pressure = RuntimeMeasurement(0.2, 0.2, 0.5, 0.8, 0.7)
+    stable = RuntimeMeasurement(0.2, 0.2, 0.2, 0.8, 0.8)
+
+    reduced = loop._record_runtime_feedback(ResourceProfile.scaled(capacity=4), pressure)
+    assert reduced["feedback_capacity_limit"] == 3
+
+    loop._record_runtime_feedback(ResourceProfile.scaled(capacity=4), stable)
+    loop._record_runtime_feedback(ResourceProfile.scaled(capacity=4), stable)
+    recovered = loop._record_runtime_feedback(ResourceProfile.scaled(capacity=4), stable)
+
+    assert recovered["feedback_capacity_limit"] is None
+    assert recovered["stable_observations_toward_recovery"] == 0
