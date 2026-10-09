@@ -67,15 +67,27 @@ class AdaptiveLearningCoordinator:
         experiences = (*prior_experiences, experience)
 
         decision = self.strategy_adapter.adapt(strategy, experiences)
-        contextual_choice = self.contextual_selector.select(
-            StrategyContext(
-                experience.failure_class,
-                experience.context_key,
-                experience.context_conditions,
-            ),
-            experiences,
-            tuple(dict.fromkeys((strategy, decision.strategy, *(item.strategy for item in experiences))),),
-        )
+        if not experience.context_key or not experience.context_conditions:
+            contextual_choice = ContextualStrategyChoice(
+                decision.strategy,
+                "explicit_context_required_for_observation_reuse",
+                (),
+                False,
+            )
+        else:
+            contextual_choice = self.contextual_selector.select(
+                StrategyContext(
+                    experience.failure_class,
+                    experience.context_key,
+                    experience.context_conditions,
+                ),
+                experiences,
+                tuple(
+                    dict.fromkeys(
+                        (strategy, decision.strategy, *(item.strategy for item in experiences))
+                    )
+                ),
+            )
         if (
             decision.action != "ABSTAIN"
             and (experience.context_key or experience.context_conditions)
