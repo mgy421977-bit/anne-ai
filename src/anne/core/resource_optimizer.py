@@ -12,9 +12,9 @@ than assuming that all machine resources belong to ANNE.
 
 from __future__ import annotations
 
+import os
 from contextlib import suppress
 from dataclasses import dataclass
-import os
 from pathlib import Path
 
 from anne.core.resource_profile import ResourceProfile
