@@ -79,14 +79,6 @@ class ContextualStrategySelector:
         candidates: tuple[str, ...],
     ) -> ContextualStrategyChoice:
         allowed = tuple(dict.fromkeys(candidates))[: self.max_candidates]
-        if not context.context_key or not context.conditions:
-            fallback = allowed[0] if allowed else "reassess_without_assuming_cause"
-            return ContextualStrategyChoice(
-                fallback,
-                "explicit_context_required_for_observation_reuse",
-                (),
-                False,
-            )
         bounded_experiences = experiences[-self.max_experiences :]
         observations: list[StrategyCandidate] = []
 
