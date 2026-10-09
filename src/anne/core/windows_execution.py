@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import ctypes
-import os
 import platform
 from typing import Final
 
