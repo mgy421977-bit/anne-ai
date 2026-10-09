@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+from anne.learning.web_research import WebResearcher
 from anne.learning.web_research_transport import (
     CacheDisposition,
     CachePolicy,
@@ -171,9 +172,7 @@ def test_web_research_applies_caller_defined_freshness_policy() -> None:
     agent.web_researcher = WebResearcher(
         transport=WebResearchTransport(
             fetcher=lambda _: "unused",
-            clock=lambda: datetime(
-                2026, 9, 29, 4, 0, tzinfo=timezone.utc
-            ),
+            clock=lambda: datetime.now(timezone.utc),
         )
     )
     agent.response_verifier = None
