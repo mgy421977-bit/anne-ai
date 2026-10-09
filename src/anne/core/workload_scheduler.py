@@ -41,7 +41,7 @@ class WorkloadScheduler:
         if max_queue < 1:
             raise ValueError("max_queue must be positive")
         self.max_queue = max_queue
-        self._queue: list[WorkItem] = ()
+        self._queue: list[WorkItem] = []
 
     def submit(self, item: WorkItem) -> None:
         if len(self._queue) >= self.max_queue:
