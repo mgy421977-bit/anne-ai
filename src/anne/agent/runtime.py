@@ -331,7 +331,7 @@ omit only when no semantic extraction is useful.
         """Run ANNE's general deterministic calculation engine."""
         try:
             return DeterministicCalculationEngine().calculate(operation, **inputs)
-        except (CalculationError, InputValidationError, TypeError, ValueError) as exc:
+        except (CalculationError, TypeError, ValueError) as exc:
             return {"ok": False, "error": str(exc)}
 
     def _create_research_plan(self, query: str) -> ResearchPlan:
