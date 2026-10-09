@@ -46,7 +46,7 @@ def test_run_fractal_prepares_adaptive_profile(tmp_path: Path, monkeypatch) -> N
     monkeypatch.setattr(
         loop,
         "_prepare_runtime_profile",
-        lambda raw_input: calls.append(raw_input) or ResourceProfile.scaled(2),
+        lambda raw_input: calls.append(raw_input) or ResourceProfile.scaled(capacity=2),
     )
 
     @dataclass
