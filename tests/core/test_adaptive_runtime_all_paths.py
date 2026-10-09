@@ -3,7 +3,6 @@ from pathlib import Path
 
 from anne.core.decision_loop import DecisionLoop
 from anne.core.resource_profile import ResourceProfile
-from anne.core.cognitive_orchestrator import OrchestrationResult
 
 
 def test_prepare_runtime_profile_updates_orchestrator(tmp_path: Path) -> None:
@@ -50,16 +49,21 @@ def test_run_fractal_prepares_adaptive_profile(tmp_path: Path, monkeypatch) -> N
         lambda raw_input: calls.append(raw_input) or ResourceProfile.scaled(2),
     )
 
+    @dataclass
+    class FakeFractalResult:
+        resource_feedback: dict | None = None
+
     class FakeFractalThinkingLoop:
         def __init__(self, *args, **kwargs):
             assert kwargs["resource_profile"] == ResourceProfile.scaled(2)
 
         def run(self, *args, **kwargs):
-            return "fractal-result"
+            return FakeFractalResult()
 
     monkeypatch.setattr(decision_loop_module, "FractalThinkingLoop", FakeFractalThinkingLoop)
 
     result = loop.run_fractal("fractal route")
 
-    assert result == "fractal-result"
+    assert isinstance(result, FakeFractalResult)
+    assert result.resource_feedback is not None
     assert calls == ["fractal route"]
