@@ -333,6 +333,28 @@ class DecisionLoop:
             trace,
         )
 
+
+    def _prepare_runtime_profile(self, raw_input: str) -> ResourceProfile:
+        """Prepare a bounded resource profile for every public execution path."""
+        decision = self.resource_planner.plan(
+            raw_input,
+            experiences=self._experience_history,
+            baseline=self.resource_profile if self._explicit_resource_profile else None,
+        )
+        snapshot = self.resource_probe.snapshot()
+        optimization = self.resource_optimizer.optimize(decision.profile, snapshot)
+        profile = self.resource_optimizer.apply(decision.profile, optimization)
+        negotiation = self.resource_negotiator.negotiate(profile, optimization, snapshot)
+        profile = negotiation.effective_profile
+        self.resource_profile = profile
+        self.orchestrator.resource_profile = profile
+        self.orchestrator.candidate_batch_size = profile.max_mitos_candidates
+        # Routing is observational: a deferred route never grants permission
+        # to execute remotely or provisions additional infrastructure.
+        self.compute_router.route(profile, self.execution_environments)
+        self.windows_execution.plan(profile, background=False)
+        return profile
+
     def run_cognitive(
         self,
         raw_input: str,
@@ -342,6 +364,7 @@ class DecisionLoop:
         seed: int | None = None,
         verifier: ClaimVerifier | None = None,
     ) -> OrchestrationResult:
+        self._prepare_runtime_profile(raw_input)
         return self.orchestrator.run(
             raw_input,
             parties=parties,
@@ -362,6 +385,7 @@ class DecisionLoop:
         task_mode: TaskMode = TaskMode.GENERAL,
         verifier: ClaimVerifier | None = None,
     ) -> FractalResult:
+        profile = self._prepare_runtime_profile(raw_input)
         people = list(parties) if parties else [Consciousness(id="user")]
         text_claim = claim if claim is not None else raw_input
         hyp = hypothesis or Hypothesis(
@@ -375,7 +399,7 @@ class DecisionLoop:
             self.memory,
             self.pipeline,
             budget=budget,
-            resource_profile=self.resource_profile,
+            resource_profile=profile,
             claim_verifier=verifier,
         ).run(
             raw_input,
