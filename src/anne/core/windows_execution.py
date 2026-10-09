@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import ctypes
+import os
 import platform
 from typing import Final
 
@@ -76,6 +77,14 @@ class WindowsExecutionAdapter:
         background: bool = False,
         cpu_mask: int | None = None,
     ) -> WindowsExecutionPlan:
+        if cpu_mask is not None and cpu_mask <= 0:
+            return WindowsExecutionPlan(
+                status="INVALID",
+                requested_capacity=max(profile.cpu_units, profile.memory_units, profile.reasoning_budget),
+                priority=None,
+                affinity_mask=None,
+                reason="CPU affinity mask must be a positive bitmask",
+            )
         if platform.system() != "Windows":
             return WindowsExecutionPlan(
                 status="UNAVAILABLE",
@@ -144,7 +153,11 @@ class WindowsExecutionAdapter:
                 skipped.append("priority")
 
         if plan.affinity_mask is not None:
-            if kernel32.SetProcessAffinityMask(process, ctypes.c_size_t(plan.affinity_mask)):
+            available_cpus = max(1, os.cpu_count() or 1)
+            allowed_mask = (1 << available_cpus) - 1
+            if plan.affinity_mask <= 0 or plan.affinity_mask & ~allowed_mask:
+                skipped.append("affinity:invalid_mask")
+            elif kernel32.SetProcessAffinityMask(process, ctypes.c_size_t(plan.affinity_mask)):
                 applied.append(f"affinity:{plan.affinity_mask:#x}")
             else:
                 skipped.append("affinity")
