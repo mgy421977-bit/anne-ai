@@ -8,8 +8,8 @@ from anne.core.resource_profile import ResourceProfile, Substrate
 from anne.memory.fractal_memory import FractalMemory
 
 
-def test_decision_loop_defaults_to_minimal_profile() -> None:
-    loop = DecisionLoop()
+def test_decision_loop_defaults_to_minimal_profile(tmp_path) -> None:
+    loop = DecisionLoop(memory=FractalMemory(tmp_path / "anne.db"))
     assert loop.resource_profile == ResourceProfile.minimal()
     assert loop.orchestrator.candidate_batch_size == 2
 
