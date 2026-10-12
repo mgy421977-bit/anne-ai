@@ -14,6 +14,14 @@ class HissetStatus(StrEnum):
     INSUFFICIENT = "insufficient"
 
 
+class RelationPresence(StrEnum):
+    """Evidence state for a stored empathy relation lookup."""
+
+    PRESENT = "present"
+    ABSENT = "absent"
+    UNKNOWN = "unknown"
+
+
 @dataclass(frozen=True)
 class HissetAssessment:
     """Immutable, non-authoritative HİSSET assessment."""
@@ -28,10 +36,20 @@ class HissetAssessment:
         if not 0.0 <= self.uncertainty <= 1.0:
             raise ValueError("HİSSET uncertainty must be between 0 and 1")
         for party_id, impact in self.party_impacts:
-            if not party_id.strip():
+            if not isinstance(party_id, str) or not party_id.strip():
                 raise ValueError("HİSSET party IDs are required")
             if not 0.0 <= impact <= 1.0:
                 raise ValueError("HİSSET impacts must be between 0 and 1")
+
+    def as_trace(self) -> dict[str, Any]:
+        """Return the single canonical serializable trace representation."""
+        return {
+            "status": self.status.value,
+            "uncertainty": self.uncertainty,
+            "reasons": list(self.reasons),
+            "provenance": list(self.provenance),
+            "party_impacts": dict(self.party_impacts),
+        }
 
 
 @dataclass
