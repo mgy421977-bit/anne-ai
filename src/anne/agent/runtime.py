@@ -48,9 +48,9 @@ from anne.runtime import AnneRuntime
 from anne.safety.policy import ToolMetadata, ToolPolicy, redact_sensitive
 from anne.semantics.core import frame_from_text
 from anne.semantics.structured import Ontology, parse_structured_frame
-from anne.tools.vita_engine import VitaEngineTool
 from anne.tools.github_repo import GitHubRepoTool
 from anne.tools.local_files import LocalFilesTool
+from anne.tools.vita_engine import VitaEngineTool
 
 
 _VITA_TOOL_SCHEMA: dict[str, Any] = {
