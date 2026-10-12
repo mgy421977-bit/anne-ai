@@ -851,6 +851,6 @@ Apache License 2.0 — see [`LICENSE`](LICENSE).
 
 ## Optional VITA-Engine tool bridge
 
-ANNE can optionally call Vitavolt's deterministic VITA-Engine core through the local bridge at `src/anne/tools/vita_engine.py`. It requires a trusted local VITA-Engine checkout configured with `VITA_ENGINE_PATH`. The bridge is not auto-registered into the full ANNE orchestration flow and is not a deployed connection yet.
+ANNE can optionally call Vitavolt's deterministic VITA-Engine core through the guarded tool at `src/anne/tools/vita_engine.py`. Set `VITA_ENGINE_PATH` or pass `vita_engine_path` to `AnneAgent` to register the tool schema and executor. This is local integration code, not a deployed connection; end-to-end verification is still required.
 
 See [VITA Engine Tool Bridge setup and safety boundaries](docs/VITA_ENGINE_TOOL_BRIDGE.md).
