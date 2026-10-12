@@ -10,7 +10,13 @@ from typing import Any
 
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
 from anne.core.anla_score import DEFAULT_TAU, MAX_ANLA_RETRIES, passes_anla
-from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
+from anne.core.cognitive_state import (
+    CognitiveState,
+    Consciousness,
+    HissetAssessment,
+    HissetStatus,
+    Hypothesis,
+)
 from anne.core.ethic_core import EthicCore
 from anne.core.evidence import EvidenceGate, evidence_status_from_verification
 from anne.core.fail_fast import FailFastGate, FailFastResult
@@ -261,6 +267,61 @@ class AnnePipeline:
                 "estimated_impact": round(impact, 3),
             }
         state.empathy_map = empathy_map
+        has_parties = bool(state.affected_consciousnesses)
+        has_relationship_pair = any(
+            c.id != other.id
+            for c in state.affected_consciousnesses
+            for other in state.affected_consciousnesses
+        )
+        relation_presence = getattr(self.memory, "has_empathy_relation", None)
+        relationship_data_known = bool(
+            has_relationship_pair
+            and callable(relation_presence)
+            and all(
+                bool(relation_presence(c.id, other.id))
+                for c in state.affected_consciousnesses
+                for other in state.affected_consciousnesses
+                if c.id != other.id
+            )
+        )
+        assessment_status = (
+            HissetStatus.AVAILABLE
+            if has_parties and relationship_data_known
+            else HissetStatus.INSUFFICIENT
+        )
+        if not has_parties:
+            reasons = ("No affected parties were supplied.",)
+        elif not has_relationship_pair:
+            reasons = ("A single party has no relation counterpart to assess.",)
+        elif not relationship_data_known:
+            reasons = (
+                "Relationship presence is unknown; the legacy relation API may return a fallback.",
+            )
+        elif state.ethic_score is None:
+            reasons = ("Ethical score is unavailable; impact uses the bounded fallback.",)
+        else:
+            reasons = (
+                "Observer-only assessment derived from existing ethical and relation signals.",
+            )
+        state.hisset_assessment = HissetAssessment(
+            status=assessment_status,
+            uncertainty=0.5 if assessment_status is HissetStatus.AVAILABLE else 1.0,
+            reasons=reasons,
+            provenance=("memory:empathy_map", "anla:ethic_score")
+            if state.ethic_score is not None
+            else ("memory:empathy_map",),
+            party_impacts=tuple(
+                (party_id, values["estimated_impact"])
+                for party_id, values in empathy_map.items()
+            ),
+        )
+        state.context_map["hisset_assessment"] = {
+            "status": state.hisset_assessment.status.value,
+            "uncertainty": state.hisset_assessment.uncertainty,
+            "reasons": list(state.hisset_assessment.reasons),
+            "provenance": list(state.hisset_assessment.provenance),
+            "party_impacts": dict(state.hisset_assessment.party_impacts),
+        }
         return state
 
     def yap(

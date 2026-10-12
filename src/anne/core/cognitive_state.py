@@ -3,7 +3,35 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any
+
+
+class HissetStatus(StrEnum):
+    """Bounded status for the observer-only HİSSET assessment."""
+
+    AVAILABLE = "available"
+    INSUFFICIENT = "insufficient"
+
+
+@dataclass(frozen=True)
+class HissetAssessment:
+    """Immutable, non-authoritative HİSSET assessment."""
+
+    status: HissetStatus
+    uncertainty: float
+    reasons: tuple[str, ...] = ()
+    provenance: tuple[str, ...] = ()
+    party_impacts: tuple[tuple[str, float], ...] = ()
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.uncertainty <= 1.0:
+            raise ValueError("HİSSET uncertainty must be between 0 and 1")
+        for party_id, impact in self.party_impacts:
+            if not party_id.strip():
+                raise ValueError("HİSSET party IDs are required")
+            if not 0.0 <= impact <= 1.0:
+                raise ValueError("HİSSET impacts must be between 0 and 1")
 
 
 @dataclass
@@ -82,6 +110,7 @@ class CognitiveState:
 
     # HİSSET
     empathy_map: dict[str, Any] = field(default_factory=dict)
+    hisset_assessment: HissetAssessment | None = None
     affected_consciousnesses: list[Consciousness] = field(default_factory=list)
 
     # YAP
