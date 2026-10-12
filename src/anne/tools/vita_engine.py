@@ -43,7 +43,10 @@ class VitaEngineTool:
         handler = getattr(adapter, "handle_anne_request", None)
         if not callable(handler):
             raise RuntimeError("Configured VITA adapter has no callable request handler")
-        return handler(request)
+        result = handler(request)
+        if not isinstance(result, dict):
+            raise RuntimeError("VITA adapter returned a non-object response")
+        return {str(key): value for key, value in result.items()}
 
 
 __all__ = ["VitaEngineTool"]
