@@ -2,14 +2,14 @@
 
 ## Status
 
-A small optional Python bridge is implemented at `src/anne/tools/vita_engine.py`. It lets an ANNE host process invoke the VITA-Engine's allow-listed in-process adapter when both repositories are checked out locally. It does **not** register itself automatically in every ANNE runtime, start a server, or create a deployed/live connection by itself.
+A small optional Python bridge is implemented at `src/anne/tools/vita_engine.py` and registered as a guarded tool in `AnneAgent` when a trusted local VITA checkout is configured. It does not start a server or create a deployed/live connection by itself.
 
 ## Local setup
 
 1. Check out VITA-Engine from a trusted source.
 2. Install VITA-Engine's documented Python dependencies in the ANNE environment.
 3. Set `VITA_ENGINE_PATH` to the absolute path of that checkout.
-4. Instantiate `VitaEngineTool()` from the ANNE host and call `execute(request)`.
+4. Instantiate `AnneAgent` with `vita_engine_path="/absolute/path/to/VITA-Engine"` (or set `VITA_ENGINE_PATH` before constructing the agent). The tool is then added to the agent's guarded tool registry and model tool schema.
 5. Run end-to-end tests in the actual ANNE runtime before describing the connection as active.
 
 Example:
