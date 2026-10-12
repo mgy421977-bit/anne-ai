@@ -53,6 +53,37 @@ from anne.tools.local_files import LocalFilesTool
 from anne.tools.vita_engine import VitaEngineTool
 
 
+_VITA_TOOL_SCHEMA: dict[str, Any] = {
+            "type": "function",
+            "function": {
+                "name": "vita_engine_assess",
+                "description": (
+                    "Run an allow-listed deterministic VITA-Engine carbon assessment, "
+                    "Türkiye ETS precheck, or taxonomy screening. The result always "
+                    "requires human review; do not modify calculated values."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "request": {
+                            "type": "object",
+                            "properties": {
+                                "request_id": {"type": "string"},
+                                "operation": {
+                                    "type": "string",
+                                    "enum": ["carbon_assess", "tr_ets_precheck", "taxonomy_screen"]
+                                },
+                                "input": {"type": "object"}
+                            },
+                            "required": ["request_id", "operation", "input"]
+                        }
+                    },
+                    "required": ["request"]
+                },
+            },
+        }
+
+
 @dataclass
 class AgentResult:
     response: str
@@ -207,35 +238,6 @@ omit only when no semantic extraction is useful.
         {
             "type": "function",
             "function": {
-                "name": "vita_engine_assess",
-                "description": (
-                    "Run an allow-listed deterministic VITA-Engine carbon assessment, "
-                    "Türkiye ETS precheck, or taxonomy screening. The result always "
-                    "requires human review; do not modify calculated values."
-                ),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "request": {
-                            "type": "object",
-                            "properties": {
-                                "request_id": {"type": "string"},
-                                "operation": {
-                                    "type": "string",
-                                    "enum": ["carbon_assess", "tr_ets_precheck", "taxonomy_screen"]
-                                },
-                                "input": {"type": "object"}
-                            },
-                            "required": ["request_id", "operation", "input"]
-                        }
-                    },
-                    "required": ["request"]
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
                 "name": "web_research",
                 "description": (
                     "Research a question using bounded public web sources. "
@@ -312,10 +314,7 @@ omit only when no semantic extraction is useful.
                 side_effect=False,
                 human_review_required=False,
             )
-            self.tool_schemas.append(next(
-                schema for schema in self.TOOL_SCHEMAS
-                if schema["function"]["name"] == "vita_engine_assess"
-            ))
+            self.tool_schemas.append(_VITA_TOOL_SCHEMA)
         if isinstance(memory, GitHubMemory):
             self.github_tools = GitHubRepoTool(
                 memory.token, memory.repository, memory.branch
@@ -752,7 +751,7 @@ omit only when no semantic extraction is useful.
         model = cast(OpenRouterProvider, self.model)
 
         for _ in range(self.MAX_TOOL_ROUNDS):
-            data = model.chat(messages, tools=self.tool_schemas)
+            data = model.chat(messages, tools=getattr(self, "tool_schemas", self.TOOL_SCHEMAS))
             choices = data.get("choices") or []
             if not choices:
                 break
