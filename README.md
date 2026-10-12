@@ -848,3 +848,9 @@ Apache License 2.0 — see [`LICENSE`](LICENSE).
 ## Investor technical diligence
 
 [`docs/INVESTOR_TECHNICAL_DUE_DILIGENCE.md`](docs/INVESTOR_TECHNICAL_DUE_DILIGENCE.md) documents the current architecture, empirical evidence, limitations, reproducibility boundaries, and remaining investor-grade proof requirements.
+
+## Optional VITA-Engine tool bridge
+
+ANNE can optionally call Vitavolt's deterministic VITA-Engine core through the guarded tool at `src/anne/tools/vita_engine.py`. Set `VITA_ENGINE_PATH` or pass `vita_engine_path` to `AnneAgent` to register the tool schema and executor. This is local integration code, not a deployed connection; end-to-end verification is still required.
+
+See [VITA Engine Tool Bridge setup and safety boundaries](docs/VITA_ENGINE_TOOL_BRIDGE.md).

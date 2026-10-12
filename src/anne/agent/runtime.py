@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import weakref
 from collections.abc import Callable
@@ -44,11 +45,43 @@ from anne.providers.gemini import GeminiProvider
 from anne.providers.local import LocalProvider
 from anne.providers.openrouter import OpenRouterProvider
 from anne.runtime import AnneRuntime
-from anne.safety.policy import ToolPolicy, redact_sensitive
+from anne.safety.policy import ToolMetadata, ToolPolicy, redact_sensitive
 from anne.semantics.core import frame_from_text
 from anne.semantics.structured import Ontology, parse_structured_frame
 from anne.tools.github_repo import GitHubRepoTool
 from anne.tools.local_files import LocalFilesTool
+from anne.tools.vita_engine import VitaEngineTool
+
+
+_VITA_TOOL_SCHEMA: dict[str, Any] = {
+            "type": "function",
+            "function": {
+                "name": "vita_engine_assess",
+                "description": (
+                    "Run an allow-listed deterministic VITA-Engine carbon assessment, "
+                    "Türkiye ETS precheck, or taxonomy screening. The result always "
+                    "requires human review; do not modify calculated values."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "request": {
+                            "type": "object",
+                            "properties": {
+                                "request_id": {"type": "string"},
+                                "operation": {
+                                    "type": "string",
+                                    "enum": ["carbon_assess", "tr_ets_precheck", "taxonomy_screen"]
+                                },
+                                "input": {"type": "object"}
+                            },
+                            "required": ["request_id", "operation", "input"]
+                        }
+                    },
+                    "required": ["request"]
+                },
+            },
+        }
 
 
 @dataclass
@@ -230,6 +263,7 @@ omit only when no semantic extraction is useful.
         require_verified_response: bool = False,
         decision_loop: DecisionLoop | None = None,
         freshness_policy: FreshnessPolicy | None = None,
+        vita_engine_path: str | Path | None = None,
     ) -> None:
         self.model = model
         self.response_verifier = response_verifier
@@ -259,6 +293,7 @@ omit only when no semantic extraction is useful.
         self._last_research_ledger: EvidenceLedger | None = None
         self._last_research_question: str | None = None
         self.tools = _GuardedToolRegistry()
+        self.tool_schemas = list(self.TOOL_SCHEMAS)
         self.tools.update(
             {
                 "local_list": self.local_tools.list,
@@ -266,6 +301,20 @@ omit only when no semantic extraction is useful.
                 "web_research": self._web_research,
             }
         )
+        configured_vita_path = vita_engine_path or os.environ.get("VITA_ENGINE_PATH")
+        if configured_vita_path:
+            self.vita_engine_tool = VitaEngineTool(configured_vita_path)
+            self.tools["vita_engine_assess"] = self._vita_engine_assess
+            self.tool_policy.allowed_tools.add("vita_engine_assess")
+            self.tool_policy.tool_metadata["vita_engine_assess"] = ToolMetadata(
+                risk=0.15,
+                reversible=True,
+                authority_required=False,
+                evidence_required=False,
+                side_effect=False,
+                human_review_required=False,
+            )
+            self.tool_schemas.append(_VITA_TOOL_SCHEMA)
         if isinstance(memory, GitHubMemory):
             self.github_tools = GitHubRepoTool(
                 memory.token, memory.repository, memory.branch
@@ -277,6 +326,16 @@ omit only when no semantic extraction is useful.
                     "github_search": self.github_tools.search_code,
                 }
             )
+
+    def _vita_engine_assess(self, request: dict[str, Any]) -> dict[str, Any]:
+        """Execute the local VITA adapter; the result still requires human review."""
+        result = self.vita_engine_tool.execute(request)
+        return {
+            "ok": True,
+            "result": result,
+            "human_review_required": True,
+            "tool": "vita_engine_assess",
+        }
 
     def _create_research_plan(self, query: str) -> ResearchPlan:
         """Create a bounded, inspectable plan before web research executes."""
@@ -692,7 +751,7 @@ omit only when no semantic extraction is useful.
         model = cast(OpenRouterProvider, self.model)
 
         for _ in range(self.MAX_TOOL_ROUNDS):
-            data = model.chat(messages, tools=self.TOOL_SCHEMAS)
+            data = model.chat(messages, tools=getattr(self, "tool_schemas", self.TOOL_SCHEMAS))
             choices = data.get("choices") or []
             if not choices:
                 break
