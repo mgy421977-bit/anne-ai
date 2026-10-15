@@ -29,15 +29,15 @@ from anne.core.verification import ClaimVerifier, verify_claim
 from anne.memory.fractal_memory import FractalMemory
 
 
-def _is_unit_interval_number(value: object) -> bool:
-    """Return whether a numeric signal is finite and bounded to [0, 1]."""
+def _bounded_unit_interval_number(value: object) -> float | None:
+    """Normalize a finite numeric signal in [0, 1], otherwise return None."""
     if not isinstance(value, (int, float)) or isinstance(value, bool):
-        return False
+        return None
     try:
         numeric = float(value)
     except (OverflowError, TypeError, ValueError):
-        return False
-    return isfinite(numeric) and 0.0 <= numeric <= 1.0
+        return None
+    return numeric if isfinite(numeric) and 0.0 <= numeric <= 1.0 else None
 
 
 class AnnePipeline:
@@ -293,6 +293,10 @@ class AnnePipeline:
         empathy_map: dict[str, Any] = {}
         relation_presence_states: list[RelationPresence] = []
         relation_presence_query = getattr(self.memory, "has_empathy_relation", None)
+        raw_ethic_total = state.ethic_score.total if state.ethic_score else None
+        bounded_ethic_total = _bounded_unit_interval_number(raw_ethic_total)
+        ethical_score_valid = bounded_ethic_total is not None
+        ethic_total = bounded_ethic_total if bounded_ethic_total is not None else 0.5
         for c in state.affected_consciousnesses:
             others = [o for o in state.affected_consciousnesses if o.id != c.id]
             rels: list[float] = []
@@ -303,11 +307,12 @@ class AnnePipeline:
                     relation_presence_states.append(RelationPresence.UNKNOWN)
                     rels.append(0.5)
                     continue
-                if not _is_unit_interval_number(relation_value):
+                bounded_relation_strength = _bounded_unit_interval_number(relation_value)
+                if bounded_relation_strength is None:
                     relation_presence_states.append(RelationPresence.UNKNOWN)
                     rels.append(0.5)
                     continue
-                rels.append(float(relation_value))
+                rels.append(bounded_relation_strength)
                 if not callable(relation_presence_query):
                     relation_presence_states.append(RelationPresence.UNKNOWN)
                     continue
@@ -323,9 +328,6 @@ class AnnePipeline:
                 except Exception:
                     relation_presence_states.append(RelationPresence.UNKNOWN)
             avg_rel = sum(rels) / len(rels) if rels else 0.5
-            raw_ethic_total = state.ethic_score.total if state.ethic_score else None
-            ethical_score_valid = _is_unit_interval_number(raw_ethic_total)
-            ethic_total = float(raw_ethic_total) if ethical_score_valid else 0.5
             impact = ethic_total * avg_rel
             empathy_map[c.id] = {
                 "perspective_weight": c.weight,
@@ -348,8 +350,6 @@ class AnnePipeline:
         relationship_data_unknown = any(
             status is RelationPresence.UNKNOWN for status in relation_presence_states
         )
-        raw_ethic_total = state.ethic_score.total if state.ethic_score else None
-        ethical_score_valid = _is_unit_interval_number(raw_ethic_total)
         assessment_status = (
             HissetStatus.AVAILABLE
             if has_parties and relationship_data_present and ethical_score_valid
