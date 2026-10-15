@@ -258,7 +258,7 @@ def test_invalid_relation_strength_fails_closed_without_crashing(
 
 @pytest.mark.parametrize(
     "invalid_total",
-    [float("nan"), float("inf"), -0.1, 1.1, "invalid", None, True],
+    [float("nan"), float("inf"), -0.1, 1.1, "invalid", None, True, 10**1000],
 )
 def test_invalid_ethical_total_fails_closed_without_crashing(
     invalid_total: object,
