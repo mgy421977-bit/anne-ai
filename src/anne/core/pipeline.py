@@ -6,11 +6,19 @@ Order: optional FailFast → DUY → BAK → GÖR → ANLA → HİSSET → YAP.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from math import isfinite
 from typing import Any
 
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
 from anne.core.anla_score import DEFAULT_TAU, MAX_ANLA_RETRIES, passes_anla
-from anne.core.cognitive_state import CognitiveState, Consciousness, Hypothesis
+from anne.core.cognitive_state import (
+    CognitiveState,
+    Consciousness,
+    HissetAssessment,
+    HissetStatus,
+    Hypothesis,
+    RelationPresence,
+)
 from anne.core.ethic_core import EthicCore
 from anne.core.evidence import EvidenceGate, evidence_status_from_verification
 from anne.core.fail_fast import FailFastGate, FailFastResult
@@ -19,6 +27,17 @@ from anne.core.requirements import CognitiveRequirements, EvidenceStatus
 from anne.core.values import ANNECore, CoreDecision
 from anne.core.verification import ClaimVerifier, verify_claim
 from anne.memory.fractal_memory import FractalMemory
+
+
+def _bounded_unit_interval_number(value: object) -> float | None:
+    """Normalize a finite numeric signal in [0, 1], otherwise return None."""
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return None
+    try:
+        numeric = float(value)
+    except (OverflowError, TypeError, ValueError):
+        return None
+    return numeric if isfinite(numeric) and 0.0 <= numeric <= 1.0 else None
 
 
 class AnnePipeline:
@@ -249,18 +268,135 @@ class AnnePipeline:
         return state
 
     def hisset(self, state: CognitiveState) -> CognitiveState:
+        ids = [c.id for c in state.affected_consciousnesses]
+        invalid_ids = [
+            party_id
+            for party_id in ids
+            if not isinstance(party_id, str) or not party_id.strip()
+        ]
+        duplicate_ids = len(ids) != len(set(ids)) if not invalid_ids else False
+        if invalid_ids or duplicate_ids:
+            reason = (
+                "Party IDs must be non-empty strings."
+                if invalid_ids
+                else "Duplicate party IDs cannot be assessed safely."
+            )
+            state.hisset_assessment = HissetAssessment(
+                status=HissetStatus.INSUFFICIENT,
+                uncertainty=1.0,
+                reasons=(reason,),
+                provenance=(),
+            )
+            state.context_map["hisset_assessment"] = state.hisset_assessment.as_trace()
+            return state
+
         empathy_map: dict[str, Any] = {}
+        relation_presence_states: list[RelationPresence] = []
+        relation_presence_query = getattr(self.memory, "has_empathy_relation", None)
+        raw_ethic_total = state.ethic_score.total if state.ethic_score else None
+        bounded_ethic_total = _bounded_unit_interval_number(raw_ethic_total)
+        ethical_score_valid = bounded_ethic_total is not None
+        ethic_total = bounded_ethic_total if bounded_ethic_total is not None else 0.5
         for c in state.affected_consciousnesses:
             others = [o for o in state.affected_consciousnesses if o.id != c.id]
-            rels = [self.memory.get_empathy_strength(c.id, o.id) for o in others]
+            rels: list[float] = []
+            for other in others:
+                try:
+                    relation_value = self.memory.get_empathy_strength(c.id, other.id)
+                except Exception:
+                    relation_presence_states.append(RelationPresence.UNKNOWN)
+                    rels.append(0.5)
+                    continue
+                bounded_relation_strength = _bounded_unit_interval_number(relation_value)
+                if bounded_relation_strength is None:
+                    relation_presence_states.append(RelationPresence.UNKNOWN)
+                    rels.append(0.5)
+                    continue
+                rels.append(bounded_relation_strength)
+                if not callable(relation_presence_query):
+                    relation_presence_states.append(RelationPresence.UNKNOWN)
+                    continue
+                try:
+                    relation_present = relation_presence_query(c.id, other.id)
+                    relation_presence_states.append(
+                        RelationPresence.PRESENT
+                        if relation_present is True
+                        else RelationPresence.ABSENT
+                        if relation_present is False
+                        else RelationPresence.UNKNOWN
+                    )
+                except Exception:
+                    relation_presence_states.append(RelationPresence.UNKNOWN)
             avg_rel = sum(rels) / len(rels) if rels else 0.5
-            impact = (state.ethic_score.total if state.ethic_score else 0.5) * avg_rel
+            impact = ethic_total * avg_rel
             empathy_map[c.id] = {
                 "perspective_weight": c.weight,
                 "avg_relation_strength": round(avg_rel, 3),
                 "estimated_impact": round(impact, 3),
             }
         state.empathy_map = empathy_map
+        has_parties = bool(state.affected_consciousnesses)
+        has_relationship_pair = any(
+            c.id != other.id
+            for c in state.affected_consciousnesses
+            for other in state.affected_consciousnesses
+        )
+        relationship_data_present = bool(relation_presence_states) and all(
+            status is RelationPresence.PRESENT for status in relation_presence_states
+        )
+        relationship_data_absent = any(
+            status is RelationPresence.ABSENT for status in relation_presence_states
+        )
+        relationship_data_unknown = any(
+            status is RelationPresence.UNKNOWN for status in relation_presence_states
+        )
+        assessment_status = (
+            HissetStatus.AVAILABLE
+            if has_parties and relationship_data_present and ethical_score_valid
+            else HissetStatus.INSUFFICIENT
+        )
+        if not has_parties:
+            reasons = ("No affected parties were supplied.",)
+        elif not has_relationship_pair:
+            reasons = ("A single party has no relation counterpart to assess.",)
+        elif relationship_data_unknown:
+            reasons = (
+                "Relationship presence is unknown; no positive relation evidence is claimed.",
+            )
+        elif relationship_data_absent:
+            reasons = ("No stored relation was found for at least one party pair.",)
+        elif not ethical_score_valid:
+            reasons = ("Ethical score is missing or invalid; impact uses the bounded fallback.",)
+        else:
+            reasons = (
+                "Observer-only assessment derived from existing ethical and relation signals.",
+            )
+        state.hisset_assessment = HissetAssessment(
+            status=assessment_status,
+            uncertainty=0.5 if assessment_status is HissetStatus.AVAILABLE else 1.0,
+            reasons=reasons,
+            provenance=tuple(
+                source
+                for source, include in (
+                    (
+                        "memory:empathy_map:presence_query",
+                        bool(relation_presence_states)
+                        and all(
+                            status is not RelationPresence.UNKNOWN
+                            for status in relation_presence_states
+                        ),
+                    ),
+                    ("memory:empathy_map:strength", relationship_data_present),
+                    ("core:ethic_core", ethical_score_valid),
+                )
+                if include
+            ),
+            party_impacts=tuple(
+                (party_id, values["estimated_impact"])
+                for party_id, values in empathy_map.items()
+            ),
+        )
+        state.context_map["hisset_assessment"] = state.hisset_assessment.as_trace()
         return state
 
     def yap(

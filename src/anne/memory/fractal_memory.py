@@ -479,6 +479,14 @@ class FractalMemory:
         ).fetchone()
         return float(row[0]) if row else 0.5
 
+    def has_empathy_relation(self, id_a: str, id_b: str) -> bool:
+        """Return whether the existing empathy-map key is actually stored."""
+        key = f"{min(id_a, id_b)}_{max(id_a, id_b)}"
+        row = self.conn.cursor().execute(
+            "SELECT 1 FROM empathy_map WHERE id=? LIMIT 1", (key,)
+        ).fetchone()
+        return row is not None
+
     def save_failure_trace(self, cycle_id: str, stage: str, raw_input: str, reason: str,
                            meta_tag: str = "", hypothesis_id: str = "", ethic_total: float = 0.0,
                            *, depth: int = 0, parent_cycle_id: str | None = None,
