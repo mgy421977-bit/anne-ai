@@ -29,6 +29,17 @@ from anne.core.verification import ClaimVerifier, verify_claim
 from anne.memory.fractal_memory import FractalMemory
 
 
+def _is_unit_interval_number(value: object) -> bool:
+    """Return whether a numeric signal is finite and bounded to [0, 1]."""
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    try:
+        numeric = float(value)
+    except (OverflowError, TypeError, ValueError):
+        return False
+    return isfinite(numeric) and 0.0 <= numeric <= 1.0
+
+
 class AnnePipeline:
     """Executes FailFast? → DUY → BAK → GÖR → ANLA → HİSSET → YAP."""
 
@@ -292,12 +303,7 @@ class AnnePipeline:
                     relation_presence_states.append(RelationPresence.UNKNOWN)
                     rels.append(0.5)
                     continue
-                if (
-                    not isinstance(relation_value, (int, float))
-                    or isinstance(relation_value, bool)
-                    or not isfinite(relation_value)
-                    or not 0.0 <= relation_value <= 1.0
-                ):
+                if not _is_unit_interval_number(relation_value):
                     relation_presence_states.append(RelationPresence.UNKNOWN)
                     rels.append(0.5)
                     continue
@@ -318,12 +324,7 @@ class AnnePipeline:
                     relation_presence_states.append(RelationPresence.UNKNOWN)
             avg_rel = sum(rels) / len(rels) if rels else 0.5
             raw_ethic_total = state.ethic_score.total if state.ethic_score else None
-            ethical_score_valid = (
-                isinstance(raw_ethic_total, (int, float))
-                and not isinstance(raw_ethic_total, bool)
-                and isfinite(raw_ethic_total)
-                and 0.0 <= raw_ethic_total <= 1.0
-            )
+            ethical_score_valid = _is_unit_interval_number(raw_ethic_total)
             ethic_total = float(raw_ethic_total) if ethical_score_valid else 0.5
             impact = ethic_total * avg_rel
             empathy_map[c.id] = {
@@ -348,12 +349,7 @@ class AnnePipeline:
             status is RelationPresence.UNKNOWN for status in relation_presence_states
         )
         raw_ethic_total = state.ethic_score.total if state.ethic_score else None
-        ethical_score_valid = (
-            isinstance(raw_ethic_total, (int, float))
-            and not isinstance(raw_ethic_total, bool)
-            and isfinite(raw_ethic_total)
-            and 0.0 <= raw_ethic_total <= 1.0
-        )
+        ethical_score_valid = _is_unit_interval_number(raw_ethic_total)
         assessment_status = (
             HissetStatus.AVAILABLE
             if has_parties and relationship_data_present and ethical_score_valid
