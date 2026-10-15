@@ -222,7 +222,7 @@ def test_hisset_does_not_change_existing_yap_result_or_decision_state() -> None:
 
 @pytest.mark.parametrize(
     "invalid_strength",
-    [float("nan"), float("inf"), -0.1, 1.1, "invalid", None, True],
+    [float("nan"), float("inf"), -0.1, 1.1, "invalid", None, True, 10**1000],
 )
 def test_invalid_relation_strength_fails_closed_without_crashing(
     invalid_strength: object,
