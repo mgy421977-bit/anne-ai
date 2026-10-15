@@ -6,6 +6,7 @@ Order: optional FailFast → DUY → BAK → GÖR → ANLA → HİSSET → YAP.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from math import isfinite
 from typing import Any
 
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
@@ -286,24 +287,45 @@ class AnnePipeline:
             rels: list[float] = []
             for other in others:
                 try:
-                    rels.append(self.memory.get_empathy_strength(c.id, other.id))
-                except (AttributeError, RuntimeError, TypeError, ValueError):
+                    relation_value = self.memory.get_empathy_strength(c.id, other.id)
+                except Exception:
                     relation_presence_states.append(RelationPresence.UNKNOWN)
                     rels.append(0.5)
                     continue
+                if (
+                    not isinstance(relation_value, (int, float))
+                    or isinstance(relation_value, bool)
+                    or not isfinite(relation_value)
+                    or not 0.0 <= relation_value <= 1.0
+                ):
+                    relation_presence_states.append(RelationPresence.UNKNOWN)
+                    rels.append(0.5)
+                    continue
+                rels.append(float(relation_value))
                 if not callable(relation_presence_query):
                     relation_presence_states.append(RelationPresence.UNKNOWN)
                     continue
                 try:
+                    relation_present = relation_presence_query(c.id, other.id)
                     relation_presence_states.append(
                         RelationPresence.PRESENT
-                        if relation_presence_query(c.id, other.id)
+                        if relation_present is True
                         else RelationPresence.ABSENT
+                        if relation_present is False
+                        else RelationPresence.UNKNOWN
                     )
-                except (AttributeError, RuntimeError, TypeError, ValueError):
+                except Exception:
                     relation_presence_states.append(RelationPresence.UNKNOWN)
             avg_rel = sum(rels) / len(rels) if rels else 0.5
-            impact = (state.ethic_score.total if state.ethic_score else 0.5) * avg_rel
+            raw_ethic_total = state.ethic_score.total if state.ethic_score else None
+            ethical_score_valid = (
+                isinstance(raw_ethic_total, (int, float))
+                and not isinstance(raw_ethic_total, bool)
+                and isfinite(raw_ethic_total)
+                and 0.0 <= raw_ethic_total <= 1.0
+            )
+            ethic_total = float(raw_ethic_total) if ethical_score_valid else 0.5
+            impact = ethic_total * avg_rel
             empathy_map[c.id] = {
                 "perspective_weight": c.weight,
                 "avg_relation_strength": round(avg_rel, 3),
@@ -325,9 +347,16 @@ class AnnePipeline:
         relationship_data_unknown = any(
             status is RelationPresence.UNKNOWN for status in relation_presence_states
         )
+        raw_ethic_total = state.ethic_score.total if state.ethic_score else None
+        ethical_score_valid = (
+            isinstance(raw_ethic_total, (int, float))
+            and not isinstance(raw_ethic_total, bool)
+            and isfinite(raw_ethic_total)
+            and 0.0 <= raw_ethic_total <= 1.0
+        )
         assessment_status = (
             HissetStatus.AVAILABLE
-            if has_parties and relationship_data_present
+            if has_parties and relationship_data_present and ethical_score_valid
             else HissetStatus.INSUFFICIENT
         )
         if not has_parties:
@@ -340,8 +369,8 @@ class AnnePipeline:
             )
         elif relationship_data_absent:
             reasons = ("No stored relation was found for at least one party pair.",)
-        elif state.ethic_score is None:
-            reasons = ("Ethical score is unavailable; impact uses the bounded fallback.",)
+        elif not ethical_score_valid:
+            reasons = ("Ethical score is missing or invalid; impact uses the bounded fallback.",)
         else:
             reasons = (
                 "Observer-only assessment derived from existing ethical and relation signals.",
@@ -362,7 +391,7 @@ class AnnePipeline:
                         ),
                     ),
                     ("memory:empathy_map:strength", relationship_data_present),
-                    ("core:ethic_core", state.ethic_score is not None),
+                    ("core:ethic_core", ethical_score_valid),
                 )
                 if include
             ),
