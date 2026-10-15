@@ -217,3 +217,82 @@ def test_hisset_does_not_change_existing_yap_result_or_decision_state() -> None:
     assert with_result.output["action"] == without_result.output["action"]
     assert with_result.output["core"] == without_result.output["core"]
     assert with_result.output["agency_decision"] == without_result.output["agency_decision"]
+
+
+
+@pytest.mark.parametrize(
+    "invalid_strength",
+    [float("nan"), float("inf"), -0.1, 1.1, "invalid", None, True],
+)
+def test_invalid_relation_strength_fails_closed_without_crashing(
+    invalid_strength: object,
+) -> None:
+    class InvalidStrengthMemory(RelationMemory):
+        def get_empathy_strength(self, id_a: str, id_b: str) -> float:
+            return invalid_strength  # type: ignore[return-value]
+
+        def has_empathy_relation(self, id_a: str, id_b: str) -> bool:
+            return True
+
+    pipeline = AnnePipeline(memory=InvalidStrengthMemory())
+    state = make_state(Consciousness(id="a"), Consciousness(id="b"))
+    original_score = state.ethic_score
+    original_logic = state.logic_valid
+    original_action = state.action
+
+    pipeline.hisset(state)
+
+    assert state.hisset_assessment is not None
+    assert state.hisset_assessment.status is HissetStatus.INSUFFICIENT
+    assert state.hisset_assessment.uncertainty == 1.0
+    assert "unknown" in state.hisset_assessment.reasons[0].lower()
+    assert all(
+        value["avg_relation_strength"] == 0.5
+        and value["estimated_impact"] == 0.375
+        for value in state.empathy_map.values()
+    )
+    assert state.ethic_score is original_score
+    assert state.logic_valid is original_logic
+    assert state.action == original_action
+
+
+@pytest.mark.parametrize(
+    "invalid_total",
+    [float("nan"), float("inf"), -0.1, 1.1, "invalid", None, True],
+)
+def test_invalid_ethical_total_fails_closed_without_crashing(
+    invalid_total: object,
+) -> None:
+    class KnownRelationMemory(RelationMemory):
+        def get_empathy_strength(self, id_a: str, id_b: str) -> float:
+            return 0.8
+
+        def has_empathy_relation(self, id_a: str, id_b: str) -> bool:
+            return True
+
+    pipeline = AnnePipeline(memory=KnownRelationMemory())
+    state = make_state(Consciousness(id="a"), Consciousness(id="b"))
+    assert state.ethic_score is not None
+    state.ethic_score.total = invalid_total  # type: ignore[assignment]
+    original_score = state.ethic_score
+    original_logic = state.logic_valid
+    original_action = state.action
+
+    pipeline.hisset(state)
+
+    assert state.hisset_assessment is not None
+    assert state.hisset_assessment.status is HissetStatus.INSUFFICIENT
+    assert state.hisset_assessment.uncertainty == 1.0
+    assert "ethical score" in state.hisset_assessment.reasons[0].lower()
+    assert state.hisset_assessment.provenance == (
+        "memory:empathy_map:presence_query",
+        "memory:empathy_map:strength",
+    )
+    assert all(
+        value["avg_relation_strength"] == 0.8
+        and value["estimated_impact"] == 0.4
+        for value in state.empathy_map.values()
+    )
+    assert state.ethic_score is original_score
+    assert state.logic_valid is original_logic
+    assert state.action == original_action
