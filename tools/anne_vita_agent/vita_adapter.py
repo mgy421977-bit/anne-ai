@@ -12,7 +12,7 @@ DEFAULT_IMAGE = "python:3.12-slim"
 MAX_ROOF_AREA_M2 = 100_000.0
 MAX_DAILY_CONSUMPTION_KWH = 1_000_000.0
 DEFAULT_PANEL_CODE = "PAN-CW-M12-132TNB-TOPCON"
-DEFAULT_INVERTER_CODE = "INV-HUA-100-001"
+DEFAULT_INVERTER_CODE = "INV-HUA-100-M2"
 
 # Fixed worker program. User task text is never interpolated into executable code.
 _WORKER = r"""
