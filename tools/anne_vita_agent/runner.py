@@ -1,10 +1,12 @@
 """Bounded local task runner: ANNE assessment + AgencyGate + allowlisted VITA action."""
 from __future__ import annotations
 
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Protocol
 
 from anne.core.agency_gate import ActionDecision, ActionProposal, AgencyGate
+from .vita_adapter import VitaSolarRequest
 
 
 class VitaAdapter(Protocol):
@@ -46,12 +48,14 @@ class LocalAgent:
         inputs = task.get("input")
         if not isinstance(inputs, dict):
             raise ValueError("task.input must be a JSON object")
+        # Validate and normalize before invoking ANNE or any execution adapter.
+        validated_inputs = asdict(VitaSolarRequest.from_mapping(inputs))
 
         summary = (
             "Perform a read-only, preliminary VITA solar feasibility calculation. "
-            f"Location={inputs.get('location', '')}; "
-            f"roof_area_m2={inputs.get('roof_area_m2', '')}; "
-            f"daily_consumption_kwh={inputs.get('daily_consumption_kwh', '')}."
+            f"Location={validated_inputs['location']}; "
+            f"roof_area_m2={validated_inputs['roof_area_m2']}; "
+            f"daily_consumption_kwh={validated_inputs['daily_consumption_kwh']}."
         )
         # ANNE provides a cognitive trace; it is not treated as proof of engineering truth.
         anne_result = self.anne_runtime.run_cognitive(summary)
@@ -90,7 +94,7 @@ class LocalAgent:
                 },
             }
 
-        vita_result = self.vita_adapter.calculate_ges(inputs)
+        vita_result = self.vita_adapter.calculate_ges(validated_inputs)
         trace = getattr(anne_result, "stage_trace", ())
         if not trace:
             trace = getattr(anne_result, "trace", ())
