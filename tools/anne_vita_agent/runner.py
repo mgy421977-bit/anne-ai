@@ -61,11 +61,11 @@ class LocalAgent:
         anne_status = str(getattr(anne_result, "status", "UNKNOWN")).upper()
         anne_reason = str(getattr(anne_result, "reason", ""))
 
-        if anne_status in BLOCKED_ANNE_STATUSES:
+        if anne_status != "EXECUTED":
             return {
                 "status": "BLOCKED_BY_ANNE",
                 "anne": {"status": anne_status, "reason": anne_reason},
-                "reason": "ANNE returned a blocking status; VITA was not invoked.",
+                "reason": "ANNE did not return the explicit EXECUTED status; VITA was not invoked.",
             }
 
         proposal = ActionProposal(
