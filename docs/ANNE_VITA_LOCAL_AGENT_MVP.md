@@ -18,7 +18,7 @@
 - Main branch inspected at commit c58b7ef16cbb4a0d904e07db30da49772843cbe4.
 - The repository contains energy/solar/solar_engine.py, which exposes SolarEngine.calculate_ges(location, roof_area_m2, daily_consumption_kwh, panel_code, inverter_code).
 - Its calculation uses a local JSON product database and includes simplified production, investment, ROI, and BOM estimates. The source itself describes investment/ROI as rough estimates. Treat output as preliminary only.
-- The adapter defaults to panel code PAN-CW-M12-132TNB-TOPCON, present in the inspected panel catalog, and inverter code INV-HUA-100-001, documented by the VITA README. A local run must still confirm both records resolve in the checked-out catalog.
+- The adapter defaults to panel code PAN-CW-M12-132TNB-TOPCON and inverter code INV-HUA-100-M2, both found in the inspected local JSON catalogs. The README's older INV-HUA-100-001 example does not exist in the current inverter catalog; the adapter intentionally uses the current catalog code.
 - This adapter targets the Python VITA-Engine repository, not the separate browser-side JavaScript engine used by the Vitavolt website. The production web calculator is not modified.
 
 ## MVP contract
