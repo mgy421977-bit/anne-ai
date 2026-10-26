@@ -56,8 +56,9 @@ class VitaSolarRequest:
             if isinstance(raw, bool) or not isinstance(raw, (int, float)):
                 raise ValueError(f"{key} must be a number")
             number = float(raw)
-            if number <= 0 or number > maximum:
-                raise ValueError(f"{key} must be greater than 0 and at most {maximum:g}")
+            minimum = 2.6 if key == "roof_area_m2" else 0.0
+            if number < minimum or number > maximum:
+                raise ValueError(f"{key} must be at least {minimum:g} and at most {maximum:g}")
             return number
 
         def product_code(key: str, default: str) -> str:
@@ -177,6 +178,7 @@ class DockerVitaAdapter:
             "result": result,
             "limitations": [
                 "VITA source describes investment and ROI calculations as rough estimates.",
+                "Current SolarEngine code accepts daily consumption but sizes panels from roof area; consumption is not used in its sizing formula.",
                 "This output is not a final engineering design, quotation, or site survey.",
             ],
         }
