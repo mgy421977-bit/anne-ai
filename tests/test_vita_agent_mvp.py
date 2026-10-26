@@ -71,6 +71,14 @@ def test_anne_blocking_status_prevents_vita_call(tmp_path):
     assert vita.calls == []
 
 
+def test_unknown_anne_status_fails_closed(tmp_path):
+    anne, vita = FakeAnne("UNKNOWN"), FakeVita()
+    agent = LocalAgent(workspace=tmp_path, vita_adapter=vita, anne_runtime=anne)
+    result = agent.run(sample_task())
+    assert result["status"] == "BLOCKED_BY_ANNE"
+    assert vita.calls == []
+
+
 def test_allowlisted_calculation_passes_agency_gate_and_calls_adapter(tmp_path):
     anne, vita = FakeAnne(), FakeVita()
     agent = LocalAgent(workspace=tmp_path, vita_adapter=vita, anne_runtime=anne)
@@ -91,14 +99,13 @@ def test_docker_adapter_uses_restricted_container_flags(tmp_path, monkeypatch):
         assert "--pull=never" in command
         assert kwargs["shell"] is False
         assert kwargs["timeout"] == 25
-        return subprocess.CompletedProcess(
-            command,
-            0,
-            stdout=json.dumps(
-                {"capacity_kw": 12.4, "num_panels": 20, "annual_kwh": 17980, "bom": {}}
-            ) + "\\n",
-            stderr="",
-        )
+        payload = {
+            "capacity_kw": 12.4,
+            "num_panels": 20,
+            "annual_kwh": 17980,
+            "bom": {},
+        }
+        return subprocess.CompletedProcess(command, 0, stdout=json.dumps(payload) + chr(10), stderr="")
 
     monkeypatch.setattr("tools.anne_vita_agent.vita_adapter.subprocess.run", fake_run)
     result = DockerVitaAdapter(tmp_path).calculate_ges(sample_task()["input"])
@@ -111,7 +118,7 @@ def test_docker_adapter_rejects_vita_error_payload(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "tools.anne_vita_agent.vita_adapter.subprocess.run",
         lambda command, **kwargs: subprocess.CompletedProcess(
-            command, 0, stdout='{"error":"Product not found"}\\n', stderr=""
+            command, 0, stdout='{"error":"Product not found"}' + chr(10), stderr=""
         ),
     )
     with pytest.raises(VitaAdapterError, match="Product not found"):
