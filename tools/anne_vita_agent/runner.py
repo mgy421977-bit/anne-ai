@@ -11,9 +11,6 @@ class VitaAdapter(Protocol):
     def calculate_ges(self, payload: dict[str, Any]) -> dict[str, Any]: ...
 
 
-BLOCKED_ANNE_STATUSES = {"ABORTED", "REVIEW", "HALT", "FAIL_FAST"}
-
-
 class LocalAgent:
     """Execute at most one explicitly allowlisted action per request.
 
