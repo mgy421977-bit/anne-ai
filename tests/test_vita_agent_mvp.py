@@ -63,6 +63,17 @@ def test_unknown_action_is_denied_without_running_adapters(tmp_path):
     assert vita.calls == []
 
 
+def test_invalid_vita_input_is_rejected_before_anne(tmp_path):
+    anne, vita = FakeAnne(), FakeVita()
+    agent = LocalAgent(workspace=tmp_path, vita_adapter=vita, anne_runtime=anne)
+    invalid = sample_task()
+    invalid["input"]["roof_area_m2"] = 0
+    with pytest.raises(ValueError):
+        agent.run(invalid)
+    assert anne.calls == 0
+    assert vita.calls == []
+
+
 def test_anne_blocking_status_prevents_vita_call(tmp_path):
     anne, vita = FakeAnne("ABORTED"), FakeVita()
     agent = LocalAgent(workspace=tmp_path, vita_adapter=vita, anne_runtime=anne)
