@@ -49,6 +49,8 @@ def test_vita_request_rejects_nonpositive_and_extreme_values():
     with pytest.raises(ValueError):
         VitaSolarRequest.from_mapping({**sample_task()["input"], "roof_area_m2": 0})
     with pytest.raises(ValueError):
+        VitaSolarRequest.from_mapping({**sample_task()["input"], "roof_area_m2": 2.59})
+    with pytest.raises(ValueError):
         VitaSolarRequest.from_mapping(
             {**sample_task()["input"], "daily_consumption_kwh": 1_000_001}
         )
