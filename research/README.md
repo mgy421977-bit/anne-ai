@@ -12,5 +12,6 @@ Transparency is part of the research product. Critiques and external-technology 
 
 | Date | Note |
 |------|------|
+| 2026-11-12 | [Life as a Branching Possibility Space](open_questions/2026-11-12_life_branching_possibility_space.md) — exploratory hypothesis; biology, philosophy and ANNE analogy kept distinct |
 | 2026-08-12 | [MatrAIx assessment (HEAR / eval substrate)](open_questions/matraix_and_hear.md) — **no architecture change** |
 | 2026-08-12 | [Decision: MatrAIx external only](decision_logs/2026-08-12_matraix_assessment.md) |
