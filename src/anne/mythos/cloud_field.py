@@ -27,7 +27,7 @@ class ThreadWorkerBackend:
     """Bounded local reference backend; cloud adapters can implement WorkerBackend."""
 
     def __init__(self, max_workers: int = 4) -> None:
-        if isinstance(max_workers, bool) or max_workers < 1:
+        if isinstance(max_workers, bool) or not isinstance(max_workers, int) or max_workers < 1:
             raise ValueError("max_workers must be a positive integer")
         self.max_workers = max_workers
 
