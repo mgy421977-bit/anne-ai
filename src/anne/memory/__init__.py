@@ -1,5 +1,11 @@
 from .contextual_memory import ContextualMemoryService
-from .fractal_memory import FractalMemory
+from .fractal_memory import FractalMemory, FractalMemoryEngine, FractalQueryResult
 from .local_memory import LocalMemory
 
-__all__ = ["ContextualMemoryService", "FractalMemory", "LocalMemory"]
+__all__ = [
+    "ContextualMemoryService",
+    "FractalMemory",
+    "FractalMemoryEngine",
+    "FractalQueryResult",
+    "LocalMemory",
+]
